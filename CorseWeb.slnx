@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="corseweb.client/corseweb.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="CorseWeb.Server/CorseWeb.Server.csproj" />
+</Solution>
