@@ -1,0 +1,624 @@
+@use "sass:map";
+
+$white: #ffffff;
+$black: #000000;
+
+// Neutral
+$gray-50: #f8fafc;
+$gray-100: #f1f5f9;
+$gray-200: #e2e8f0;
+$gray-300: #cbd5e1;
+$gray-400: #94a3b8;
+$gray-500: #64748b;
+$gray-600: #475569;
+$gray-700: #334155;
+$gray-800: #1e293b;
+$gray-900: #0f172a;
+$gray-950: #020617;
+
+// Brand
+$brand-50: #eef2ff;
+$brand-100: #e0e7ff;
+$brand-200: #c7d2fe;
+$brand-300: #a5b4fc;
+$brand-400: #818cf8;
+$brand-500: #6366f1;
+$brand-600: #4f46e5;
+$brand-700: #4338ca;
+$brand-800: #3730a3;
+$brand-900: #312e81;
+
+// Success
+$success-50: #f0fdf4;
+$success-100: #dcfce7;
+$success-500: #22c55e;
+$success-600: #16a34a;
+$success-700: #15803d;
+
+// Warning
+$warning-50: #fffbeb;
+$warning-100: #fef3c7;
+$warning-500: #f59e0b;
+$warning-600: #d97706;
+$warning-700: #b45309;
+
+// Danger
+$danger-50: #fef2f2;
+$danger-100: #fee2e2;
+$danger-500: #ef4444;
+$danger-600: #dc2626;
+$danger-700: #b91c1c;
+
+// Info
+$info-50: #eff6ff;
+$info-100: #dbeafe;
+$info-500: #3b82f6;
+$info-600: #2563eb;
+$info-700: #1d4ed8;
+
+
+// ============================================================
+// 2. TOKENS SEMÂNTICOS
+// ============================================================
+
+// ------------------------------------------------------------
+// LIGHT MODE
+// Padrão quando o sistema do usuário está em modo claro.
+// ------------------------------------------------------------
+
+:root {
+    color-scheme: light;
+    // Background
+    --color-bg: #{$white};
+    --color-bg-subtle: #{$gray-50};
+    --color-bg-muted: #{$gray-100};
+    --color-bg-elevated: #{$white};
+    --color-bg-inverse: #{$gray-900};
+    // Surface
+    --color-surface: #{$white};
+    --color-surface-hover: #{$gray-50};
+    --color-surface-active: #{$gray-100};
+    // Text
+    --color-text: #{$gray-900};
+    --color-text-secondary: #{$gray-600};
+    --color-text-muted: #{$gray-500};
+    --color-text-disabled: #{$gray-400};
+    --color-text-inverse: #{$white};
+    --color-text-link: #{$brand-600};
+    --color-text-link-hover: #{$brand-700};
+    // Border
+    --color-border: #{$gray-200};
+    --color-border-subtle: #{$gray-100};
+    --color-border-strong: #{$gray-300};
+    --color-border-focus: #{$brand-500};
+    // Brand
+    --color-brand: #{$brand-600};
+    --color-brand-hover: #{$brand-700};
+    --color-brand-active: #{$brand-800};
+    --color-brand-subtle: #{$brand-50};
+    --color-brand-contrast: #{$white};
+    // Status
+    --color-success: #{$success-600};
+    --color-success-subtle: #{$success-50};
+    --color-success-border: #{$success-100};
+    --color-warning: #{$warning-600};
+    --color-warning-subtle: #{$warning-50};
+    --color-warning-border: #{$warning-100};
+    --color-danger: #{$danger-600};
+    --color-danger-subtle: #{$danger-50};
+    --color-danger-border: #{$danger-100};
+    --color-info: #{$info-600};
+    --color-info-subtle: #{$info-50};
+    --color-info-border: #{$info-100};
+    // Overlay
+    --color-overlay: rgb(15 23 42 / 0.5);
+    // Focus
+    --focus-ring: 0 0 0 3px rgb(99 102 241 / 0.25);
+}
+
+
+// ------------------------------------------------------------
+// DARK MODE
+// Alterado automaticamente conforme o sistema operacional.
+// ------------------------------------------------------------
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        // Background
+        --color-bg: #{$gray-950};
+        --color-bg-subtle: #{$gray-900};
+        --color-bg-muted: #{$gray-800};
+        --color-bg-elevated: #{$gray-900};
+        --color-bg-inverse: #{$white};
+        // Surface
+        --color-surface: #{$gray-900};
+        --color-surface-hover: #{$gray-800};
+        --color-surface-active: #{$gray-700};
+        // Text
+        --color-text: #{$gray-50};
+        --color-text-secondary: #{$gray-300};
+        --color-text-muted: #{$gray-400};
+        --color-text-disabled: #{$gray-500};
+        --color-text-inverse: #{$gray-900};
+        --color-text-link: #{$brand-400};
+        --color-text-link-hover: #{$brand-300};
+        // Border
+        --color-border: #{$gray-800};
+        --color-border-subtle: #{$gray-900};
+        --color-border-strong: #{$gray-700};
+        --color-border-focus: #{$brand-400};
+        // Brand
+        --color-brand: #{$brand-500};
+        --color-brand-hover: #{$brand-400};
+        --color-brand-active: #{$brand-300};
+        --color-brand-subtle: rgb(99 102 241 / 0.12);
+        --color-brand-contrast: #{$white};
+        // Status
+        --color-success: #{$success-500};
+        --color-success-subtle: rgb(34 197 94 / 0.12);
+        --color-success-border: rgb(34 197 94 / 0.25);
+        --color-warning: #{$warning-500};
+        --color-warning-subtle: rgb(245 158 11 / 0.12);
+        --color-warning-border: rgb(245 158 11 / 0.25);
+        --color-danger: #{$danger-500};
+        --color-danger-subtle: rgb(239 68 68 / 0.12);
+        --color-danger-border: rgb(239 68 68 / 0.25);
+        --color-info: #{$info-500};
+        --color-info-subtle: rgb(59 130 246 / 0.12);
+        --color-info-border: rgb(59 130 246 / 0.25);
+        // Overlay
+        --color-overlay: rgb(0 0 0 / 0.65);
+        // Focus
+        --focus-ring: 0 0 0 3px rgb(129 140 248 / 0.25);
+    }
+}
+
+
+// ============================================================
+// 3. TIPOGRAFIA
+// ============================================================
+
+:root {
+    --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+    --text-5xl: 3rem;
+    --text-6xl: 3.75rem;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.7;
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+}
+
+
+// ============================================================
+// 4. ESPAÇAMENTO
+// ============================================================
+
+:root {
+    --space-0: 0;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+}
+
+
+// ============================================================
+// 5. BORDER RADIUS
+// ============================================================
+
+:root {
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+}
+
+
+// ============================================================
+// 6. SOMBRAS
+// ============================================================
+
+:root {
+    --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.05);
+    --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.05);
+    --shadow-md: 0 4px 6px rgb(15 23 42 / 0.07), 0 2px 4px rgb(15 23 42 / 0.05);
+    --shadow-lg: 0 10px 20px rgb(15 23 42 / 0.10);
+    --shadow-xl: 0 20px 30px rgb(15 23 42 / 0.12);
+}
+
+
+// ============================================================
+// 7. BREAKPOINTS
+// ============================================================
+
+$breakpoints: ( xs: 30rem, sm: 40rem, md: 48rem, lg: 64rem, xl: 80rem, 2xl: 96rem );
+
+
+// ============================================================
+// 8. MIXIN RESPONSIVO
+// ============================================================
+
+@mixin respond($breakpoint) {
+    @if map.has-key($breakpoints, $breakpoint) {
+        @media (min-width: map.get($breakpoints, $breakpoint)) {
+            @content;
+        }
+    }
+    @else {
+        @warn "Breakpoint `#{$breakpoint}` não encontrado.";
+    }
+}
+
+
+// ============================================================
+// 9. CONTAINER RESPONSIVO
+// ============================================================
+
+.container {
+    width: min(100% - 2rem, 1280px);
+    margin-inline: auto;
+
+    @include respond(md) {
+        width: min(100% - 3rem, 1280px);
+    }
+
+    @include respond(xl) {
+        width: min(100% - 4rem, 1440px);
+    }
+}
+
+
+// ============================================================
+// 10. RESET BÁSICO
+// ============================================================
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color 180ms ease, color 180ms ease;
+}
+
+img,
+picture,
+svg,
+video {
+    display: block;
+    max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: var(--color-text-link);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--color-text-link-hover);
+    }
+}
+
+::selection {
+    background: var(--color-brand);
+    color: var(--color-brand-contrast);
+}
+
+
+// ============================================================
+// 11. ACESSIBILIDADE
+// ============================================================
+
+:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+// ============================================================
+// 12. COMPONENTES UTILITÁRIOS
+// ============================================================
+
+.surface {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.card {
+    @extend .surface;
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+
+    &:hover {
+        background: var(--color-surface-hover);
+        box-shadow: var(--shadow-md);
+    }
+}
+
+.card--glass {
+    width: 100%;
+    max-width: var(--container-width);
+    padding: var(--space-2) var(--space-4);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-glass);
+    box-shadow: var(--navbar-shadow);
+    overflow: hidden;
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}
+
+.text-brand {
+    color: var(--color-brand);
+}
+
+.bg-subtle {
+    background: var(--color-bg-subtle);
+}
+
+
+// ============================================================
+// 13. BOTÃO BASE
+// ============================================================
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-brand);
+    color: var(--color-brand-contrast);
+    font-weight: var(--font-semibold);
+    line-height: 1;
+    transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+
+    &:hover {
+        background: var(--color-brand-hover);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.button--secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border);
+
+    &:hover {
+        background: var(--color-surface-hover);
+    }
+}
+
+.button--danger {
+    background: var(--color-danger);
+    color: var(--color-brand-contrast);
+}
+
+
+// ============================================================
+// 14. FLUID TYPOGRAPHY
+// ============================================================
+
+.display-xl {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: var(--tracking-tight);
+    font-weight: var(--font-bold);
+}
+
+.display-lg {
+    font-size: clamp(2rem, 4vw, 3.75rem);
+    line-height: 1.1;
+    letter-spacing: var(--tracking-tight);
+    font-weight: var(--font-bold);
+}
+
+.heading-xl {
+    font-size: clamp(1.875rem, 3vw, 3rem);
+    line-height: 1.15;
+    font-weight: var(--font-bold);
+}
+
+.heading-lg {
+    font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+    line-height: 1.2;
+    font-weight: var(--font-semibold);
+}
+
+
+// ============================================================
+// 15. GRID RESPONSIVO
+// ============================================================
+
+.grid {
+    display: grid;
+    gap: var(--space-6);
+
+    &--2 {
+        grid-template-columns: 1fr;
+
+        @include respond(md) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    &--3 {
+        grid-template-columns: 1fr;
+
+        @include respond(md) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @include respond(lg) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    &--4 {
+        grid-template-columns: 1fr;
+
+        @include respond(sm) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @include respond(lg) {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+}
+
+
+// ============================================================
+// 16. SAFE AREA — MOBILE
+// ============================================================
+
+.page {
+    padding-inline: max( var(--space-4), env(safe-area-inset-left) );
+    padding-inline: max( var(--space-4), env(safe-area-inset-right) );
+    padding-bottom: max( var(--space-6), env(safe-area-inset-bottom) );
+}
+
+.scroller {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-subtle) transparent;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--color-border-subtle);
+        border-radius: var(--radius-full);
+    }
+
+    &:hover {
+        scrollbar-color: var(--color-border-strong) transparent;
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--color-border-strong);
+        }
+    }
+}
+
+// ============================================================
+// 17. UI / NAVBAR / SURFACES
+// ============================================================
+:root {
+    // --------------------------------------------------------
+    // Layout
+    // --------------------------------------------------------
+
+    --container-width: 1126px;
+    --navbar-height: 64px;
+    // --------------------------------------------------------
+    // Navbar
+    // --------------------------------------------------------
+
+    --navbar-bg-start: rgb(17 18 20 / 0.75);
+    --navbar-bg-end: rgb(12 13 15 / 0.90);
+    --navbar-border: rgb(255 255 255 / 0.06);
+    --navbar-highlight: rgb(255 255 255 / 0.15);
+    --navbar-shadow: inset 0 1px 1px rgb(255 255 255 / 0.12), 0 8px 32px rgb(0 0 0 / 0.12);
+    --navbar-blur: 12px;
+    // --------------------------------------------------------
+    // Surfaces translúcidas
+    // --------------------------------------------------------
+
+    --surface-glass: linear-gradient( 137deg, var(--navbar-bg-start) 4.87%, var(--navbar-bg-end) 75.88% );
+    --surface-glass-border: var(--navbar-border);
+
+    // --------------------------------------------------------
+    // Streaming / Netflix-like
+    // --------------------------------------------------------
+
+    --hero-fade: linear-gradient( 180deg, transparent 0%, rgb(0 0 0 / 0.35) 55%, var(--color-bg) 100% );
+    --poster-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
