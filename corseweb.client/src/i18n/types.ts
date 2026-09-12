@@ -12,7 +12,8 @@ export interface Translations {
         title: string;
         description: string;
         discoverCourses: string;
-        informations: string;
+        newCourses: string;
+        informations: informatiosModel[];
     };
     app: {
         continueStudying: string;
@@ -36,6 +37,11 @@ export interface Translations {
 
     };
 }
+
+interface informatiosModel {
+    text: string;
+    priority: number;
+};
 
 export type Locale = "pt-BR" | "en" | "es";
 

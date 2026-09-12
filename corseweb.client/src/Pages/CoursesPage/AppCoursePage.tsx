@@ -1,6 +1,6 @@
-import CardCourseBase from "../../../UIComplement/CardCourseBase/CardCourseBase";
-import CardGuidLayout from "../../../UIComplement/CardGuidLayout/CardGuidLayout";
-import { useTranslation } from "../../../i18n/LanguageContext";
+import CardCourseBase from "../../UIComplement/CardCourseBase/CardCourseBase";
+import CardGuidLayout from "../../UIComplement/CardGuidLayout/CardGuidLayout";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 function HomeCoursePage() {
     const { t } = useTranslation();
