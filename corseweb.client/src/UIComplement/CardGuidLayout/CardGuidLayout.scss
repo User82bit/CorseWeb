@@ -1,7 +1,9 @@
 @use "../../Styles/SetGlobalsColors" as *;
 
-// Trilho horizontal estilo Netflix ("Continue Watching"):
-// cards 16:9 lado a lado, largura coerente, overflow-x: scroll com snap.
+// ============================================================
+// CardGuidLayout - Horizontal scroll (Netflix style) with glass cards
+// ============================================================
+
 .card-grid {
     display: flex;
     flex-direction: row;
@@ -42,21 +44,22 @@
         display: flex;
         flex-direction: column;
         gap: 0;
-        padding: 0;
         margin: 0;
         overflow: visible;
-        border: 1px solid transparent;
         border-radius: var(--radius-md);
-        background: transparent;
-        box-shadow: none;
-        cursor: pointer;
+        /* Glass surface */
+        background: var(--surface-glass);
+        border: 1px solid var(--surface-glass-border);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         scroll-snap-align: start;
-        transition: transform 200ms ease;
+        transition: transform 200ms ease, box-shadow 200ms ease;
 
         &:hover,
         &:focus-visible {
             transform: scale(1.04);
             z-index: 1;
+            box-shadow: 0 12px 28px var(--color-brand-glow, var(--glow-violet));
         }
 
         &:focus-visible {
@@ -89,16 +92,16 @@
                 background: linear-gradient(180deg, transparent 55%, rgb(0 0 0 / 0.55) 100%);
                 pointer-events: none;
             }
-        }
 
-        &:hover .card__banner,
-        &:focus-visible .card__banner {
-            box-shadow: var(--shadow-xl);
-        }
+            &:hover,
+            &:focus-visible {
+                box-shadow: var(--shadow-xl);
+            }
 
-        &:hover .card__banner img,
-        &:focus-visible .card__banner img {
-            transform: scale(1.05);
+            &:hover img,
+            &:focus-visible img {
+                transform: scale(1.05);
+            }
         }
 
         // Metadados abaixo do banner (ex.: "S3 E4 · Old Friends" / "20m left")
@@ -106,7 +109,7 @@
             display: flex;
             flex-direction: column;
             gap: var(--space-1);
-            padding: var(--space-2) var(--space-1) 0;
+            padding: var(--space-2) var(--space-3) var(--space-3);
         }
 
         .card__title {
@@ -143,6 +146,12 @@
             background: var(--color-bg-subtle);
             border: 1px solid var(--color-border);
             color: var(--color-text-secondary);
+            transition: all 150ms ease;
+
+            &:hover {
+                background: var(--color-border);
+                color: var(--color-text);
+            }
 
             &--featured {
                 background: var(--color-brand-subtle);

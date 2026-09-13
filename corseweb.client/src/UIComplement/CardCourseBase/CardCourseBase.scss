@@ -1,34 +1,116 @@
 @use "../../Styles/SetGlobalsColors" as *;
 
+// ============================================================
+// CardCourseBase - Glassmorphism style with hover lift and glow
+// Nota: não usa @extend .card--glass (definido em Primitives.scss)
+// para evitar erro de dependência entre módulos SASS.
+// ============================================================
+
 .card {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--color-text);
-    gap: var(--space-1);
+    /* Glass surface — inline para não depender de @extend cross-file */
+    width: 100%;
+    max-width: var(--container-width);
+    padding: var(--space-4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-glass);
+    box-shadow: var(--navbar-shadow);
+    overflow: hidden;
+    /* Override padding for content */
+    padding: var(--space-6);
+    /* Hover effects */
+    transition: transform 200ms ease, box-shadow 200ms ease;
+
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-4px);
+        box-shadow: 
+            0 12px 28px var(--color-brand-glow, var(--glow-violet)),
+            0 4px 12px rgba(0 0 0 / 0.15);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
 
     &__banner {
-        background: var(--color-bg-muted);
+        position: relative;
+        aspect-ratio: 16 / 9;
+        width: 100%;
+        overflow: hidden;
         border-radius: var(--radius-md);
+        background: var(--color-bg-muted);
+        box-shadow: var(--shadow-md);
+        transition: box-shadow 200ms ease;
+
+        img,
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 350ms ease;
+        }
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 55%, rgba(0 0 0 / 0.4) 100%);
+            pointer-events: none;
+        }
+
+        &:hover,
+        &:focus-visible {
+            box-shadow: var(--shadow-xl);
+        }
+
+        &:hover img,
+        &:focus-visible img {
+            transform: scale(1.05);
+        }
     }
 
     &__title {
+        margin: var(--space-3) 0 var(--space-2);
+        font-size: var(--text-lg);
+        font-weight: var(--font-semibold);
+        line-height: var(--leading-tight);
         color: var(--color-text);
-        font-weight: var(--font-medium);
     }
 
     &__description {
+        margin: 0 0 var(--space-4);
+        font-size: var(--text-sm);
+        line-height: var(--leading-relaxed);
         color: var(--color-text-muted);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     &__tags {
+        display: flex;
+        flex-wrap: wrap;
         gap: var(--space-1);
-        color: var(--color-text-secondary);
+        margin-bottom: var(--space-3);
     }
 
     &__tag {
-        background: var(--color-bg-subtle);
+        font-size: var(--text-xs);
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-full);
         border: 1px solid var(--color-border);
         color: var(--color-text-secondary);
+        background: var(--color-bg-subtle);
+        transition: all 150ms ease;
+
+        &:hover {
+            background: var(--color-border);
+            color: var(--color-text);
+        }
 
         &--featured {
             background: var(--color-brand-subtle);
@@ -41,17 +123,49 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: var(--color-text);
-        color: var(--color-bg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-2xl);
-        padding: var(--space-1) var(--space-3);
-        transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+        gap: var(--space-1);
+        min-height: 2.75rem;
+        padding: 0.625rem 1.5rem;
+        border: 1px solid transparent;
+        border-radius: var(--radius-full);
+        font-weight: var(--font-semibold);
+        transition: all 160ms ease;
 
-        &:hover {
+        /* Primary button - brand color */
+        &--primary {
             background: var(--color-brand);
             color: var(--color-brand-contrast);
-            border-color: var(--color-brand);
+            &:hover {
+                background: var(--color-brand-hover);
+                color: var(--color-brand-contrast);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 30px var(--color-brand-glow, var(--glow-violet));
+            }
+            &:active {
+                transform: translateY(0);
+            }
+        }
+
+        /* Secondary button - glass */
+        &--glass {
+            background: var(--surface-glass);
+            color: var(--color-text);
+            border-color: var(--surface-glass-border);
+            &:hover {
+                background: var(--color-surface-hover);
+                color: var(--color-text);
+            }
+        }
+
+        /* Outline button */
+        &--outline {
+            background: transparent;
+            color: var(--color-text);
+            border-color: var(--color-border);
+            &:hover {
+                background: var(--color-bg-subtle);
+                color: var(--color-text);
+            }
         }
     }
 }
