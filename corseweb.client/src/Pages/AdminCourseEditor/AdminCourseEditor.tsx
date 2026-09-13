@@ -1,0 +1,248 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { CourseCreateInput } from "../../types/course";
+import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
+import "./AdminCourseEditor.scss";
+
+const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
+
+function AdminCourseEditor() {
+  const navigate = useNavigate();
+  const { courseSlug } = useParams<{ courseSlug?: string }>();
+  const isEditing = Boolean(courseSlug);
+  const existing = courseSlug ? getCourseBySlugStore(courseSlug) : undefined;
+  const isDraft = Boolean(existing && (existing as unknown as { isDraft?: boolean }).isDraft);
+
+  const [form, setForm] = useState<CourseCreateInput>(() => ({
+    title: existing?.title ?? "",
+    subtitle: existing?.subtitle ?? "",
+    description: existing?.description ?? "",
+    category: existing?.category ?? CATEGORIES[0],
+    tags: (existing?.tags as CourseCreateInput["tags"]) ?? [],
+    level: (existing?.level as CourseCreateInput["level"]) ?? "Iniciante",
+    language: existing?.language ?? "pt-BR",
+    allowComments: existing?.allowComments ?? true,
+    allowFork: existing?.allowFork ?? true,
+  }));
+
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [publishBusy, setPublishBusy] = useState(false);
+
+  useEffect(() => {
+    refreshCourses().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!courseSlug) return;
+    return subscribeCourses(() => {
+      const c = getCourseBySlugStore(courseSlug);
+      if (c) {
+        setForm({
+          title: c.title,
+          subtitle: c.subtitle ?? "",
+          description: c.description,
+          category: c.category,
+          tags: c.tags as CourseCreateInput["tags"],
+          level: c.level as CourseCreateInput["level"],
+          language: c.language,
+          allowComments: c.allowComments,
+          allowFork: c.allowFork,
+        });
+      }
+    });
+  }, [courseSlug]);
+
+  const canSave = form.title.trim().length >= 3 && form.description.trim().length >= 20;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSave || saving) return;
+    setSaving(true); setErr(null);
+    try {
+      if (isEditing && courseSlug) {
+        await updateCourse(courseSlug, {
+          title: form.title.trim(),
+          subtitle: form.subtitle?.trim() || undefined,
+          description: form.description.trim(),
+          category: form.category,
+          level: form.level,
+          language: form.language,
+          allowComments: form.allowComments,
+          allowFork: form.allowFork,
+        });
+        navigate("/admin/courses");
+      } else {
+        const created = await createCourse(form) as unknown as { slug: string };
+        navigate(`/admin/courses/${created.slug}/editor`);
+      }
+    } catch (e2: unknown) {
+      const msg = (e2 as { body?: { error?: string }; message?: string })?.body?.error ?? (e2 as { message?: string })?.message ?? "Falha ao salvar. Verifique se está logado.";
+      setErr(msg);
+    } finally { setSaving(false); }
+  };
+
+  const handlePublish = async () => {
+    if (!courseSlug || publishBusy) return;
+    const draft = getDraftCourses().find(d => d.slug === courseSlug);
+    if (!draft?.draftId) { setErr("Este curso já está publicado ou não é um rascunho seu."); return; }
+    setPublishBusy(true); setErr(null);
+    try {
+      await publishDraft(draft.draftId);
+      navigate("/admin/courses");
+    } catch (e2: unknown) {
+      const msg = (e2 as { body?: { error?: string }; message?: string })?.body?.error ?? (e2 as Error).message ?? "Falha ao publicar";
+      setErr(msg);
+    } finally { setPublishBusy(false); }
+  };
+
+  return (
+    <section className="admin-editor">
+      <header className="admin-editor__header">
+        <div>
+          <p className="admin-editor__eyebrow">{isEditing ? (isDraft ? "Rascunho vinculado à sua conta" : "Edição (publicado)") : "Autoria"}</p>
+          <h1 className="display-lg">{isEditing ? "Editar curso" : "Novo curso"}</h1>
+          <p className="admin-editor__subtitle">
+            {isEditing
+              ? isDraft
+                ? "Rascunho salvo no banco (vinculado à sua conta). Ao publicar, entra no catálogo público."
+                : "Curso publicado. Edições geram nova versão."
+              : "Qualquer usuário logado pode criar. O curso inicia como rascunho vinculado à sua conta e só aparece no catálogo após publicar."}
+          </p>
+        </div>
+        <div className="admin-editor__header-actions">
+          <Link to="/admin/courses" className="button button--secondary">
+            Cancelar
+          </Link>
+          {isEditing && isDraft && (
+            <button type="button" className="button button--primary" onClick={handlePublish} disabled={publishBusy}>
+              {publishBusy ? "Publicando…" : "Publicar"}
+            </button>
+          )}
+          <button type="submit" form="course-form" className="button button--primary" disabled={!canSave || saving}>
+            {saving ? "Salvando…" : isEditing ? "Salvar" : "Criar rascunho"}
+          </button>
+        </div>
+      </header>
+
+      {err && <p role="alert" style={{ color: "crimson", margin: "12px 0" }}>{err}</p>}
+      {isEditing && !existing && (
+        <p className="text-secondary">Curso não encontrado. Pode ter sido removido ou você não tem permissão.</p>
+      )}
+
+      <form id="course-form" className="admin-editor__form" onSubmit={handleSubmit}>
+        <div className="admin-editor__grid">
+          <div className="admin-editor__main">
+            <label className="field">
+              <span className="field__label">Título *</span>
+              <input
+                className="field__input"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Ex: Inglês do Zero ao Intermediário"
+                maxLength={120}
+              />
+            </label>
+
+            <label className="field">
+              <span className="field__label">Subtítulo</span>
+              <input
+                className="field__input"
+                value={form.subtitle}
+                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                placeholder="Uma frase curta sobre o curso"
+                maxLength={160}
+              />
+            </label>
+
+            <label className="field">
+              <span className="field__label">Descrição *</span>
+              <textarea
+                className="field__input field__input--textarea"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Descreva o curso, público e o que será aprendido"
+                rows={5}
+              />
+              <span className="field__hint">{form.description.length} caracteres (mín. 20)</span>
+            </label>
+
+            <div className="field-row">
+              <label className="field">
+                <span className="field__label">Categoria</span>
+                <select className="field__input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span className="field__label">Nível</span>
+                <select
+                  className="field__input"
+                  value={form.level}
+                  onChange={(e) => setForm({ ...form, level: e.target.value as CourseCreateInput["level"] })}
+                >
+                  <option value="Iniciante">Iniciante</option>
+                  <option value="Intermediário">Intermediário</option>
+                  <option value="Avançado">Avançado</option>
+                </select>
+              </label>
+
+              <label className="field">
+                <span className="field__label">Idioma</span>
+                <select className="field__input" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+                  <option value="pt-BR">pt-BR</option>
+                  <option value="en">en</option>
+                  <option value="es">es</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="admin-editor__panel">
+              <h2 className="admin-editor__panel-title">Estrutura educacional</h2>
+              <p className="text-secondary" style={{ margin: 0 }}>
+                Curso → Módulo → Aula → Blocos → Componentes. Esta tela cria o Curso; módulos e aulas são gerenciados no editor de conteúdo
+                (próxima etapa).
+              </p>
+              <div className="admin-editor__placeholder">
+                <span>Editor de Módulos e Aulas (visual, estilo Figma/Scratch) — em breve</span>
+              </div>
+            </div>
+          </div>
+
+          <aside className="admin-editor__aside">
+            <div className="admin-editor__card">
+              <h3 className="admin-editor__card-title">Configurações</h3>
+              <label className="field field--check">
+                <input type="checkbox" checked={form.allowComments} onChange={(e) => setForm({ ...form, allowComments: e.target.checked })} />
+                <span>Permitir comentários</span>
+              </label>
+              <label className="field field--check">
+                <input type="checkbox" checked={form.allowFork} onChange={(e) => setForm({ ...form, allowFork: e.target.checked })} />
+                <span>Permitir fork / remix</span>
+              </label>
+            </div>
+
+            <div className="admin-editor__card">
+              <h3 className="admin-editor__card-title">Próximos passos</h3>
+              <ol className="admin-editor__steps">
+                <li>Criar rascunho do curso</li>
+                <li>Adicionar módulos e aulas no editor visual</li>
+                <li>Publicar → entra no catálogo público (versionado)</li>
+              </ol>
+              <p className="text-secondary" style={{ fontSize: "var(--text-xs)", margin: "var(--space-3) 0 0" }}>
+                Rascunhos ficam vinculados à sua conta (banco). Publicados ficam em /courses e /app.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+export default AdminCourseEditor;

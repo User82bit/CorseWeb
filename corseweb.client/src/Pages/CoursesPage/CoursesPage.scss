@@ -1,0 +1,79 @@
+@use "../../Styles/SetGlobalsColors" as *;
+
+.courses-page {
+  padding: var(--space-10) var(--space-4) var(--space-16);
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+
+  &__grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    @include respond(md) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @include respond(lg) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  &__empty {
+    display: grid;
+    place-items: center;
+    padding: var(--space-8) 0;
+  }
+
+  &__empty-card {
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+    padding: var(--space-10) var(--space-6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: center;
+
+    .heading-lg { margin: 0; }
+  }
+
+  &__empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: center;
+    margin-top: var(--space-2);
+  }
+
+  &__empty-hint {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    max-width: 48ch;
+  }
+}
+
+.card__badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  &--featured { background: var(--color-brand-emerald); color: var(--color-brand-emerald-contrast); }
+}
+
+.card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  &-item { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); font-weight: var(--font-medium); }
+}
+
+.card__tag--level { background: var(--color-brand-blue-subtle); color: var(--color-brand-blue); border-color: var(--color-brand-blue); }
