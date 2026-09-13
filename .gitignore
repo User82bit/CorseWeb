@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# CorseWeb local db (SQLite dev)
+CorseWeb.Server/corseweb.db
+CorseWeb.Server/corseweb.db-*
+*.db-shm
+*.db-wal
+# local overrides
+appsettings.local.json
+appsettings.Development.local.json
