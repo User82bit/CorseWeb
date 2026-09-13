@@ -13,8 +13,9 @@ export const en: Translations = {
     home: {
         title: "Learn for free, at your own pace.",
         description: "A personal shelf of 100% free courses. Start now — no sign-up, no cost.",
+        newCourses: "New courses",
         discoverCourses: "Discover our courses",
-        informations: "",
+        informations: [],
     },
     app: {
         continueStudying: "Continue studying",

@@ -13,8 +13,9 @@ export const es: Translations = {
     home: {
         title: "Aprende gratis, a tu propio ritmo.",
         description: "Una estantería personal de cursos 100% gratuitos. Empieza ahora, sin registro y sin costo.",
+        newCourses: "Cursos nuevos",
         discoverCourses: "Descubre nuestros cursos",
-        informations: "",
+        informations: [],
     },
     app: {
         continueStudying: "Continúa estudiando",
