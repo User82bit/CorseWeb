@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Locale, Translations } from "./types";
 import { LanguageContext } from "./languageContext";
+import type { LanguageContextValue } from "./languageContext";
 import { defaultLocale, locales } from "./types";
 import { ptBR } from "./translations/pt-BR";
 import { en } from "./translations/en";
