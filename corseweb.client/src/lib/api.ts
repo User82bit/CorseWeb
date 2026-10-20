@@ -17,7 +17,7 @@ export async function apiFetch(input: RequestInfo, init: RequestInit = {}): Prom
 export async function apiJson<T>(input: RequestInfo, init: RequestInit = {}): Promise<T> {
   const res = await apiFetch(input, init);
   if (!res.ok) {
-    let body: unknown = null;
+    let body: unknown;
     try { body = await res.json(); } catch { body = await res.text().catch(() => null); }
     throw Object.assign(new Error(`API ${res.status}`), { status: res.status, body, response: res });
   }

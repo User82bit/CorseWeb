@@ -31,6 +31,7 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 - `docs/FRONTEND/TODO.md`
 - `docs/BACKEND/TODO.md`
 - `docs/CI/etapas/ci-initial-validation-pipeline.md`
+- Ajustes mecânicos de lint, necessários para que a pipeline verifique o estado atual sem enfraquecer as regras.
 
 ## Decisões técnicas
 
@@ -44,10 +45,11 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 
 ## Implementação
 
-- [x] Arquivo de workflow adicionado à branch de trabalho.
+- [x] Workflow de CI criado.
 - [x] Kanban inicial e diretrizes mobile-first registrados.
-- [ ] Confirmar que o GitHub Actions executa o workflow.
-- [ ] Confirmar resultado de lint.
+- [x] Primeira execução do CI investigada.
+- [x] Corrigidos os três erros de lint reportados pela execução inicial, sem desativar regras.
+- [ ] Confirmar resultado do lint após as correções.
 - [ ] Confirmar resultado do build frontend.
 - [ ] Confirmar restore/build .NET.
 - [ ] Revisar diff e atualizar o estado para EM REVISÃO antes do PR.
@@ -55,7 +57,11 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 ## Testes e resultados
 
 - **Execução local:** não realizada neste ambiente; clone local não disponível e SDK .NET ausente no ambiente local.
-- **CI remoto:** pendente de execução após o push desta branch.
+- **CI remoto inicial:** falhou na etapa de lint antes de executar o build e a compilação .NET ([execução #39433046357](https://github.com/User82bit/CorseWeb/actions/runs/39433046357)).
+- **Erros identificados:** variável de estado não utilizada em `AppLessonPage.tsx`; exportação do hook junto ao provider em `LanguageContext.tsx`; inicialização redundante de variável em `api.ts`.
+- **Correções nesta branch:** omitida a variável de estado não utilizada; movidos o contexto e o hook para módulos separados, preservando a API pública de `useTranslation` e sem alterar os arquivos de traduções; removida apenas a inicialização redundante em `api.ts`. Essas alterações são de estrutura/lint, não um redesenho de tela nem uma confirmação de que o fluxo da aula/API esteja funcional.
+- **Aviso de dependências:** `npm ci` reportou duas vulnerabilidades de severidade alta na árvore instalada. A investigação e eventual atualização serão tratadas em uma entrega separada para evitar alterações de dependências fora do escopo atual.
+- **CI após as correções:** pendente de nova execução.
 - Nenhum teste será declarado aprovado sem resultado visível.
 
 ## Critérios de aceitação
@@ -64,7 +70,7 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 2. `npm ci`, `npm run lint` e `npm run build` concluem com sucesso.
 3. `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release` concluem com sucesso.
 4. Nenhuma credencial ou segredo é adicionado.
-5. O diff contém apenas CI e documentação de acompanhamento necessária.
+5. O diff contém apenas CI e documentação de acompanhamento necessária, mais ajustes estritamente mecânicos que impedem a validação.
 6. PR direcionado a `Homologa` com instruções de validação manual e resultados reais dos testes.
 
 ## Problemas conhecidos e riscos
@@ -75,7 +81,7 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 
 ## Próximos passos
 
-1. Ler o resultado do workflow.
+1. Ler o resultado do workflow após as correções.
 2. Corrigir falhas relacionadas a esta entrega sem ampliar para um redesenho geral.
 3. Revisar o diff e o CI após a última alteração.
 4. Abrir PR para `Homologa` somente depois das verificações obrigatórias.
