@@ -1,58 +1,46 @@
-﻿import { useEffect, useState } from 'react';
-import './App.css';
+﻿import { Routes, Route } from "react-router-dom";
+import HomePage from "./Pages/HomePage/HomePage";
+import CoursesPage from "./Pages/CoursesPage/CoursesPage";
+import CourseDetailPage from "./Pages/CourseDetailPage/CourseDetailPage";
+import AppLayout from "./Pages/AppLayout/AppLayout";
+import AppDashboard from "./Pages/AppDashboard/AppDashboard";
+import AppMyCourses from "./Pages/AppMyCourses/AppMyCourses";
+import AppCourseDetailPage from "./Pages/AppCourseDetailPage/AppCourseDetailPage";
+import AppLessonPage from "./Pages/AppLessonPage/AppLessonPage";
+import AdminLayout from "./Pages/AdminLayout/AdminLayout";
+import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
+import AdminCoursesPage from "./Pages/AdminCoursesPage/AdminCoursesPage";
+import AdminCourseEditor from "./Pages/AdminCourseEditor/AdminCourseEditor";
+import NotFound from "./Pages/NotFound/NotFound";
+import LoginPage from "./Pages/Login/LoginPage";
+import { RequireAuth, RequireAdmin } from "./components/AuthGuard";
 
-interface Forecast {
-    date: string;
-    temperatureC: number;
-    temperatureF: number;
-    summary: string;
+export default function App() {
+  return (
+    <Routes>
+      {/* Público */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/courses" element={<CoursesPage />} />
+      <Route path="/courses/:courseSlug" element={<CourseDetailPage />} />
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Aluno — exige login */}
+      <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+        <Route path="/app" element={<AppDashboard />} />
+        <Route path="/app/courses" element={<AppMyCourses />} />
+        <Route path="/app/courses/:courseSlug" element={<AppCourseDetailPage />} />
+        <Route path="/app/courses/:courseSlug/lessons/:lessonSlug" element={<AppLessonPage />} />
+      </Route>
+
+      {/* Admin — exige login + role admin (definido no servidor via AdminEmails) */}
+      <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/courses" element={<AdminCoursesPage />} />
+        <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
+        <Route path="/admin/courses/:courseSlug/editor" element={<AdminCourseEditor />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }
-
-function App() {
-    const [forecasts, setForecasts] = useState<Forecast[]>();
-
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
-
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tableLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
-
-    return (
-        <div>
-            <h1 id="tableLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        if (response.ok) {
-            const data = await response.json();
-            setForecasts(data);
-        }
-    }
-}
-
-export default App;

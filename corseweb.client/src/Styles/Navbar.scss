@@ -1,0 +1,48 @@
+@use "./SetGlobalsColors" as *;
+
+.navbar-container {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: var(--space-2);
+    transform: translateX(-50%);
+    overscroll-behavior: contain;
+}
+
+.navbar {
+    position: relative;
+    display: grid;
+    align-items: center;
+    width: 100%;
+    max-width: var(--container-width);
+    min-height: var(--navbar-height);
+    grid-template-columns: 1fr;
+    grid-template-rows: 24px auto;
+    padding: var(--space-2) var(--space-4);
+    overflow: hidden;
+    background: var(--surface-glass);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(var(--navbar-blur));
+    -webkit-backdrop-filter: blur(var(--navbar-blur));
+    box-shadow: var(--navbar-shadow);
+    transition: height 300ms ease, transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
+    will-change: height, transform;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--navbar-highlight), transparent);
+        pointer-events: none;
+    }
+
+    &:hover {
+        border-color: var(--color-border-strong);
+    }
+}

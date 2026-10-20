@@ -1,0 +1,7 @@
+namespace CorseWeb.Server.Dtos;
+
+public record UserDto(string Id, string Name, string Email, string? AvatarUrl, string Role);
+
+public record GoogleLoginRequest(string IdToken);
+
+public record DevLoginRequest(string Email, string? Name);

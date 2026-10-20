@@ -1,0 +1,85 @@
+@use "../../Styles/SetGlobalsColors" as *;
+
+.admin-courses-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-16);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1 1 260px;
+    max-width: 420px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    &:focus-within { border-color: var(--color-border-focus); box-shadow: var(--focus-ring); }
+  }
+
+  &__search-input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    outline: none;
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    &::placeholder { color: var(--color-text-muted); }
+  }
+
+  &__filter-tabs { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  &__filter-tab {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    &.active { background: var(--color-brand); color: var(--color-brand-contrast); border-color: var(--color-brand); }
+  }
+
+  &__grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    @include respond(md) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @include respond(lg) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  &__empty {
+    text-align: center;
+    padding: var(--space-12) var(--space-6);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    align-items: center;
+    .heading-lg { margin: 0; }
+  }
+
+  &__empty-hint { margin: 0; font-size: var(--text-xs); color: var(--color-text-muted); }
+}
+
+.card__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.card__button--danger { color: #ef4444; border-color: currentColor; &:hover { background: rgba(239 68 68 / 0.08); } }

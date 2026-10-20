@@ -1,0 +1,149 @@
+@use "./SetGlobalsColors" as *;
+
+// ============================================================
+// Primitives — superfícies, cards, botões, tipografia display
+// Importado por index.scss. Mantém SetGlobalsColors como TOKENS ONLY.
+// ============================================================
+
+.surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  &:active { transform: translateY(0); }
+}
+
+.card--glass {
+  width: 100%;
+  max-width: var(--container-width);
+  padding: var(--space-4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  box-shadow: var(--navbar-shadow);
+  overflow: hidden;
+}
+
+.text-muted { color: var(--color-text-muted); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-brand { color: var(--color-brand); }
+.bg-subtle { background: var(--color-bg-subtle); }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-brand);
+  color: var(--color-brand-contrast);
+  font-weight: var(--font-semibold);
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, color 160ms ease;
+
+  &:hover {
+    background: var(--color-brand-hover);
+    color: var(--color-brand-contrast);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--glow-violet);
+  }
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+}
+
+.button--primary {
+  background: var(--color-brand);
+  color: var(--color-brand-contrast);
+  &:hover { background: var(--color-brand-hover); }
+}
+
+.button--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+  &:hover { background: var(--color-surface-hover); }
+}
+
+.button--glass {
+  background: var(--surface-glass);
+  color: var(--color-text);
+  border-color: var(--surface-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  &:hover { background: var(--color-surface-hover); }
+}
+
+.button--outline {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border);
+  &:hover { background: var(--color-bg-subtle); }
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: transparent;
+  &:hover { background: var(--color-bg-subtle); color: var(--color-text); }
+}
+
+.button--danger {
+  background: var(--color-danger);
+  color: #fff;
+  &:hover { filter: brightness(0.95); }
+}
+
+.button--emerald {
+  background: var(--color-brand-emerald);
+  color: #fff;
+  &:hover { background: var(--color-brand-emerald-hover); }
+}
+
+.button--large {
+  min-height: 3rem;
+  padding: 0.75rem 1.5rem;
+  font-size: var(--text-lg);
+}
+
+.display-xl {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--font-bold);
+}
+.display-lg {
+  font-size: clamp(2rem, 4vw, 3.75rem);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--font-bold);
+}
+.heading-xl {
+  font-size: clamp(1.875rem, 3vw, 3rem);
+  line-height: 1.15;
+  font-weight: var(--font-bold);
+}
+.heading-lg {
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  line-height: 1.2;
+  font-weight: var(--font-semibold);
+}
