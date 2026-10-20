@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `ci`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `ci/initial-validation-pipeline`
-- **PR:** ainda não aberto
+- **PR:** [#2 — ci: adiciona validação automatizada inicial](https://github.com/User82bit/CorseWeb/pull/2)
 - **Base de trabalho:** `master` em `bfaac3ffbac2887005467b60fc628e52bbd08fbd`
 
 ## Objetivo
@@ -49,10 +49,10 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 - [x] Kanban inicial e diretrizes mobile-first registrados.
 - [x] Primeira execução do CI investigada.
 - [x] Corrigidos os três erros de lint reportados pela execução inicial, sem desativar regras.
-- [ ] Confirmar resultado do lint após as correções.
-- [ ] Confirmar resultado do build frontend.
-- [ ] Confirmar restore/build .NET.
-- [ ] Revisar diff e atualizar o estado para EM REVISÃO antes do PR.
+- [x] Confirmar resultado do lint após as correções.
+- [x] Confirmar resultado do build frontend.
+- [x] Confirmar restore/build .NET.
+- [x] Revisar diff e abrir PR para `Homologa`.
 
 ## Testes e resultados
 
@@ -61,7 +61,9 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 - **Erros identificados:** variável de estado não utilizada em `AppLessonPage.tsx`; exportação do hook junto ao provider em `LanguageContext.tsx`; inicialização redundante de variável em `api.ts`.
 - **Correções nesta branch:** omitida a variável de estado não utilizada; movidos o contexto e o hook para módulos separados, preservando a API pública de `useTranslation` e sem alterar os arquivos de traduções; removida apenas a inicialização redundante em `api.ts`. Essas alterações são de estrutura/lint, não um redesenho de tela nem uma confirmação de que o fluxo da aula/API esteja funcional.
 - **Aviso de dependências:** `npm ci` reportou duas vulnerabilidades de severidade alta na árvore instalada. A investigação e eventual atualização serão tratadas em uma entrega separada para evitar alterações de dependências fora do escopo atual.
-- **CI após as correções:** pendente de nova execução.
+- **CI após as correções — push:** aprovado em [execução #39434966738](https://github.com/User82bit/CorseWeb/actions/runs/39434966738).
+- **CI do Pull Request:** aprovado em [execução #39435582824](https://github.com/User82bit/CorseWeb/actions/runs/39435582824).
+- **PR:** aberto para `Homologa` e aguardando revisão do proprietário.
 - Nenhum teste será declarado aprovado sem resultado visível.
 
 ## Critérios de aceitação
@@ -71,7 +73,7 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 3. `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release` concluem com sucesso.
 4. Nenhuma credencial ou segredo é adicionado.
 5. O diff contém apenas CI e documentação de acompanhamento necessária, mais ajustes estritamente mecânicos que impedem a validação.
-6. PR direcionado a `Homologa` com instruções de validação manual e resultados reais dos testes.
+6. PR direcionado a `Homologa` com instruções de validação manual e resultados reais dos testes — cumprido; a revisão e integração pelo proprietário continuam pendentes.
 
 ## Problemas conhecidos e riscos
 

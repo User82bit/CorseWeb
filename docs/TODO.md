@@ -26,7 +26,7 @@ O estado de implementação deve ser distinguido de PR aberto/aprovado, integra�
 
 | ID | Entrega | Área | Prioridade | Estado | Branch / PR | Dependências |
 |---|---|---|---|---|---|---|
-| CI-001 | Pipeline inicial de validação para frontend e backend | CI | P0 | EM DESENVOLVIMENTO | `ci/initial-validation-pipeline` / ainda não aberto | Nenhuma |
+| CI-001 | Pipeline inicial de validação para frontend e backend | CI | P0 | EM REVISÃO | `ci/initial-validation-pipeline` / [PR #2](https://github.com/User82bit/CorseWeb/pull/2) | Nenhuma |
 | FE-001 | Redefinir a experiência visual e funcional mobile-first; começar por auditoria e fundamentos móveis | Frontend | P0 | NÃO INICIADA | A definir após integração da tarefa atual | CI-001 integrada em `master` |
 | BE-001 | Auditar e planejar a reconstrução dos fluxos de API, autenticação e persistência | Backend | P1 | NÃO INICIADA | A definir após definição do escopo | CI-001 integrada em `master` |
 | DOC-001 | Consolidar decisões arquiteturais e documentação técnica de conteúdo, aulas e progresso | Documentação | P1 | NÃO INICIADA | A definir | Localizar/validar materiais arquiteturais existentes |
