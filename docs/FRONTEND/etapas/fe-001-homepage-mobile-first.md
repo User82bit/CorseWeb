@@ -68,8 +68,8 @@ Iniciar a reconstrução visual e funcional do frontend por uma entrega pública
 ## Testes e resultados
 
 - **Execução local:** não disponível neste ambiente; a validação será realizada pelo GitHub Actions.
-- **CI do push:** aprovado em [execução #39591632969](https://github.com/User82bit/CorseWeb/actions/runs/39591632969). Passaram `npm ci`, `npm run lint`, `npm run build`, `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release`.
-- **CI do Pull Request:** execução [#39591849630](https://github.com/User82bit/CorseWeb/actions/runs/39591849630) iniciada; aguardar resultado para confirmar o estado final do PR.
+- **CI do commit de implementação `5db5fdab21da0757af57d66ef60b482f6c65b9f6` (push):** aprovado em [execução #39592123325](https://github.com/User82bit/CorseWeb/actions/runs/39592123325). Passaram `npm ci`, `npm run lint`, `npm run build`, `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release`.
+- **CI do Pull Request no mesmo commit:** aprovado em [execução #39592130369](https://github.com/User82bit/CorseWeb/actions/runs/39592130369).
 - **Consistência de tradução:** conferidas as chaves de Home utilizadas no TSX contra o tipo e as três traduções; nenhum campo ausente.
 - **Teste manual em celular/tablet/desktop:** pendente; o build não comprova ausência de overflow nem qualidade visual real.
 - **Testes funcionais de API/autenticação:** fora do escopo e não presumidos como funcionando.
