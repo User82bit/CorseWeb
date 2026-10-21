@@ -3,8 +3,9 @@
 ## Identificação
 
 - **Tipo:** `feat` + `style` + `a11y`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `feat/student-dashboard-mobile-first`
+- **PR:** [#14 — Reconstruir dashboard e navegação mobile do aluno](https://github.com/User82bit/CorseWeb/pull/14)
 - **Base:** `master` no commit `ee2e927432fc1952518fad32cce0b20ab41142c9`, após a integração do PR #12 (FE-003).
 - **Escopo desta entrega:** primeira fatia independente de FE-004, restrita ao dashboard inicial e à navegação global da área do aluno.
 
@@ -53,7 +54,7 @@
 - [x] Adicionar skip link e rótulos acessíveis da navegação.
 - [x] Adicionar traduções para esta tela em pt-BR, en e es.
 - [x] Corrigir o estado de FE-003 e remover a linha duplicada no TODO do frontend.
-- [ ] Validar lint, testes de idioma, build frontend e build .NET no CI.
+- [x] CI aprovada no commit `81bf4a317a567b3adf63a1415f105b7553a254ad`: lint, testes de idioma, build frontend e build .NET passaram.
 - [ ] Inspecionar manualmente em navegador real a 320–375 px, tablet e desktop.
 
 ## Critérios de aceitação
@@ -67,6 +68,10 @@
 7. O skip link leva ao conteúdo principal e pode ser alcançado por teclado.
 8. Não foram introduzidas dependências nem mudanças no backend.
 9. A CI aprova lint, teste de idioma, build frontend e build .NET.
+
+## Evidência CI
+
+- Execução [#39608617508](https://github.com/User82bit/CorseWeb/actions/runs/39608617508): `npm ci`, lint, `npm run test:i18n`, build frontend, restore e build .NET concluíram com sucesso no HEAD inicial da implementação.
 
 ## Validação manual mobile-first
 
