@@ -15,6 +15,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | ID | Entrega | Estado | Critério principal |
 |---|---|---|---|
 | FE-001 | Reconstruir a Home pública com design responsivo mobile-first | EM REVISÃO | [PR #4](https://github.com/User82bit/CorseWeb/pull/4); CI passou; inspeção visual manual em celular/tablet/desktop ainda pendente |
+| FE-006 | Corrigir carregamento do provedor de idioma em Windows | EM DESENVOLVIMENTO | Renomear o módulo para evitar colisão case-insensitive entre `LanguageProvider.tsx` e `languageContext.ts`; validar CI e inicialização local |
 | FE-002 | Revalidar e completar o sistema de tradução | NÃO INICIADA | Idiomas existentes e fallback verificados, sem hardcode de textos nas telas reconstruídas |
 | FE-003 | Estabelecer fundamentos visuais responsivos e acessíveis | NÃO INICIADA | Tokens e componentes base definidos após auditoria, com validação móvel antes de tablet/desktop |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | NÃO INICIADA | Cada entrega com resultado verificável, sem regressões nos contratos necessários |
