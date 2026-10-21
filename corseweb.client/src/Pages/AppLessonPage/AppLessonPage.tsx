@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
 import { getCourseBySlugStore, refreshCourses, subscribeCourses } from "../../store/courseStore";
@@ -111,7 +111,6 @@ function ContentComponent({ component }: { component: Component }) {
 function AppLessonPage() {
   const { t, locale } = useTranslation();
   const { courseSlug, lessonSlug } = useParams<{ courseSlug: string; lessonSlug: string }>();
-  const navigate = useNavigate();
   const [course, setCourse] = useState<Course | undefined>(() => courseSlug ? getCourseBySlugStore(courseSlug) : undefined);
   const [enrollment, setEnrollment] = useState<CourseEnrollment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,14 +143,20 @@ function AppLessonPage() {
     }
   }, [courseSlug]);
 
-  useEffect(() => { void loadLessonData(); }, [loadLessonData]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadLessonData();
+    });
+    return () => { active = false; };
+  }, [loadLessonData]);
 
   useEffect(() => {
     if (!courseSlug) return;
     return subscribeCourses(() => setCourse(getCourseBySlugStore(courseSlug)));
   }, [courseSlug]);
 
-  const modules = course?.modules ?? [];
+  const modules = useMemo(() => course?.modules ?? [], [course?.modules]);
   const allLessons = useMemo(() =>
     modules.flatMap(module => [...module.lessons].sort((a, b) => a.order - b.order)),
   [modules]);
