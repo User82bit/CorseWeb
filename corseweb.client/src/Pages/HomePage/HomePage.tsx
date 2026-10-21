@@ -2,220 +2,423 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
 import { useTranslation } from "../../i18n/useTranslation";
-import CardGuidLayout from "../../UIComplement/CardGuidLayout/CardGuidLayout";
-import CardCourseBase from "../../UIComplement/CardCourseBase/CardCourseBase";
-import { getPublishedCourses, subscribeCourses, refreshCourses } from "../../store/courseStore";
-import { getCurrentUser, subscribeAuth, refreshAuth, logout, isAdmin, getGoogleClientId, loginWithGoogle } from "../../store/authStore";
+import {
+  getPublishedCourses,
+  refreshCourses,
+  subscribeCourses,
+} from "../../store/courseStore";
+import {
+  getCurrentUser,
+  isAdmin,
+  logout,
+  refreshAuth,
+  subscribeAuth,
+} from "../../store/authStore";
 import type { User } from "../../store/authStore";
 import type { Course } from "../../types/course";
 import "./HomePage.scss";
 
-declare global {
-  interface Window { google?: { accounts: { id: { initialize: (o: unknown) => void; renderButton: (el: HTMLElement, o: unknown) => void; prompt?: () => void } } } }
+function BrandSymbol() {
+  return (
+    <svg viewBox="0 0 44 44" aria-hidden="true" focusable="false">
+      <rect width="44" height="44" rx="14" fill="#2b63e5" />
+      <path
+        d="M30.5 13.4a13.2 13.2 0 1 0 0 17.2"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="6.2"
+        strokeLinecap="round"
+      />
+      <path d="m21 17.2 10.1 4.8L21 26.8Z" fill="#8cece2" />
+    </svg>
+  );
+}
+
+function HeroIllustration() {
+  return (
+    <div className="home-hero-art" aria-hidden="true">
+      <div className="home-hero-art__halo home-hero-art__halo--one" />
+      <div className="home-hero-art__halo home-hero-art__halo--two" />
+      <div className="home-hero-art__panel">
+        <div className="home-hero-art__top">
+          <span className="home-hero-art__mark">C</span>
+          <span className="home-hero-art__wordmark">CORSEWEB / LEARNING</span>
+          <span className="home-hero-art__dots"><i /><i /><i /></span>
+        </div>
+        <div className="home-hero-art__book">
+          <svg viewBox="0 0 210 150" focusable="false">
+            <path d="M105 40C82 23 49 20 23 29v84c27-9 57-5 82 12Z" fill="#e9efff" />
+            <path d="M105 40c23-17 56-20 82-11v84c-27-9-57-5-82 12Z" fill="#cddcff" />
+            <path d="M105 40v85" stroke="#9aaee0" strokeWidth="3" strokeLinecap="round" />
+            <path d="M41 49c15-4 30-3 43 3M41 66c15-4 30-3 43 3M41 83c15-4 30-3 43 3" fill="none" stroke="#a9b9e0" strokeWidth="4" strokeLinecap="round" />
+            <path d="M126 52c13-6 28-7 43-3M126 69c13-6 28-7 43-3M126 86c13-6 28-7 43-3" fill="none" stroke="#879dd1" strokeWidth="4" strokeLinecap="round" />
+            <path d="m151 12 4.5 10 10.5 4.5-10.5 4.5-4.5 10-4.5-10-10.5-4.5 10.5-4.5Z" fill="#8cece2" />
+          </svg>
+        </div>
+        <div className="home-hero-art__lines">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="home-hero-art__bottom">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+      <span className="home-hero-art__float home-hero-art__float--left">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="m5 12 4.2 4.2L19 6.8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <span className="home-hero-art__float home-hero-art__float--right">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 3v18M3 12h18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4.5 12h15M13 5.5l6.5 6.5-6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <path d="M16 9.2C12.2 6.4 7.8 6 4 7.3v17c4-1.4 8.3-.8 12 2.1ZM16 9.2C19.8 6.4 24.2 6 28 7.3v17c-4-1.4-8.3-.8-12 2.1Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M16 9.2v17.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 function HomePage() {
   const { t } = useTranslation();
-  const infos = t.home.informations ?? [];
-  const pillars = infos.filter((i) => i.priority === 4).map((i) => i.text);
-  const intro = infos.find((i) => i.priority === 1)?.text;
-  const introLong = infos.find((i) => i.priority === 3)?.text;
-  const listTitle = infos.find((i) => i.priority === 2)?.text;
-  const ctaQuestion = infos.filter((i) => i.priority === 1)[1]?.text;
+  const [menuOpen, setMenuOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(() => getPublishedCourses());
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesLoadError, setCoursesLoadError] = useState(false);
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
-  const [clientId, setClientId] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
-  const [authErr, setAuthErr] = useState<string | null>(null);
 
-  useEffect(() => { refreshCourses().catch(() => {}); return subscribeCourses(() => setCourses(getPublishedCourses())); }, []);
   useEffect(() => {
-    refreshAuth().catch(() => {});
-    return subscribeAuth(() => setUser(getCurrentUser()));
-  }, []);
-  useEffect(() => { getGoogleClientId().then(setClientId).catch(() => {}); }, []);
+    let active = true;
+    const unsubscribe = subscribeCourses(() => {
+      if (!active) return;
+      setCourses(getPublishedCourses());
+      setCoursesLoading(false);
+    });
 
-  // GSI inline na Home (quando deslogado e ClientId configurado)
-  useEffect(() => {
-    if (user || !clientId || !window.google) return;
-    try {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (resp: { credential: string }) => {
-          setAuthBusy(true); setAuthErr(null);
-          try {
-            await loginWithGoogle(resp.credential);
-            setUser(getCurrentUser());
-          } catch (e: unknown) {
-            const msg = (e as { body?: { error?: string } })?.body?.error ?? (e as Error).message ?? "Falha no login Google";
-            setAuthErr(msg);
-          } finally { setAuthBusy(false); }
-        },
+    refreshCourses()
+      .then(() => {
+        if (active) setCourses(getPublishedCourses());
+      })
+      .catch(() => {
+        if (active) setCoursesLoadError(true);
+      })
+      .finally(() => {
+        if (active) setCoursesLoading(false);
       });
-      const el = document.getElementById("home-gsi-btn");
-      if (el) {
-        el.innerHTML = "";
-        window.google.accounts.id.renderButton(el, { theme: "outline", size: "large", width: 260, text: "signin_with", shape: "pill" });
-      }
-    } catch { /* ignore */ }
-  }, [clientId, user]);
 
-  const featured = courses.slice(0, 3);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
-  const handleLogout = async () => {
-    setAuthBusy(true);
-    try { await logout(); setUser(null); } finally { setAuthBusy(false); }
-  };
+  useEffect(() => {
+    const unsubscribe = subscribeAuth(() => setUser(getCurrentUser()));
+    refreshAuth().catch(() => {});
+    return unsubscribe;
+  }, []);
+
   const dashboardTo = user ? (isAdmin(user) ? "/admin" : "/app") : "/login";
+  const featuredCourses = courses.slice(0, 3);
+
+  async function handleLogout() {
+    setAuthBusy(true);
+    try {
+      await logout();
+      setUser(null);
+      setMenuOpen(false);
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleRetryCourses() {
+    setCoursesLoading(true);
+    setCoursesLoadError(false);
+    try {
+      await refreshCourses();
+      setCourses(getPublishedCourses());
+    } catch {
+      setCoursesLoadError(true);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
 
   return (
-    <>
-      <section className="hero">
-        <div className="home-topbar">
-          <Link to="/" className="home-topbar__brand" aria-label="CorseWeb início">CorseWeb</Link>
-          <div className="home-topbar__right">
+    <div className="home-page">
+      <a className="home-skip-link" href="#conteudo">
+        {t.home.skipToContent}
+      </a>
+
+      <header className="home-header">
+        <div className="home-header__inner home-container">
+          <Link to="/" className="home-brand" aria-label={t.home.homeLinkLabel} onClick={closeMenu}>
+            <BrandSymbol />
+            <span>CorseWeb</span>
+          </Link>
+
+          <div className="home-header__actions">
             <LanguageSwitcher />
-            {user ? (
-              <div className="home-topbar__auth">
-                <span className="home-topbar__user" title={user.email}>{user.name}</span>
-                <Link to={dashboardTo} className="button button--glass home-topbar__btn">Dashboard</Link>
-                <button type="button" onClick={handleLogout} disabled={authBusy} className="button button--glass home-topbar__btn">
-                  Sair
+            <button
+              type="button"
+              className="home-menu-toggle"
+              aria-label={menuOpen ? t.home.closeMenu : t.home.openMenu}
+              aria-expanded={menuOpen}
+              aria-controls="home-primary-navigation"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          <nav
+            id="home-primary-navigation"
+            className={`home-nav${menuOpen ? " home-nav--open" : ""}`}
+            aria-label={t.home.primaryNavigation}
+          >
+            <Link to="/courses" onClick={closeMenu}>{t.home.discoverCourses}</Link>
+            <a href="#como-funciona" onClick={closeMenu}>{t.home.aboutLink}</a>
+            <Link className="home-nav__action" to={dashboardTo} onClick={closeMenu}>
+              {user ? t.home.dashboard : t.home.login}
+              <ArrowIcon />
+            </Link>
+            {user && (
+              <button
+                type="button"
+                className="home-nav__logout"
+                onClick={handleLogout}
+                disabled={authBusy}
+              >
+                {t.home.logout}
+              </button>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <main id="conteudo">
+        <section className="home-hero" aria-labelledby="home-hero-title">
+          <div className="home-container home-hero__grid">
+            <div className="home-hero__copy">
+              <p className="home-eyebrow home-eyebrow--hero">
+                <span className="home-eyebrow__dot" />
+                {t.home.heroEyebrow}
+              </p>
+              <h1 id="home-hero-title" className="home-hero__title">{t.home.title}</h1>
+              <p className="home-hero__description">{t.home.description}</p>
+
+              <div className="home-hero__actions">
+                <Link to="/courses" className="home-button home-button--primary">
+                  {t.home.exploreCta}
+                  <ArrowIcon />
+                </Link>
+                <a href="#como-funciona" className="home-button home-button--secondary">
+                  {t.home.aboutCta}
+                </a>
+              </div>
+
+              <ul className="home-hero__trust" aria-label={t.home.valuePropositionLabel}>
+                <li><span aria-hidden="true">✓</span>{t.home.heroTrustOne}</li>
+                <li><span aria-hidden="true">✓</span>{t.home.heroTrustTwo}</li>
+                <li><span aria-hidden="true">✓</span>{t.home.heroTrustThree}</li>
+              </ul>
+            </div>
+
+            <HeroIllustration />
+          </div>
+        </section>
+
+        <section id="como-funciona" className="home-steps" aria-labelledby="home-steps-title">
+          <div className="home-container">
+            <header className="home-section-heading">
+              <p className="home-eyebrow">{t.home.stepsEyebrow}</p>
+              <h2 id="home-steps-title">{t.home.stepsTitle}</h2>
+              <p>{t.home.stepsDescription}</p>
+            </header>
+
+            <div className="home-steps__grid">
+              {t.home.steps.map((step, index) => (
+                <article className="home-step-card" key={step.title}>
+                  <span className="home-step-card__number">{String(index + 1).padStart(2, "0")}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="cursos" className="home-courses" aria-labelledby="home-courses-title" aria-busy={coursesLoading}>
+          <div className="home-container">
+            <div className="home-courses__heading">
+              <div className="home-section-heading">
+                <p className="home-eyebrow">{t.home.coursesEyebrow}</p>
+                <h2 id="home-courses-title">{t.home.coursesTitle}</h2>
+                <p>{t.home.coursesDescription}</p>
+              </div>
+              <Link to="/courses" className="home-text-link">
+                {t.home.viewAllCourses}
+                <ArrowIcon />
+              </Link>
+            </div>
+
+            {coursesLoading && (
+              <>
+                <p className="home-visually-hidden" role="status">{t.home.loadingCourses}</p>
+                <div className="home-course-grid home-course-grid--loading" aria-hidden="true">
+                  {[0, 1, 2].map((item) => (
+                    <div className="home-course-skeleton" key={item}>
+                      <span />
+                      <div><i /><i /><i /></div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {!coursesLoading && coursesLoadError && (
+              <div className="home-course-state" role="alert">
+                <div className="home-course-state__icon"><BookIcon /></div>
+                <h3>{t.home.coursesErrorTitle}</h3>
+                <p>{t.home.coursesErrorDescription}</p>
+                <button type="button" className="home-button home-button--primary" onClick={handleRetryCourses}>
+                  {t.home.retryCourses}
+                  <ArrowIcon />
                 </button>
               </div>
-            ) : (
-              <div className="home-topbar__auth">
-                <Link to="/login" className="button button--glass home-topbar__btn">Entrar</Link>
+            )}
+
+            {!coursesLoading && !coursesLoadError && featuredCourses.length === 0 && (
+              <div className="home-course-state">
+                <div className="home-course-state__icon"><BookIcon /></div>
+                <h3>{t.home.emptyCoursesTitle}</h3>
+                <p>{t.home.emptyCoursesDescription}</p>
+                <Link to="/courses" className="home-button home-button--primary">
+                  {t.home.emptyCoursesAction}
+                  <ArrowIcon />
+                </Link>
+              </div>
+            )}
+
+            {!coursesLoading && !coursesLoadError && featuredCourses.length > 0 && (
+              <div className="home-course-grid">
+                {featuredCourses.map((course) => (
+                  <article className="home-course-card" key={course.id}>
+                    <div className="home-course-card__media">
+                      <span className="home-course-card__media-pattern" aria-hidden="true" />
+                      {course.thumbnail?.url && (
+                        <img
+                          src={course.thumbnail.url}
+                          alt={course.thumbnail.alt ?? ""}
+                          width="480"
+                          height="300"
+                          loading="lazy"
+                          decoding="async"
+                          onError={(event) => { event.currentTarget.hidden = true; }}
+                        />
+                      )}
+                      <span className="home-course-card__category">{course.category}</span>
+                    </div>
+                    <div className="home-course-card__body">
+                      <div className="home-course-card__level">
+                        <span>{t.home.courseLevelLabel}</span>
+                        <strong>{course.level}</strong>
+                      </div>
+                      <h3>{course.title}</h3>
+                      <p>{course.shortDescription || course.description}</p>
+                      <div className="home-course-card__meta">
+                        <span>
+                          <BookIcon />
+                          {course.totalLessons} {t.home.lessonUnit}
+                        </span>
+                        {course.totalMinutes > 0 && (
+                          <span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                              <path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            {Math.max(1, Math.round(course.totalMinutes / 60))} {t.home.hourUnit}
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        to={`/courses/${encodeURIComponent(course.slug)}`}
+                        className="home-course-card__link"
+                        aria-label={`${t.home.openCourse}: ${course.title}`}
+                      >
+                        {t.home.openCourse}
+                        <ArrowIcon />
+                      </Link>
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        <h1 className="hero__title">{t.home.title || "Aprenda de graça, no seu ritmo."}</h1>
-        <p className="hero__description">
-          {t.home.description || "Sua estante pessoal de cursos 100% gratuitos. Comece agora, sem cadastro e sem custo."}
-        </p>
-        <div className="hero__actions">
-          <Link to="/courses" className="button button--primary">
-            {t.home.discoverCourses || "Explorar cursos"}
-          </Link>
-          <a href="#sobre" className="button button--glass">
-            Como funciona
-          </a>
-          {user ? (
-            <Link to={dashboardTo} className="button button--glass">
-              Ir ao dashboard →
-            </Link>
-          ) : (
-            <Link to="/login" className="button button--glass">
-              Entrar e criar
-            </Link>
-          )}
-        </div>
-
-        {!user && (
-          <div className="home-hero-login" aria-label="Entrar na plataforma">
-            <div className="home-hero-login__card">
-              <p className="home-hero-login__title">Entre para criar rascunhos vinculados à sua conta</p>
-              <p className="home-hero-login__hint">Publicados entram no catálogo. Rascunhos ficam só na sua conta (banco).</p>
-              <div id="home-gsi-btn" className="home-hero-login__gsi">
-                {!clientId && <span className="home-hero-login__gsi-fallback">Google não configurado — use Entrar para login dev.</span>}
+        <section className="home-cta" aria-labelledby="home-cta-title">
+          <div className="home-container">
+            <div className="home-cta__panel">
+              <div className="home-cta__orb home-cta__orb--one" aria-hidden="true" />
+              <div className="home-cta__orb home-cta__orb--two" aria-hidden="true" />
+              <div className="home-cta__content">
+                <p className="home-eyebrow home-eyebrow--cta">{t.home.ctaEyebrow}</p>
+                <h2 id="home-cta-title">{t.home.ctaTitle}</h2>
+                <p>{t.home.ctaDescription}</p>
               </div>
-              {authErr && <p role="alert" className="home-hero-login__err">{authErr}</p>}
-              <div className="home-hero-login__or">
-                <span>ou</span>
-              </div>
-              <Link to="/login" className="button button--primary home-hero-login__cta">
-                Entrar com e-mail
+              <Link to="/courses" className="home-button home-button--cta">
+                {t.home.ctaAction}
+                <ArrowIcon />
               </Link>
             </div>
           </div>
-        )}
-        {user && (
-          <p className="hero__welcome">
-            Olá, <strong>{user.name}</strong> · {user.role === "admin" ? "admin" : "aluno"} · <Link to={dashboardTo}>ir ao dashboard</Link>
-          </p>
-        )}
-      </section>
+        </section>
+      </main>
 
-      <section id="sobre" className="home-about">
-        <div className="home-about__inner">
-          <header className="home-about__header">
-            <p className="home-about__eyebrow">Por que CorseWeb</p>
-            <h2 className="home-about__title">{intro ?? "O que é o CorseWeb?"}</h2>
-            <p className="home-about__lead">{introLong}</p>
-          </header>
-          <div className="home-about__panel">
-            <h3 className="home-about__panel-title">{listTitle ?? "O que você encontra na plataforma:"}</h3>
-            <ul className="home-about__list">
-              {pillars.map((text) => (
-                <li key={text} className="home-about__list-item">
-                  <span className="home-about__check" aria-hidden="true">✓</span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {ctaQuestion && (
-            <div className="home-about__cta">
-              <p className="home-about__cta-question">{ctaQuestion}</p>
-              <Link to="/courses" className="button button--primary">
-                Ver todos os cursos
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section id="courses" className="home-courses">
-        <div className="home-courses__header">
-          <h2 className="home-section-title">{t.home.discoverCourses}</h2>
-          <Link to="/courses" className="home-courses__link">
-            Ver catálogo →
+      <footer className="home-footer">
+        <div className="home-container home-footer__inner">
+          <Link to="/" className="home-brand home-brand--footer" onClick={closeMenu}>
+            <BrandSymbol />
+            <span>CorseWeb</span>
           </Link>
+          <p>{t.home.footerDescription}</p>
+          <span className="home-footer__copyright">© {new Date().getFullYear()} CorseWeb</span>
         </div>
-
-        {featured.length === 0 ? (
-          <div className="home-courses__empty">
-            <p className="text-secondary">Nenhum curso publicado ainda. Faça login e crie o primeiro — rascunhos ficam na sua conta; ao publicar entram no catálogo.</p>
-            <Link to={user ? "/admin/courses/new" : "/login"} className="button button--primary">
-              {user ? "Criar curso agora" : "Entrar e criar curso"}
-            </Link>
-          </div>
-        ) : (
-          <CardGuidLayout
-            children={
-              <>
-                {featured.map((c) => (
-                  <CardCourseBase
-                    key={c.id}
-                    children={
-                      <article className="card">
-                        <div className="card__banner">
-                          <img src={c.thumbnail.url} alt={c.thumbnail.alt ?? c.title} loading="lazy" />
-                        </div>
-                        <div className="card__content">
-                          <div className="card__tags">
-                            <span className="card__tag">{c.category}</span>
-                            <span className="card__tag card__tag--level">{c.level}</span>
-                          </div>
-                          <h3 className="card__title">{c.title}</h3>
-                          <p className="card__description">{c.shortDescription ?? c.description}</p>
-                          <Link to={`/courses/${c.slug}`} className="card__button card__button--primary">
-                            {t.common.seeMore}
-                          </Link>
-                        </div>
-                      </article>
-                    }
-                  />
-                ))}
-              </>
-            }
-          />
-        )}
-      </section>
-    </>
+      </footer>
+    </div>
   );
 }
 
