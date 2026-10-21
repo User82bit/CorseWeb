@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
-import { useTranslation } from "../../i18n/LanguageContext";
+import { useTranslation } from "../../i18n/useTranslation";
 import CardGuidLayout from "../../UIComplement/CardGuidLayout/CardGuidLayout";
 import CardCourseBase from "../../UIComplement/CardCourseBase/CardCourseBase";
 import { getPublishedCourses, subscribeCourses, refreshCourses } from "../../store/courseStore";

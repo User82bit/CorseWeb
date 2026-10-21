@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../i18n/LanguageContext';
+import { useTranslation } from '../../i18n/useTranslation';
 import LanguageSwitcher from '../../UIComplement/LanguageSwitcher/LanguageSwitcher';
 import { getCurrentUser, logout as doLogout, refreshAuth, subscribeAuth, isAdmin } from '../../store/authStore';
 import type { User } from '../../store/authStore';
