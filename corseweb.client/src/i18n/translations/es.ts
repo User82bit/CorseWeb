@@ -222,6 +222,7 @@ export const es: Translations = {
         emptyModulesDescription: "Este curso todavía no tiene módulos para mostrar.",
         startCourse: "Inscribirme y empezar",
         continueCourse: "Seguir aprendiendo",
+        reviewCourse: "Repasar el curso",
         enrolling: "Inscribiendo...",
         enrollmentError: "No se pudo guardar tu inscripción. Inténtalo de nuevo.",
         enrolledLabel: "Inscrito",
