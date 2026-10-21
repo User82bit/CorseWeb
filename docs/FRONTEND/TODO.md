@@ -14,8 +14,8 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 
 | ID | Entrega | Estado | Critério principal |
 |---|---|---|---|
-| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | CONCLUÍDA em `Homologa` (validação manual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4) mesclada em `Homologa`; inspeção visual manual em celular/tablet/desktop ainda pendente |
-| FE-006 | Corrigir carregamento do provedor de idioma em Windows | CONCLUÍDA em `Homologa` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
+| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | INTEGRADA em `master` (validação visual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4); inspeção visual manual em celular/tablet/desktop ainda pendente |
+| FE-006 | Corrigir carregamento do provedor de idioma em Windows | INTEGRADA em `master` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
 | FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | INTEGRADA em `master` (validação visual pendente) | [PR #6](https://github.com/User82bit/CorseWeb/pull/6); CI passou; inspeção visual responsiva ainda pendente |
 | FE-008 | Centralizar SVGs inline na pasta `src/assets` | INTEGRADA em `master` (validação visual pendente) | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
 | FE-002 | Revalidar e completar o sistema de tradução | EM DESENVOLVIMENTO | Resolver locale validado, persistência opcional e segura, `html lang` sincronizado, etiquetas traduzidas e testes automáticos de fallback |
