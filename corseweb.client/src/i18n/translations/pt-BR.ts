@@ -233,6 +233,7 @@ export const ptBR: Translations = {
         previousLesson: "Aula anterior",
         nextLesson: "Próxima aula",
         completeLesson: "Marcar aula como concluída",
+        lessonCompletionDescription: "Ao terminar, marque a aula como concluída para atualizar seu progresso.",
         lessonCompleted: "Aula concluída",
         savingProgress: "Salvando progresso...",
         saveProgressError: "Não foi possível salvar seu progresso. Tente novamente.",
