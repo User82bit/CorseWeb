@@ -40,14 +40,14 @@ O lint/build em CI não identificavam o problema porque o ambiente de CI usa um 
 
 - [x] Confirmar que não restou importação de `./i18n/LanguageContext` no ponto de entrada.
 - [x] Confirmar que a exportação `LanguageProvider` agora está em `LanguageProvider.tsx`, com nome não conflitante.
-- [ ] Executar `npm ci`, `npm run lint` e `npm run build` via CI. Execução de CI inicial enfileirada; aguardar conclusão antes de marcar como aprovada.
+- [x] Executar `npm ci`, `npm run lint` e `npm run build` via CI; as três etapas passaram.
 - [ ] Testar a inicialização no Windows com o servidor Vite e confirmar que a Home deixa de ficar em branco.
 - [ ] Conferir o Console do navegador após recarga forçada.
-- [x] Abrir PR #5 para `Homologa` e atualizar os Kanbans; resultado final da CI e teste local ainda pendentes.
+- [x] Abrir PR #5 para `Homologa` e atualizar os Kanbans.
 
 ## Evidência CI
 
-- CI inicial após a abertura do PR: enfileirada, execução [#39595191005](https://github.com/User82bit/CorseWeb/actions/runs/39595191005). O resultado ainda não foi confirmado no momento desta atualização.
+- CI aprovada no commit `514ccb76a87cfd170f8f0ef378ea265657fbd76b`: execução [#39595265636](https://github.com/User82bit/CorseWeb/actions/runs/39595265636). Passaram `npm ci`, lint, build do frontend, restore e build .NET.
 
 ## Limitações
 
