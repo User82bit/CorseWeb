@@ -61,14 +61,18 @@ Foi criado `corseweb.client/src/UIComplement/SvgIcon/SvgIcon.tsx` e seu SCSS. Í
 
 ## Validação estática inicial
 
-A primeira execução da CI terminou com status geral de cancelada, embora todas as etapas de validação (instalação, lint, build frontend, restore e build .NET) tenham concluído com sucesso. Uma nova execução no HEAD atualizado será usada para a confirmação final.
+A primeira execução terminou com status geral de cancelada durante a finalização, embora as etapas de validação tenham concluído com sucesso. A execução limpa [#39599238926](https://github.com/User82bit/CorseWeb/actions/runs/39599238926) foi concluída com sucesso no commit `ff8ea60a828f456d26146b8a4bd27347f8a282bf`.
 
 - [x] Confirmar que os seis componentes TSX auditados não contêm tags `<svg>` inline.
 - [x] Confirmar que as bandeiras e a ilustração são carregadas de `src/assets`.
 - [x] Confirmar que os componentes que usam a marca oficial apontam para o mesmo `/favicon.ico`.
-- [ ] Executar `npm ci`, `npm run lint` e `npm run build` pelo CI.
-- [ ] Executar restore/build .NET no CI.
+- [x] Executar `npm ci`, `npm run lint` e `npm run build` pelo CI.
+- [x] Executar restore/build .NET no CI.
 - [ ] Verificar visualmente o alinhamento e cor dos ícones em tela móvel e em larguras maiores.
+
+## Evidência CI
+
+- Execução [#39599238926](https://github.com/User82bit/CorseWeb/actions/runs/39599238926): `npm ci`, `npm run lint`, `npm run build`, `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release` concluíram com sucesso.
 
 ## Critérios de aceitação
 
