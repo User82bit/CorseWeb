@@ -99,7 +99,7 @@ export default function LoginPage() {
         window.google.accounts.id.renderButton(element, {
           theme: "outline",
           size: "large",
-          width: 300,
+          width: Math.max(180, Math.min(300, element.clientWidth || 280)),
           text: "continue_with",
           shape: "rectangular",
           logo_alignment: "left",
