@@ -14,7 +14,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 
 | ID | Entrega | Estado | Critério principal |
 |---|---|---|---|
-| FE-001 | Auditar o frontend e definir a primeira etapa de reconstrução visual/funcional | NÃO INICIADA | Inventário das páginas, dependências e contratos existentes; proposta de escopo pequeno; protótipo/implementação começa pelo celular |
+| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | EM REVISÃO | [PR #4](https://github.com/User82bit/CorseWeb/pull/4); CI passou; inspeção visual manual em celular/tablet/desktop ainda pendente |
 | FE-002 | Revalidar e completar o sistema de tradução | NÃO INICIADA | Idiomas existentes e fallback verificados, sem hardcode de textos nas telas reconstruídas |
 | FE-003 | Estabelecer fundamentos visuais responsivos e acessíveis | NÃO INICIADA | Tokens e componentes base definidos após auditoria, com validação móvel antes de tablet/desktop |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | NÃO INICIADA | Cada entrega com resultado verificável, sem regressões nos contratos necessários |
@@ -26,7 +26,7 @@ Se a inclusão autônoma de um recurso não for possível, a entrega deve inclui
 
 ## Dependências e limites
 
-- FE-001 deve ser planejada após a integração em `master` da branch inicial de CI.
+- FE-001 parte da `master` atualizada após a integração da CI-001.
 - Não codificar o curso de inglês como um caso especial.
 - Não substituir React/TypeScript/TSX/SCSS por outras tecnologias sem justificativa e autorização.
 - Não criar branches futuras antes do momento previsto no fluxo.
