@@ -230,6 +230,7 @@ export interface Translations {
         previousLesson: string;
         nextLesson: string;
         completeLesson: string;
+        lessonCompletionDescription: string;
         lessonCompleted: string;
         savingProgress: string;
         saveProgressError: string;
