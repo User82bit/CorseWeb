@@ -1,7 +1,10 @@
 using System.Text.Json;
+using System.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using CorseWeb.Server.Data;
+using CorseWeb.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +50,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 
 // Permite Vite em https://localhost:49188 enviar cookies (quando rodar separado do SpaProxy)
 builder.Services.AddCors(opts =>
@@ -73,20 +77,30 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // Use Migrate para aplicar migrations; se não houver migrations ainda, EnsureCreated como fallback
     try
     {
         if (db.Database.GetPendingMigrations().Any())
             db.Database.Migrate();
         else
             db.Database.EnsureCreated();
+
+        // Compatibility migration: existing SQLite databases were created with
+        // EnsureCreated and do not receive new columns automatically.
+        EnsurePasswordHashColumn(db);
     }
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Erro ao migrar/criar banco");
-        // em dev, tenta EnsureCreated
-        try { db.Database.EnsureCreated(); } catch { }
+        try
+        {
+            db.Database.EnsureCreated();
+            EnsurePasswordHashColumn(db);
+        }
+        catch (Exception fallbackException)
+        {
+            logger.LogError(fallbackException, "Erro ao garantir o esquema compatível do banco");
+        }
     }
 }
 
@@ -111,3 +125,42 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
+
+
+static void EnsurePasswordHashColumn(AppDbContext db)
+{
+    if (!db.Database.IsSqlite()) return;
+
+    var connection = db.Database.GetDbConnection();
+    var closeConnection = connection.State != ConnectionState.Open;
+    if (closeConnection) connection.Open();
+
+    try
+    {
+        var hasPasswordHash = false;
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA table_info('Users');";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), "PasswordHash", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasPasswordHash = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasPasswordHash)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "ALTER TABLE \"Users\" ADD COLUMN \"PasswordHash\" TEXT NULL;";
+            command.ExecuteNonQuery();
+        }
+    }
+    finally
+    {
+        if (closeConnection) connection.Close();
+    }
+}
