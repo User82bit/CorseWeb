@@ -189,7 +189,7 @@ function AppLessonPage() {
     };
     pendingProgress.current = progressUpdate;
     updateEnrollmentProgress(course.slug, progressUpdate).then(updated => {
-      pendingProgress.current = null;
+      if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
       if (active) setEnrollment(updated);
     }).catch(() => {
       if (active) setSaveError(true);
@@ -259,7 +259,7 @@ function AppLessonPage() {
     pendingProgress.current = progressUpdate;
     try {
       const updated = await updateEnrollmentProgress(course.slug, progressUpdate);
-      pendingProgress.current = null;
+      if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
       setEnrollment(updated);
     } catch {
       setSaveError(true);
