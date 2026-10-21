@@ -61,6 +61,8 @@ Foi criado `corseweb.client/src/UIComplement/SvgIcon/SvgIcon.tsx` e seu SCSS. Í
 
 ## Validação estática inicial
 
+A primeira execução da CI terminou com status geral de cancelada, embora todas as etapas de validação (instalação, lint, build frontend, restore e build .NET) tenham concluído com sucesso. Uma nova execução no HEAD atualizado será usada para a confirmação final.
+
 - [x] Confirmar que os seis componentes TSX auditados não contêm tags `<svg>` inline.
 - [x] Confirmar que as bandeiras e a ilustração são carregadas de `src/assets`.
 - [x] Confirmar que os componentes que usam a marca oficial apontam para o mesmo `/favicon.ico`.
