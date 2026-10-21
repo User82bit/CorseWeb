@@ -18,7 +18,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-006 | Corrigir carregamento do provedor de idioma em Windows | INTEGRADA em `master` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
 | FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | INTEGRADA em `master` (validação visual pendente) | [PR #6](https://github.com/User82bit/CorseWeb/pull/6); CI passou; inspeção visual responsiva ainda pendente |
 | FE-008 | Centralizar SVGs inline na pasta `src/assets` | INTEGRADA em `master` (validação visual pendente) | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
-| FE-002 | Revalidar e completar o sistema de tradução | EM DESENVOLVIMENTO | Resolver locale validado, persistência opcional e segura, `html lang` sincronizado, etiquetas traduzidas e testes automáticos de fallback |
+| FE-002 | Revalidar e completar o sistema de tradução | EM REVISÃO | [PR #10](https://github.com/User82bit/CorseWeb/pull/10); testes de fallback e CI aprovados; conferência manual de `html lang` no navegador pendente |
 | FE-003 | Estabelecer fundamentos visuais responsivos e acessíveis | NÃO INICIADA | Tokens e componentes base definidos após auditoria, com validação móvel antes de tablet/desktop |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | NÃO INICIADA | Cada entrega com resultado verificável, sem regressões nos contratos necessários |
 | FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
