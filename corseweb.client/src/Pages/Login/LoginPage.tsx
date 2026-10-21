@@ -254,7 +254,7 @@ export default function LoginPage() {
 
             <div className="auth-divider"><span>{t.auth.divider}</span></div>
 
-            <form className="auth-form" onSubmit={handleSubmit} noValidate>
+            <form className="auth-form" onSubmit={handleSubmit}>
               {isRegistering && (
                 <label className="auth-field">
                   <span>{t.auth.nameLabel}</span>
