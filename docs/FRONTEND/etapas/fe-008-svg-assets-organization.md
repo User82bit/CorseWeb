@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `refactor`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `refactor/svg-assets-organization`
-- **PR:** a abrir para `Homologa`
+- **PR:** [#8 — refactor(assets): centraliza os SVGs em src/assets](https://github.com/User82bit/CorseWeb/pull/8)
 - **Base:** `master` atualizada após a integração do PR #6.
 - **Motivação:** pedido do proprietário para guardar o código SVG em arquivos `.svg` e organizar os recursos em `src/assets`.
 
