@@ -17,7 +17,7 @@
 - Layouts foram reconstruídos mobile-first, incluindo responsividade, foco, navegação por teclado e preferência por movimento reduzido.
 
 ## Critérios de aceitação
-- [ ] CI do HEAD final passa: `npm run lint`, `npm run test:i18n`, `npm run build`, restore e build .NET.
+- [x] CI aprovada no HEAD `fec76617d6f63f0189e21e4d7fe2b46d4522830b`: [PR run #39623025551](https://github.com/User82bit/CorseWeb/actions/runs/39623025551) passou em lint, testes de idioma, build frontend, restore e build .NET.
 - [ ] Inscrever-se em um curso publicado o adiciona à biblioteca do aluno.
 - [ ] Uma inscrição existente continua aparecendo após recarregar a página.
 - [ ] Abrir uma aula registra a última aula acessada sem incrementar conclusão artificialmente.
@@ -26,6 +26,6 @@
 - [ ] Layout testado manualmente em 320–375 px, tablet e desktop; teclado, foco e traduções verificados.
 
 ## Limites conhecidos
-- A CI aprovada no commit `6fa6cc3b3ff53c079c92dbd19b810fbd1768fb9c` passou em lint, testes de idioma, build frontend, restore e build .NET. Depois dele foi ajustado o estado de carregamento para evitar que a tela de aula mostre a opção de inscrição antes de terminar a consulta das matrículas; a CI do HEAD atual ainda precisa confirmar essa mudança.
+- A CI aprovada no HEAD `fec76617d6f63f0189e21e4d7fe2b46d4522830b` ([run #39623025551](https://github.com/User82bit/CorseWeb/actions/runs/39623025551)): lint, testes de idioma, build frontend, restore e build .NET passaram.
 - Interatividade completa de quizzes/exercícios ainda não foi implementada; o leitor mostra um marcador informativo para essas atividades.
 - Não houve teste manual num navegador real nesta sessão. Não considerar matrícula, gravação de progresso nem qualidade visual como validados apenas por causa do build.
