@@ -17,7 +17,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-001 | Reconstruir a Home pública com design responsivo mobile-first | CONCLUÍDA em `Homologa` (validação manual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4) mesclada em `Homologa`; inspeção visual manual em celular/tablet/desktop ainda pendente |
 | FE-006 | Corrigir carregamento do provedor de idioma em Windows | CONCLUÍDA em `Homologa` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
 | FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | INTEGRADA em `master` (validação visual pendente) | [PR #6](https://github.com/User82bit/CorseWeb/pull/6); CI passou; inspeção visual responsiva ainda pendente |
-| FE-008 | Centralizar SVGs inline na pasta `src/assets` | EM DESENVOLVIMENTO | SVGs em `icons/`, `flags/` e `illustrations/`; ícones monocromáticos preservam `currentColor` via componente reutilizável |
+| FE-008 | Centralizar SVGs inline na pasta `src/assets` | EM REVISÃO | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI e inspeção visual responsiva pendentes |
 | FE-002 | Revalidar e completar o sistema de tradução | NÃO INICIADA | Idiomas existentes e fallback verificados, sem hardcode de textos nas telas reconstruídas |
 | FE-003 | Estabelecer fundamentos visuais responsivos e acessíveis | NÃO INICIADA | Tokens e componentes base definidos após auditoria, com validação móvel antes de tablet/desktop |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | NÃO INICIADA | Cada entrega com resultado verificável, sem regressões nos contratos necessários |
