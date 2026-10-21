@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `fix` + `refactor` + `test`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `feat/i18n-resilient-locale-system`
-- **PR:** a abrir para `Homologa`
+- **PR:** [#10 — feat(i18n): fortalece resolução e fallback de idiomas](https://github.com/User82bit/CorseWeb/pull/10)
 - **Base:** `master` atualizada após as integrações das etapas anteriores.
 
 ## Auditoria inicial
@@ -44,13 +44,17 @@ Esta etapa fortalece o núcleo de idioma e garante que a Home reconstruída e o 
 
 ## Validação
 
-- [ ] `npm ci`
-- [ ] `npm run test:i18n`
-- [ ] `npm run lint`
-- [ ] `npm run build`
-- [ ] `dotnet restore CorseWeb.slnx`
-- [ ] `dotnet build CorseWeb.slnx --no-restore --configuration Release`
+- [x] `npm ci`
+- [x] `npm run test:i18n`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `dotnet restore CorseWeb.slnx`
+- [x] `dotnet build CorseWeb.slnx --no-restore --configuration Release`
 - [ ] Conferir as trocas de idioma no navegador e confirmar o atributo `html lang`.
+
+## Evidência CI
+
+- Execução [#39601219578](https://github.com/User82bit/CorseWeb/actions/runs/39601219578), no commit `63d84c6d89a1f893097651b12fd2f5f0bed8e5da`: todos os passos passaram, incluindo `npm run test:i18n`, lint, build frontend, restore e build .NET.
 
 ## Critérios de aceitação
 
