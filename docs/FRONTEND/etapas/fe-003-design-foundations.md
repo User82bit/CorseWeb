@@ -3,8 +3,9 @@
 ## Identificação
 
 - **Tipo:** `style` + `refactor`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `feat/design-system-foundations`
+- **PR:** [#12 — fundamentos visuais responsivos e acessíveis](https://github.com/User82bit/CorseWeb/pull/12)
 - **Base:** `master` no commit `277f5c22c32705aa4af852fbf77e14b7cfaef436`, após a integração do PR #11.
 - **Objetivo:** completar a fundação visual já existente sem criar um segundo sistema de tokens ou reescrever páginas fora do escopo.
 
@@ -46,12 +47,12 @@
 - [x] Adicionar primitivas acessíveis de formulário e badges sem impor conteúdo específico a um curso.
 - [x] Remover regras utilitárias globais duplicadas.
 - [x] Atualizar o Kanban para refletir a integração de FE-002 em `master`.
-- [ ] Executar a CI para o commit final desta etapa.
+- [x] CI aprovada para o código da etapa no commit `1a9f47e66ffae6f4cc508f32799c2bbae1c69c24`.
 - [ ] Inspecionar visualmente em navegador real e validar teclado/leitor de tela quando aplicável.
 
 ## Testes e resultados
 
-A validação automatizada ainda será executada no fluxo do GitHub Actions. Não há nesta sessão um navegador gráfico ligado ao repositório para confirmar a renderização visual. O resultado da CI e quaisquer limitações serão registrados antes de marcar esta etapa pronta para revisão.
+A execução [#39605172498](https://github.com/User82bit/CorseWeb/actions/runs/39605172498), no commit `1a9f47e66ffae6f4cc508f32799c2bbae1c69c24`, passou em `npm ci`, lint, testes de idioma, build frontend, restore e build .NET. Esta atualização documental dispara uma nova execução; a inspeção visual em navegador real permanece pendente.
 
 ## Critérios de aceitação
 
