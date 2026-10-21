@@ -219,6 +219,7 @@ export interface Translations {
         emptyModulesDescription: string;
         startCourse: string;
         continueCourse: string;
+        reviewCourse: string;
         enrolling: string;
         enrollmentError: string;
         enrolledLabel: string;
