@@ -1,54 +1,97 @@
-import { useEffect, useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../i18n/useTranslation';
-import LanguageSwitcher from '../../UIComplement/LanguageSwitcher/LanguageSwitcher';
-import { getCurrentUser, logout as doLogout, refreshAuth, subscribeAuth, isAdmin } from '../../store/authStore';
-import type { User } from '../../store/authStore';
-import SvgIcon from '../../UIComplement/SvgIcon/SvgIcon';
-import './AppLayout.scss';
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useTranslation } from "../../i18n/useTranslation";
+import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
+import { getCurrentUser, logout as doLogout, refreshAuth, subscribeAuth, isAdmin } from "../../store/authStore";
+import type { User } from "../../store/authStore";
+import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
+import "./AppLayout.scss";
 
 function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     refreshAuth().catch(() => {});
     return subscribeAuth(() => setUser(getCurrentUser()));
   }, []);
 
-  const navItems = [
-    { path: '/app', label: t.navbar.home, exact: true },
-    { path: '/app/courses', label: t.navbar.myCourse },
-  ];
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    navigationRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 48rem)");
+    const closeOnDesktop = () => {
+      if (mediaQuery.matches) setMobileNavOpen(false);
+    };
+
+    mediaQuery.addEventListener("change", closeOnDesktop);
+    return () => mediaQuery.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  const closeMobileNav = () => setMobileNavOpen(false);
 
   const handleLogout = async () => {
     await doLogout();
-    navigate('/');
+    closeMobileNav();
+    navigate("/");
   };
 
   return (
     <div className="app-layout">
-      <aside className="app-sidebar" aria-label="Navegação do aluno">
-        <nav className="app-nav">
+      <a className="skip-link" href="#app-main-content">{t.app.skipToContent}</a>
+
+      <aside className={mobileNavOpen ? "app-sidebar app-sidebar--open" : "app-sidebar"} id="student-navigation">
+        <nav className="app-nav" ref={navigationRef} aria-label={t.app.primaryNavigation}>
           <div className="app-nav__brand">
-            <Link to="/app" className="app-nav__logo">
+            <Link to="/app" className="app-nav__logo" onClick={closeMobileNav}>
               <img className="app-nav__logo-image" src="/favicon.ico" alt="" width={32} height={32} decoding="async" />
               <span>CorseWeb</span>
             </Link>
           </div>
 
-          <ul className="app-nav__list" role="list">
-            {navItems.map(item => (
-              <li key={item.path}>
-                <Link to={item.path} className="app-nav__link" aria-current={item.exact ? 'page' : undefined}>
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+          <ul className="app-nav__list">
+            <li>
+              <NavLink
+                to="/app"
+                end
+                className={({ isActive }) => isActive ? "app-nav__link app-nav__link--active" : "app-nav__link"}
+                onClick={closeMobileNav}
+              >
+                {t.navbar.home}
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/app/courses"
+                className={({ isActive }) => isActive ? "app-nav__link app-nav__link--active" : "app-nav__link"}
+                onClick={closeMobileNav}
+              >
+                {t.navbar.myCourse}
+              </NavLink>
+            </li>
             {user && isAdmin(user) && (
               <li>
-                <Link to="/admin" className="app-nav__link">Admin</Link>
+                <NavLink to="/admin" className="app-nav__link" onClick={closeMobileNav}>
+                  Admin
+                </NavLink>
               </li>
             )}
           </ul>
@@ -56,48 +99,54 @@ function AppLayout() {
           <div className="app-nav__footer">
             {user ? (
               <div className="app-nav__user">
-                <div className="user-avatar" aria-hidden="true">{user.name.slice(0,1).toUpperCase()}</div>
+                <div className="user-avatar" aria-hidden="true">{user.name.slice(0, 1).toUpperCase()}</div>
                 <div className="user-info">
                   <span className="user-name">{user.name}</span>
-                  <span className="user-plan" title={user.email}>{user.email} · {user.role}</span>
+                  <span className="user-plan" title={user.email}>{user.email}</span>
                 </div>
               </div>
-            ) : (
-              <div className="app-nav__user">
-                <div className="user-avatar">U</div>
-                <div className="user-info">
-                  <span className="user-name">Visitante</span>
-                  <Link to="/login" className="user-plan" style={{ textDecoration: 'underline' }}>Entrar</Link>
-                </div>
-              </div>
-            )}
-            <Link to="/" className="app-nav__exit">
+            ) : null}
+            <Link to="/" className="app-nav__exit" onClick={closeMobileNav}>
               <SvgIcon name="log-out" size="1rem" />
-              Voltar ao site
+              {t.app.returnToSite}
             </Link>
-            {user ? (
-              <button type="button" onClick={handleLogout} className="app-nav__exit" style={{ marginTop: 8 }}>
-                Sair
+            {user && (
+              <button type="button" onClick={handleLogout} className="app-nav__exit app-nav__logout">
+                <SvgIcon name="log-out" size="1rem" />
+                {t.home.logout}
               </button>
-            ) : (
-              <Link to="/login" className="app-nav__exit" style={{ marginTop: 8 }}>Entrar</Link>
             )}
           </div>
         </nav>
       </aside>
 
-      <main className="app-main" role="main">
+      {mobileNavOpen && (
+        <button
+          type="button"
+          className="app-sidebar-scrim"
+          aria-label={t.app.closeMenu}
+          onClick={closeMobileNav}
+        />
+      )}
+
+      <main className="app-main" id="app-main-content" tabIndex={-1}>
         <header className="app-header">
           <div className="app-header__left">
-            <button className="app-header__menu-toggle" aria-label="Alternar menu" aria-expanded="false">
-              <SvgIcon name="menu" size="1.5rem" />
+            <button
+              ref={menuButtonRef}
+              type="button"
+              className="app-header__menu-toggle"
+              aria-label={mobileNavOpen ? t.app.closeMenu : t.app.openMenu}
+              aria-expanded={mobileNavOpen}
+              aria-controls="student-navigation"
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
+              <SvgIcon name={mobileNavOpen ? "close" : "menu"} size="1.5rem" />
             </button>
+            <span className="app-header__section-label">{t.app.sectionLabel}</span>
           </div>
           <div className="app-header__right">
             <LanguageSwitcher />
-            <div className="app-header__notifications" role="button" aria-label="Notificações" tabIndex={0}>
-              <SvgIcon name="bell" size="1.25rem" />
-            </div>
           </div>
         </header>
 
