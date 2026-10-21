@@ -20,7 +20,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-008 | Centralizar SVGs inline na pasta `src/assets` | INTEGRADA em `master` (validação visual pendente) | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
 | FE-002 | Revalidar e completar o sistema de tradução | INTEGRADA em `master` (validação manual pendente) | [PR #10](https://github.com/User82bit/CorseWeb/pull/10); testes automatizados e CI passaram; conferência manual de `html lang` pendente |
 | FE-003 | Consolidar os fundamentos visuais responsivos e acessíveis | INTEGRADA em `master` (validação visual pendente) | [PR #12](https://github.com/User82bit/CorseWeb/pull/12); CI aprovada para o código; inspeção visual em navegador real pendente |
-| FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | EM DESENVOLVIMENTO | Dashboard/navegação do aluno integrado: [PR #14](https://github.com/User82bit/CorseWeb/pull/14). Fluxo de login em revisão: [PR #16](https://github.com/User82bit/CorseWeb/pull/16), CI aprovada; teste manual com autenticação real e reconstrução de `/courses` ainda pendentes |
+| FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | EM DESENVOLVIMENTO | Dashboard/navegação integrada: [PR #14](https://github.com/User82bit/CorseWeb/pull/14). Branch `feat/local-auth-and-public-pages`: login local via backend + redesenho mobile-first de `/login` e `/courses`; CI e testes manuais pendentes |
 | FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
 
 ## Regras para imagens manuais
