@@ -16,6 +16,8 @@ import {
 } from "../../store/authStore";
 import type { User } from "../../store/authStore";
 import type { Course } from "../../types/course";
+import homeOpenBook from "../../assets/illustrations/home-open-book.svg?url";
+import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import "./HomePage.scss";
 
 function BrandLogo() {
@@ -43,14 +45,7 @@ function HeroIllustration() {
           <span className="home-hero-art__dots"><i /><i /><i /></span>
         </div>
         <div className="home-hero-art__book">
-          <svg viewBox="0 0 210 150" focusable="false">
-            <path d="M105 40C82 23 49 20 23 29v84c27-9 57-5 82 12Z" fill="#e9efff" />
-            <path d="M105 40c23-17 56-20 82-11v84c-27-9-57-5-82 12Z" fill="#cddcff" />
-            <path d="M105 40v85" stroke="#9aaee0" strokeWidth="3" strokeLinecap="round" />
-            <path d="M41 49c15-4 30-3 43 3M41 66c15-4 30-3 43 3M41 83c15-4 30-3 43 3" fill="none" stroke="#a9b9e0" strokeWidth="4" strokeLinecap="round" />
-            <path d="M126 52c13-6 28-7 43-3M126 69c13-6 28-7 43-3M126 86c13-6 28-7 43-3" fill="none" stroke="#879dd1" strokeWidth="4" strokeLinecap="round" />
-            <path d="m151 12 4.5 10 10.5 4.5-10.5 4.5-4.5 10-4.5-10-10.5-4.5 10.5-4.5Z" fill="#8cece2" />
-          </svg>
+          <img className="home-hero-art__book-image" src={homeOpenBook} alt="" width={210} height={150} decoding="async" />
         </div>
         <div className="home-hero-art__lines">
           <span />
@@ -64,34 +59,21 @@ function HeroIllustration() {
         </div>
       </div>
       <span className="home-hero-art__float home-hero-art__float--left">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path d="m5 12 4.2 4.2L19 6.8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <SvgIcon name="check" size="1.3rem" />
       </span>
       <span className="home-hero-art__float home-hero-art__float--right">
-        <svg viewBox="0 0 24 24" focusable="false">
-          <path d="M12 3v18M3 12h18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-        </svg>
+        <SvgIcon name="plus" size="1.3rem" />
       </span>
     </div>
   );
 }
 
 function ArrowIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M4.5 12h15M13 5.5l6.5 6.5-6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <SvgIcon name="arrow-right" />;
 }
 
 function BookIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <path d="M16 9.2C12.2 6.4 7.8 6 4 7.3v17c4-1.4 8.3-.8 12 2.1ZM16 9.2C19.8 6.4 24.2 6 28 7.3v17c-4-1.4-8.3-.8-12 2.1Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M16 9.2v17.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <SvgIcon name="book-open" />;
 }
 
 function HomePage() {
@@ -188,15 +170,7 @@ function HomePage() {
               aria-controls="home-primary-navigation"
               onClick={() => setMenuOpen((open) => !open)}
             >
-              {menuOpen ? (
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              )}
+              <SvgIcon name={menuOpen ? "close" : "menu"} size="1.35rem" />
             </button>
           </div>
 
@@ -362,10 +336,7 @@ function HomePage() {
                         </span>
                         {course.totalMinutes > 0 && (
                           <span>
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                              <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
-                              <path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                            <SvgIcon name="clock" size="1rem" />
                             {Math.max(1, Math.round(course.totalMinutes / 60))} {t.home.hourUnit}
                           </span>
                         )}

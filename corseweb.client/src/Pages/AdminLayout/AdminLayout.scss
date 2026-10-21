@@ -57,15 +57,13 @@
   &:hover { color: var(--color-brand); }
 }
 
-.admin-nav__logo-mark {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
+.admin-nav__logo-image {
+  display: block;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: var(--radius-md);
-  background: var(--color-brand);
-  color: var(--color-brand-contrast);
-  font-size: var(--text-base);
+  object-fit: contain;
 }
 
 .admin-nav__badge {
