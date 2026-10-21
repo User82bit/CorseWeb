@@ -233,6 +233,7 @@ export const es: Translations = {
         previousLesson: "Lección anterior",
         nextLesson: "Siguiente lección",
         completeLesson: "Marcar lección como completada",
+        lessonCompletionDescription: "Al terminar, marca la lección como completada para actualizar tu progreso.",
         lessonCompleted: "Lección completada",
         savingProgress: "Guardando progreso...",
         saveProgressError: "No se pudo guardar tu progreso. Inténtalo de nuevo.",
