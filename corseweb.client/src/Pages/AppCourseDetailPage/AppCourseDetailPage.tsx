@@ -46,7 +46,13 @@ function AppCourseDetailPage() {
     }
   }, [courseSlug]);
 
-  useEffect(() => { void loadCourse(); }, [loadCourse]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadCourse();
+    });
+    return () => { active = false; };
+  }, [loadCourse]);
 
   useEffect(() => {
     if (!courseSlug) return;
@@ -54,7 +60,7 @@ function AppCourseDetailPage() {
     return subscribeCourses(sync);
   }, [courseSlug]);
 
-  const modules = course?.modules ?? [];
+  const modules = useMemo(() => course?.modules ?? [], [course?.modules]);
   const allLessons = useMemo(
     () => modules.flatMap(module => [...module.lessons].sort((a, b) => a.order - b.order)),
     [modules],
