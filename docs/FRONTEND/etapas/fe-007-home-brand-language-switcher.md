@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `fix` + `style`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `fix/home-brand-and-language-switcher`
-- **PR:** a abrir para `Homologa`
+- **PR:** [#6 — fix(home): unifica a marca e clareia o seletor de idioma](https://github.com/User82bit/CorseWeb/pull/6)
 - **Prioridade:** P1 — consistência de marca e ajuste visual na Home pública.
 
 ## Problemas reportados
