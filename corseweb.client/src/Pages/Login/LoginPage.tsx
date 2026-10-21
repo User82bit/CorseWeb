@@ -1,14 +1,22 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { devLogin, getGoogleClientId, getLoginRedirectPath, loginWithGoogle } from "../../store/authStore";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
+import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
+import { useTranslation } from "../../i18n/useTranslation";
+import { getGoogleClientId, getLoginRedirectPath, loginWithEmail, loginWithGoogle, registerWithEmail } from "../../store/authStore";
+import homeOpenBook from "../../assets/illustrations/home-open-book.svg?url";
+import "./LoginPage.scss";
 
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
-          initialize: (options: unknown) => void;
-          renderButton: (element: HTMLElement, options: unknown) => void;
+          initialize: (options: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void | Promise<void>;
+          }) => void;
+          renderButton: (element: HTMLElement, options: Record<string, unknown>) => void;
         };
       };
     };
@@ -16,31 +24,41 @@ declare global {
 }
 
 type LoginLocationState = { from?: string };
+type AuthMode = "login" | "register";
+
+function BrandMark() {
+  return (
+    <Link to="/" className="auth-brand" aria-label="CorseWeb">
+      <img src="/favicon.ico" alt="" width={42} height={42} />
+      <span>CorseWeb</span>
+    </Link>
+  );
+}
 
 export default function LoginPage() {
-  const nav = useNavigate();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as LoginLocationState | null;
-  const from = locationState?.from ?? getLoginRedirectPath();
+  const routeState = location.state as LoginLocationState | null;
+  const redirectTo = routeState?.from ?? getLoginRedirectPath();
 
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
-  const isDevelopment = import.meta.env.DEV;
-
   useEffect(() => {
     let active = true;
-
     getGoogleClientId()
       .then(id => { if (active) setClientId(id); })
       .catch(() => { if (active) setClientId(null); })
       .finally(() => { if (active) setConfigLoading(false); });
-
     return () => { active = false; };
   }, []);
 
@@ -58,20 +76,19 @@ export default function LoginPage() {
       try {
         window.google.accounts.id.initialize({
           client_id: clientId,
-          callback: async (response: { credential?: string }) => {
+          callback: async response => {
             if (!response.credential) {
-              setErr("O Google não retornou uma credencial válida. Tente novamente.");
+              setError(t.auth.loginFailure);
               return;
             }
 
             setBusy(true);
-            setErr(null);
+            setError(null);
             try {
               await loginWithGoogle(response.credential);
-              nav(from, { replace: true });
-            } catch (error: unknown) {
-              const apiError = error as { body?: { error?: string }; message?: string };
-              setErr(apiError.body?.error ?? apiError.message ?? "Falha no login Google.");
+              navigate(redirectTo, { replace: true });
+            } catch {
+              setError(t.auth.loginFailure);
             } finally {
               setBusy(false);
             }
@@ -82,21 +99,20 @@ export default function LoginPage() {
         window.google.accounts.id.renderButton(element, {
           theme: "outline",
           size: "large",
-          width: 280,
-          text: "signin_with",
+          width: Math.max(180, Math.min(300, element.clientWidth || 280)),
+          text: "continue_with",
           shape: "rectangular",
+          logo_alignment: "left",
         });
         initialized = true;
         setGoogleError(null);
       } catch {
-        setGoogleError("Não foi possível inicializar o login Google. Recarregue a página e tente novamente.");
+        setGoogleError(t.auth.googleLoadError);
       }
     };
 
     const onScriptError = () => {
-      if (!disposed) {
-        setGoogleError("Não foi possível carregar o serviço de login do Google. Verifique sua conexão ou tente novamente.");
-      }
+      if (!disposed) setGoogleError(t.auth.googleLoadError);
     };
 
     const script = document.querySelector<HTMLScriptElement>(
@@ -106,15 +122,11 @@ export default function LoginPage() {
     if (window.google) {
       initializeGoogle();
     } else if (script) {
-      // The Google script is async/defer. Listen for it instead of assuming
-      // it loaded before the API returned the client ID.
       script.addEventListener("load", initializeGoogle);
       script.addEventListener("error", onScriptError);
     } else {
-      // Defer the state update out of the effect body to avoid an immediate
-      // render cascade; this branch is only a defensive fallback.
       queueMicrotask(() => {
-        if (!disposed) setGoogleError("O script de login Google não foi encontrado nesta página.");
+        if (!disposed) setGoogleError(t.auth.googleLoadError);
       });
     }
 
@@ -123,94 +135,224 @@ export default function LoginPage() {
       script?.removeEventListener("load", initializeGoogle);
       script?.removeEventListener("error", onScriptError);
     };
-  }, [clientId, from, nav]);
+  }, [clientId, redirectTo, navigate, t.auth.googleLoadError, t.auth.loginFailure]);
 
-  const handleDevLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  function switchMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    setError(null);
+    setPassword("");
+    setConfirmPassword("");
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim() || !email.includes("@")) {
-      setErr("Informe um e-mail válido.");
-      return;
+    if (busy) return;
+    setError(null);
+
+    const normalizedEmail = email.trim();
+    if (mode === "register") {
+      if (name.trim().length < 2) {
+        setError(t.auth.registerFailure);
+        return;
+      }
+      if (password.length < 8) {
+        setError(t.auth.passwordMinLength);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError(t.auth.passwordMismatch);
+        return;
+      }
     }
 
     setBusy(true);
-    setErr(null);
     try {
-      await devLogin(email.trim(), name.trim() || undefined);
-      nav(from, { replace: true });
-    } catch (error: unknown) {
-      const apiError = error as { body?: { error?: string }; message?: string };
-      setErr(apiError.body?.error ?? apiError.message ?? "Falha no login de desenvolvimento.");
+      if (mode === "login") {
+        await loginWithEmail(normalizedEmail, password);
+      } else {
+        await registerWithEmail(name.trim(), normalizedEmail, password);
+      }
+      navigate(redirectTo, { replace: true });
+    } catch (caught: unknown) {
+      const apiError = caught as { status?: number };
+      if (mode === "login" && apiError.status === 401) {
+        setError(t.auth.invalidCredentials);
+      } else if (mode === "register" && apiError.status === 409) {
+        setError(t.auth.accountExists);
+      } else {
+        setError(mode === "login" ? t.auth.loginFailure : t.auth.registerFailure);
+      }
     } finally {
       setBusy(false);
     }
-  };
+  }
+
+  const isRegistering = mode === "register";
 
   return (
-    <main style={{ minHeight: "100svh", display: "grid", placeItems: "center", padding: "clamp(1rem, 5vw, 2rem)", background: "var(--color-bg)" }}>
-      <section aria-labelledby="login-title" style={{ width: "min(100%, 420px)", border: "1px solid var(--color-border)", borderRadius: 16, padding: "clamp(1.25rem, 5vw, 1.5rem)", background: "var(--color-surface, white)" }}>
-        <Link to="/" style={{ fontWeight: 700, fontSize: 18 }}>CorseWeb</Link>
-        <h1 id="login-title" style={{ margin: "12px 0 4px" }}>Entrar</h1>
-        <p className="text-secondary" style={{ margin: 0, fontSize: 14 }}>
-          Entre com sua conta Google para acessar seus cursos. Em desenvolvimento, também é possível usar o acesso de teste.
-        </p>
+    <div className="auth-page">
+      <a className="auth-skip-link" href="#auth-main">{t.app.skipToContent}</a>
 
-        <div id="gsi-btn" aria-busy={configLoading || busy} style={{ marginTop: 20, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 44 }}>
-          {configLoading && <span className="text-secondary" style={{ fontSize: 13 }}>Verificando login Google…</span>}
-          {!configLoading && clientId && !googleError && <span className="text-secondary" style={{ fontSize: 13 }}>Carregando login Google…</span>}
-          {!configLoading && !clientId && !isDevelopment && <span className="text-secondary" style={{ fontSize: 13 }}>O login Google não está configurado neste ambiente.</span>}
-          {!configLoading && !clientId && isDevelopment && <span className="text-secondary" style={{ fontSize: 13 }}>Google Client ID não configurado — use o acesso de desenvolvimento abaixo.</span>}
+      <header className="auth-header">
+        <div className="auth-header__inner">
+          <BrandMark />
+          <div className="auth-header__actions">
+            <LanguageSwitcher />
+            <Link to="/" className="auth-header__back">
+              <SvgIcon name="arrow-left" size="1rem" />
+              <span>{t.auth.backToSite}</span>
+            </Link>
+          </div>
         </div>
-        {googleError && <p role="status" className="text-secondary" style={{ fontSize: 13, marginTop: 8 }}>{googleError}</p>}
+      </header>
 
-        {isDevelopment && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-              <div aria-hidden="true" style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
-              <span className="text-secondary" style={{ fontSize: 12 }}>ou acesso de desenvolvimento</span>
-              <div aria-hidden="true" style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+      <main id="auth-main" className="auth-main">
+        <section className="auth-promo" aria-labelledby="auth-promo-title">
+          <div className="auth-promo__glow auth-promo__glow--one" />
+          <div className="auth-promo__glow auth-promo__glow--two" />
+          <p className="auth-eyebrow">{t.auth.brandEyebrow}</p>
+          <h1 id="auth-promo-title">{t.auth.panelTitle}</h1>
+          <p className="auth-promo__description">{t.auth.panelDescription}</p>
+
+          <div className="auth-illustration" aria-hidden="true">
+            <div className="auth-illustration__window">
+              <div className="auth-illustration__window-top">
+                <span /><span /><span />
+                <span className="auth-illustration__window-label">CORSEWEB / LEARNING</span>
+              </div>
+              <img src={homeOpenBook} alt="" width={240} height={170} />
+              <div className="auth-illustration__lines"><span /><span /><span /></div>
+            </div>
+            <span className="auth-illustration__float auth-illustration__float--check"><SvgIcon name="check" /></span>
+            <span className="auth-illustration__float auth-illustration__float--book"><SvgIcon name="book-open" /></span>
+          </div>
+
+          <ul className="auth-benefits">
+            <li><span className="auth-benefits__check"><SvgIcon name="check" size="0.9rem" /></span>{t.auth.featureOne}</li>
+            <li><span className="auth-benefits__check"><SvgIcon name="check" size="0.9rem" /></span>{t.auth.featureTwo}</li>
+            <li><span className="auth-benefits__check"><SvgIcon name="check" size="0.9rem" /></span>{t.auth.featureThree}</li>
+          </ul>
+        </section>
+
+        <section className="auth-card-wrap" aria-labelledby="auth-form-title">
+          <div className="auth-card">
+            <div className="auth-card__intro">
+              <span className="auth-card__mark"><SvgIcon name="user" size="1.15rem" /></span>
+              <p className="auth-card__eyebrow">{isRegistering ? t.auth.registerTitle : t.auth.loginTitle}</p>
+              <h2 id="auth-form-title">{isRegistering ? t.auth.registerTitle : t.auth.loginTitle}</h2>
+              <p>{isRegistering ? t.auth.registerDescription : t.auth.loginDescription}</p>
             </div>
 
-            <form onSubmit={handleDevLogin} style={{ display: "grid", gap: 12 }}>
-              <label className="field">
-                <span className="field__label">E-mail</span>
+            <div className="auth-google-wrap">
+              <div id="gsi-btn" className="auth-google-button" aria-busy={configLoading || busy}>
+                {configLoading && <span className="auth-muted">{t.auth.googleConfigLoading}</span>}
+                {!configLoading && !clientId && <span className="auth-muted">{t.auth.googleConfigMissing}</span>}
+                {!configLoading && clientId && !googleError && <span className="auth-muted">{t.auth.googleConfigLoading}</span>}
+              </div>
+              {googleError && <p role="status" className="auth-inline-note">{googleError}</p>}
+            </div>
+
+            <div className="auth-divider"><span>{t.auth.divider}</span></div>
+
+            <form className="auth-form" onSubmit={handleSubmit}>
+              {isRegistering && (
+                <label className="auth-field">
+                  <span>{t.auth.nameLabel}</span>
+                  <input
+                    type="text"
+                    name="name"
+                    value={name}
+                    onChange={event => setName(event.target.value)}
+                    placeholder={t.auth.namePlaceholder}
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={80}
+                    required
+                    disabled={busy}
+                  />
+                </label>
+              )}
+
+              <label className="auth-field">
+                <span>{t.auth.emailLabel}</span>
                 <input
-                  className="field__input"
+                  type="email"
+                  name="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="seu@email.com"
-                  type="email"
+                  placeholder={t.auth.emailPlaceholder}
                   autoComplete="email"
+                  maxLength={254}
                   required
+                  disabled={busy}
                 />
               </label>
-              <label className="field">
-                <span className="field__label">Nome (opcional)</span>
+
+              <label className="auth-field">
+                <span>{t.auth.passwordLabel}</span>
                 <input
-                  className="field__input"
-                  value={name}
-                  onChange={event => setName(event.target.value)}
-                  placeholder="Seu nome"
-                  autoComplete="name"
+                  type="password"
+                  name="password"
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  placeholder={t.auth.passwordPlaceholder}
+                  autoComplete={isRegistering ? "new-password" : "current-password"}
+                  minLength={isRegistering ? 8 : undefined}
+                  maxLength={128}
+                  required
+                  disabled={busy}
                 />
+                {isRegistering && <small>{t.auth.passwordHint}</small>}
               </label>
-              <button className="button button--primary" disabled={busy} type="submit">
-                {busy ? "Entrando…" : "Entrar em modo de desenvolvimento"}
+
+              {isRegistering && (
+                <label className="auth-field">
+                  <span>{t.auth.confirmPasswordLabel}</span>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={event => setConfirmPassword(event.target.value)}
+                    placeholder={t.auth.confirmPasswordPlaceholder}
+                    autoComplete="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    required
+                    disabled={busy}
+                  />
+                </label>
+              )}
+
+              {error && <p className="auth-error" role="alert">{error}</p>}
+
+              <button type="submit" className="auth-submit" disabled={busy}>
+                <span>{busy
+                  ? (isRegistering ? t.auth.registerBusy : t.auth.loginBusy)
+                  : (isRegistering ? t.auth.registerAction : t.auth.loginAction)}</span>
+                {!busy && <SvgIcon name="arrow-right" size="1rem" />}
               </button>
             </form>
-          </>
-        )}
 
-        {err && <p role="alert" style={{ color: "var(--color-danger, crimson)", marginTop: 12, fontSize: 13 }}>{err}</p>}
+            <p className="auth-switch">
+              {isRegistering ? t.auth.hasAccount : t.auth.noAccount}
+              <button
+                type="button"
+                onClick={() => switchMode(isRegistering ? "login" : "register")}
+                disabled={busy}
+              >
+                {isRegistering ? t.auth.signInLink : t.auth.createAccountLink}
+              </button>
+            </p>
 
-        <p className="text-secondary" style={{ marginTop: 16, fontSize: 12 }}>
-          {isDevelopment
-            ? <>Este acesso de teste só é aceito quando o backend está em <code>Development</code>. A permissão de administrador vem da configuração <code>AdminEmails</code> no servidor.</>
-            : <>Se o login Google não aparecer, o servidor precisa ter <code>Authentication:Google:ClientId</code> configurado.</>}
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <Link to="/" className="button button--glass" style={{ width: "100%", justifyContent: "center" }}>Voltar ao site</Link>
-        </p>
-      </section>
-    </main>
+            <p className="auth-security-note"><SvgIcon name="check" size="0.9rem" />{t.auth.accountNote}</p>
+          </div>
+        </section>
+      </main>
+
+      <footer className="auth-footer">
+        <span>© {new Date().getFullYear()} CorseWeb</span>
+        <Link to="/courses">{t.home.discoverCourses}</Link>
+      </footer>
+    </div>
   );
 }
