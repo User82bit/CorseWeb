@@ -303,7 +303,6 @@ export interface Translations {
         noResultsTitle: string;
         noResultsDescription: string;
         clearFilters: string;
-        viewPublicCatalog: string;
         category: string;
         level: string;
         modules: string;
