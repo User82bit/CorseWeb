@@ -1,3 +1,8 @@
+export interface HomeStep {
+    title: string;
+    description: string;
+}
+
 export interface Translations {
     common: {
         seeMore: string;
@@ -14,6 +19,46 @@ export interface Translations {
         discoverCourses: string;
         newCourses: string;
         informations: informatiosModel[];
+        skipToContent: string;
+        primaryNavigation: string;
+        homeLinkLabel: string;
+        openMenu: string;
+        closeMenu: string;
+        login: string;
+        dashboard: string;
+        logout: string;
+        aboutLink: string;
+        heroEyebrow: string;
+        exploreCta: string;
+        aboutCta: string;
+        valuePropositionLabel: string;
+        heroTrustOne: string;
+        heroTrustTwo: string;
+        heroTrustThree: string;
+        stepsEyebrow: string;
+        stepsTitle: string;
+        stepsDescription: string;
+        steps: HomeStep[];
+        coursesEyebrow: string;
+        coursesTitle: string;
+        coursesDescription: string;
+        viewAllCourses: string;
+        loadingCourses: string;
+        coursesErrorTitle: string;
+        coursesErrorDescription: string;
+        retryCourses: string;
+        emptyCoursesTitle: string;
+        emptyCoursesDescription: string;
+        emptyCoursesAction: string;
+        courseLevelLabel: string;
+        lessonUnit: string;
+        hourUnit: string;
+        openCourse: string;
+        ctaEyebrow: string;
+        ctaTitle: string;
+        ctaDescription: string;
+        ctaAction: string;
+        footerDescription: string;
     };
     app: {
         continueStudying: string;
@@ -34,14 +79,13 @@ export interface Translations {
     tags: {
         language: string;
         english: string;
-
     };
 }
 
 interface informatiosModel {
     text: string;
     priority: number;
-};
+}
 
 export type Locale = "pt-BR" | "en" | "es";
 

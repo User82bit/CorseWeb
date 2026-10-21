@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `ci`
-- **Estado:** EM REVISÃO
+- **Estado:** CONCLUÍDA
 - **Branch:** `ci/initial-validation-pipeline`
-- **PR:** [#2 — ci: adiciona validação automatizada inicial](https://github.com/User82bit/CorseWeb/pull/2)
+- **PR:** [#2 — ci: adiciona validação automatizada inicial](https://github.com/User82bit/CorseWeb/pull/2) — integrado em `master` em 2026-10-21
 - **Base de trabalho:** `master` em `bfaac3ffbac2887005467b60fc628e52bbd08fbd`
 
 ## Objetivo
@@ -63,7 +63,7 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 - **Aviso de dependências:** `npm ci` reportou duas vulnerabilidades de severidade alta na árvore instalada. A investigação e eventual atualização serão tratadas em uma entrega separada para evitar alterações de dependências fora do escopo atual.
 - **CI após as correções — push:** aprovado em [execução #39434966738](https://github.com/User82bit/CorseWeb/actions/runs/39434966738).
 - **CI do Pull Request:** aprovado em [execução #39435582824](https://github.com/User82bit/CorseWeb/actions/runs/39435582824).
-- **PR:** aberto para `Homologa` e aguardando revisão do proprietário.
+- **PR:** integrado em `master` por meio do fluxo de PR do proprietário em 2026-10-21.
 - Nenhum teste será declarado aprovado sem resultado visível.
 
 ## Critérios de aceitação
@@ -83,12 +83,10 @@ O repositório não possuía workflows em `.github/workflows/`, não declarou um
 
 ## Próximos passos
 
-1. Ler o resultado do workflow após as correções.
-2. Corrigir falhas relacionadas a esta entrega sem ampliar para um redesenho geral.
-3. Revisar o diff e o CI após a última alteração.
-4. Abrir PR para `Homologa` somente depois das verificações obrigatórias.
-5. Aguardar revisão e integração em `master` antes de criar a próxima branch.
+1. CI-001 foi integrada em `master` em 2026-10-21; não é necessária outra alteração nesta entrega.
+2. Usar o Kanban geral para acompanhar as próximas etapas, sem tratar a compilação como prova de funcionamento das telas ou APIs.
+3. A primeira entrega visual após a CI é `FE-001`, descrita em `docs/FRONTEND/etapas/fe-001-homepage-mobile-first.md`, com implementação mobile-first.
 
 ## Resumo técnico para a próxima sessão
 
-O projeto já tem páginas em React e controllers no ASP.NET Core, mas o proprietário determinou que tradução incompleta é a única funcionalidade atualmente considerada funcional. A reconstrução futura precisa ser mobile-first em cada entrega de interface, com expansão posterior para tablet e desktop. Esta etapa não redesenha páginas; ela estabelece CI e documenta essas restrições.
+A CI-001 foi integrada em `master` em 2026-10-21. O proprietário determinou que somente o sistema de tradução, ainda incompleto, deve ser considerado funcional. A próxima entrega começa a reconstrução da Home pública mobile-first, adaptando depois para tablet e desktop.
