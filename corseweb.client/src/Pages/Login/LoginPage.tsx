@@ -111,7 +111,11 @@ export default function LoginPage() {
       script.addEventListener("load", initializeGoogle);
       script.addEventListener("error", onScriptError);
     } else {
-      setGoogleError("O script de login Google não foi encontrado nesta página.");
+      // Defer the state update out of the effect body to avoid an immediate
+      // render cascade; this branch is only a defensive fallback.
+      queueMicrotask(() => {
+        if (!disposed) setGoogleError("O script de login Google não foi encontrado nesta página.");
+      });
     }
 
     return () => {
