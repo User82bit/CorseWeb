@@ -28,7 +28,7 @@ O estado de implementação deve ser distinguido de PR aberto/aprovado, integra�
 |---|---|---|---|---|---|---|
 | CI-001 | Pipeline inicial de validação para frontend e backend | CI | P0 | CONCLUÍDA | `ci/initial-validation-pipeline` / [PR #2](https://github.com/User82bit/CorseWeb/pull/2) — integrada em `master` | Nenhuma |
 | FE-001 | Reconstruir a Home pública com design responsivo mobile-first e auditoria dos contratos usados | Frontend | P0 | CONCLUÍDA em `Homologa` (validação manual pendente) | `feat/homepage-mobile-first` / [PR #4](https://github.com/User82bit/CorseWeb/pull/4) | CI-001 integrada em `master`; integração desta entrega em `master` sob controle do proprietário |
-| FE-006 | Corrigir conflito de resolução do LanguageProvider em Windows/Vite | Frontend/Dev | P0 | EM REVISÃO | `fix/language-provider-windows-resolution` / [PR #5](https://github.com/User82bit/CorseWeb/pull/5) | FE-001 mesclada em `Homologa`; CI-001 |
+| FE-006 | Corrigir conflito de resolução do LanguageProvider em Windows/Vite | Frontend/Dev | P0 | EM REVISÃO | `fix/language-provider-windows-resolution` / [PR #5](https://github.com/User82bit/CorseWeb/pull/5) | CI aprovada; inicialização local em Windows pendente |
 | BE-001 | Auditar e planejar a reconstrução dos fluxos de API, autenticação e persistência | Backend | P1 | NÃO INICIADA | A definir após definição do escopo | CI-001 integrada em `master` |
 | DOC-001 | Consolidar decisões arquiteturais e documentação técnica de conteúdo, aulas e progresso | Documentação | P1 | NÃO INICIADA | A definir | Localizar/validar materiais arquiteturais existentes |
 
