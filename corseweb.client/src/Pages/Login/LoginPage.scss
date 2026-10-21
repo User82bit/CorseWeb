@@ -65,6 +65,14 @@
   }
 }
 
+.auth-header__back span {
+  display: none;
+}
+
+@media (min-width: 22rem) {
+  .auth-header__back span { display: inline; }
+}
+
 .auth-brand {
   display: inline-flex;
   align-items: center;
