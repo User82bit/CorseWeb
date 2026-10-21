@@ -48,7 +48,7 @@ function ContentComponent({ component }: { component: Component }) {
     case "bloco-codigo":
       return (
         <pre className="student-lesson__code">
-          {props.language && <span className="student-lesson__code-language">{safeText(props.language)}</span>}
+          {typeof props.language === "string" && props.language && <span className="student-lesson__code-language">{safeText(props.language)}</span>}
           <code>{safeText(props.code)}</code>
         </pre>
       );
@@ -58,7 +58,7 @@ function ContentComponent({ component }: { component: Component }) {
       return (
         <figure className="student-lesson__figure">
           <img src={src} alt={safeText(props.alt)} loading="lazy" decoding="async" />
-          {props.caption && <figcaption>{safeText(props.caption)}</figcaption>}
+          {typeof props.caption === "string" && props.caption && <figcaption>{safeText(props.caption)}</figcaption>}
         </figure>
       );
     }
@@ -69,7 +69,7 @@ function ContentComponent({ component }: { component: Component }) {
           <video controls preload="metadata" src={src}>
             <track kind="captions" />
           </video>
-          {props.caption && <p>{safeText(props.caption)}</p>}
+          {typeof props.caption === "string" && props.caption && <p>{safeText(props.caption)}</p>}
         </div>
       ) : <p className="student-lesson__unsupported">{safeText(props.caption || "")}</p>;
     }
@@ -80,7 +80,7 @@ function ContentComponent({ component }: { component: Component }) {
         const variant = String(component.type).replace("callout-", "");
         return (
           <aside className={`student-lesson__callout student-lesson__callout--${variant}`}>
-            {props.title && <strong>{safeText(props.title)}</strong>}
+            {typeof props.title === "string" && props.title && <strong>{safeText(props.title)}</strong>}
             <p>{safeText(props.content)}</p>
           </aside>
         );
