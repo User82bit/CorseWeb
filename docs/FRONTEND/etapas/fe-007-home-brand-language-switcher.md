@@ -3,7 +3,7 @@
 ## Identificação
 
 - **Tipo:** `fix` + `style`
-- **Estado:** EM REVISÃO
+- **Estado:** INTEGRADA em `master` (validação visual pendente)
 - **Branch:** `fix/home-brand-and-language-switcher`
 - **PR:** [#6 — fix(home): unifica a marca e clareia o seletor de idioma](https://github.com/User82bit/CorseWeb/pull/6)
 - **Prioridade:** P1 — consistência de marca e ajuste visual na Home pública.

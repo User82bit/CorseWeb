@@ -47,6 +47,10 @@ jobs:
         working-directory: corseweb.client
         run: npm run lint
 
+      - name: Test locale resolution
+        working-directory: corseweb.client
+        run: npm run test:i18n
+
       - name: Build frontend
         working-directory: corseweb.client
         run: npm run build

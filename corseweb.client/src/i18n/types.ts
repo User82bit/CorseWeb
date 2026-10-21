@@ -1,3 +1,8 @@
+export interface InformationItem {
+    text: string;
+    priority: number;
+}
+
 export interface HomeStep {
     title: string;
     description: string;
@@ -18,7 +23,7 @@ export interface Translations {
         description: string;
         discoverCourses: string;
         newCourses: string;
-        informations: informatiosModel[];
+        informations: InformationItem[];
         skipToContent: string;
         primaryNavigation: string;
         homeLinkLabel: string;
@@ -82,13 +87,8 @@ export interface Translations {
     };
 }
 
-interface informatiosModel {
-    text: string;
-    priority: number;
-}
+export const locales = ["pt-BR", "en", "es"] as const;
 
-export type Locale = "pt-BR" | "en" | "es";
-
-export const locales: Locale[] = ["pt-BR", "en", "es"];
+export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = "pt-BR";

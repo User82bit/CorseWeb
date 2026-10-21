@@ -3,7 +3,7 @@
 ## Identificação
 
 - **Tipo:** `fix`
-- **Estado:** CONCLUÍDA em `Homologa`
+- **Estado:** INTEGRADA em `master`
 - **Branch:** `fix/language-provider-windows-resolution`
 - **PR:** [#5 — fix(i18n): corrige tela branca no Windows](https://github.com/User82bit/CorseWeb/pull/5)
 - **Prioridade:** P0 — a aplicação abre em tela branca em ambiente de desenvolvimento Windows.
