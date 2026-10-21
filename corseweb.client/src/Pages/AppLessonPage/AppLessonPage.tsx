@@ -9,6 +9,7 @@ import {
   updateEnrollmentProgress,
   type CourseEnrollment,
   type EnrollmentModuleProgress,
+  type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
 import type { Component, Course, Lesson, Module } from "../../types/course";
 import "./AppLessonPage.scss";
@@ -118,7 +119,9 @@ function AppLessonPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [enrollmentError, setEnrollmentError] = useState(false);
   const lastTrackedLesson = useRef<string | null>(null);
+  const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
 
   const loadLessonData = useCallback(async () => {
     if (!courseSlug) {
@@ -179,11 +182,14 @@ function AppLessonPage() {
 
     let active = true;
     setSaveError(false);
-    updateEnrollmentProgress(course.slug, {
+    const progressUpdate: EnrollmentProgressUpdate = {
       overallPercent: enrollment.overallPercent,
       currentLessonId: lesson.id,
       modulesProgress: enrollment.modulesProgress,
-    }).then(updated => {
+    };
+    pendingProgress.current = progressUpdate;
+    updateEnrollmentProgress(course.slug, progressUpdate).then(updated => {
+      pendingProgress.current = null;
       if (active) setEnrollment(updated);
     }).catch(() => {
       if (active) setSaveError(true);
@@ -194,11 +200,11 @@ function AppLessonPage() {
   const handleEnroll = async () => {
     if (!course || enrolling) return;
     setEnrolling(true);
-    setLoadError(false);
+    setEnrollmentError(false);
     try {
       setEnrollment(await enrollInCourse(course.slug));
     } catch {
-      setLoadError(true);
+      setEnrollmentError(true);
     } finally {
       setEnrolling(false);
     }
@@ -245,12 +251,35 @@ function AppLessonPage() {
       ? Math.round(completedLessonIds.size / allLessons.length * 100)
       : 0;
 
+    const progressUpdate: EnrollmentProgressUpdate = {
+      overallPercent,
+      currentLessonId: lesson.id,
+      modulesProgress: nextModulesProgress,
+    };
+    pendingProgress.current = progressUpdate;
     try {
-      const updated = await updateEnrollmentProgress(course.slug, {
-        overallPercent,
-        currentLessonId: lesson.id,
-        modulesProgress: nextModulesProgress,
-      });
+      const updated = await updateEnrollmentProgress(course.slug, progressUpdate);
+      pendingProgress.current = null;
+      setEnrollment(updated);
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRetryProgress = async () => {
+    if (!course || !enrollment || saving) return;
+    const progressUpdate = pendingProgress.current ?? {
+      overallPercent: enrollment.overallPercent,
+      currentLessonId: lesson?.id ?? enrollment.currentLessonId,
+      modulesProgress: enrollment.modulesProgress,
+    };
+    setSaving(true);
+    setSaveError(false);
+    try {
+      const updated = await updateEnrollmentProgress(course.slug, progressUpdate);
+      pendingProgress.current = null;
       setEnrollment(updated);
     } catch {
       setSaveError(true);
@@ -313,7 +342,7 @@ function AppLessonPage() {
           <SvgIcon name="arrow-right" size="1rem" />
         </button>
         <Link to={`/app/courses/${course.slug}`} className="student-lesson__text-link">{t.learning.backToMyCourses}</Link>
-        {loadError && <p role="alert" className="student-lesson__error">{t.learning.enrollmentError}</p>}
+        {enrollmentError && <p role="alert" className="student-lesson__error">{t.learning.enrollmentError}</p>}
       </div>
     );
   }
@@ -342,7 +371,7 @@ function AppLessonPage() {
         <div className="student-lesson__notice" role="alert">
           <SvgIcon name="bell" size="1rem" />
           <span>{t.learning.saveProgressError}</span>
-          <button type="button" onClick={() => void loadLessonData()}>{t.learning.retry}</button>
+          <button type="button" onClick={() => void handleRetryProgress()} disabled={saving}>{saving ? t.learning.savingProgress : t.learning.retry}</button>
         </div>
       )}
 
@@ -390,7 +419,7 @@ function AppLessonPage() {
               </span>
               <div>
                 <h2>{isLessonComplete ? t.learning.lessonCompleted : t.learning.completeLesson}</h2>
-                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : t.learning.savingProgress}</p>
+                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : t.learning.lessonCompletionDescription}</p>
               </div>
             </div>
             <button
