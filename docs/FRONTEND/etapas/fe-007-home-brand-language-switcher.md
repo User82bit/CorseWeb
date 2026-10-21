@@ -44,10 +44,14 @@
 - [x] Confirmar que o asset oficial existe e é uma imagem PNG.
 - [x] Confirmar que os dois pontos de marca da Home usam `BrandLogo`.
 - [x] Confirmar que o seletor recebe cores claras específicas, independentes das variáveis de tema escuro do SO.
-- [ ] Executar CI: `npm ci`, `npm run lint`, `npm run build`, restore/build .NET.
+- [x] Executar CI: `npm ci`, `npm run lint`, `npm run build`, restore/build .NET.
 - [ ] Validar visualmente a marca, o seletor fechado/aberto e seus estados hover/focus no celular.
 - [ ] Repetir a validação em tablet e desktop.
 - [ ] Confirmar que o seletor permanece claro com o sistema operacional em tema escuro.
+
+## Evidência CI
+
+- CI aprovada no commit de implementação `e3bb8b9005c7e1e8448a06c37dd097cd80b21a4d`: [execução #39596666320](https://github.com/User82bit/CorseWeb/actions/runs/39596666320). Passaram instalação, lint, build frontend, restore e build .NET. Os commits posteriores desta branch alteraram somente documentação.
 
 ## Critérios de aceitação
 
