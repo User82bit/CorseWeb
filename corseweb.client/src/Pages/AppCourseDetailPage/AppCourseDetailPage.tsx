@@ -92,7 +92,7 @@ function AppCourseDetailPage() {
     }
   }
 
-  if (loading && !course) {
+  if (loading) {
     return (
       <div className="student-course-detail__state" role="status" aria-live="polite">
         <span className="student-course-detail__state-icon"><SvgIcon name="book-open" size="1.4rem" /></span>
