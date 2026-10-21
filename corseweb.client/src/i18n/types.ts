@@ -304,7 +304,6 @@ export interface Translations {
         noResultsDescription: string;
         clearFilters: string;
         viewPublicCatalog: string;
-        createCourse: string;
         category: string;
         level: string;
         modules: string;
