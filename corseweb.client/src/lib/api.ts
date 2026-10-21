@@ -6,8 +6,8 @@ export async function apiFetch(input: RequestInfo, init: RequestInit = {}): Prom
   // API callers pass JSON.stringify(...) strings. Fetch does not infer their
   // media type, so ASP.NET [FromBody] actions may reject them without this.
   const body = init.body;
-  const isJsonObjectOrArray =
-    typeof body === "string" && /^\s*[\[{]/.test(body);
+  const trimmedBody = typeof body === "string" ? body.trimStart() : "";
+  const isJsonObjectOrArray = trimmedBody.startsWith("{") || trimmedBody.startsWith("[");
   if (isJsonObjectOrArray && !Object.keys(headers).some(key => key.toLowerCase() === "content-type")) {
     headers["Content-Type"] = "application/json";
   }
