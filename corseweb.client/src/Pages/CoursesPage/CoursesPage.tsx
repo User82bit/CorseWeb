@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "../../i18n/LanguageContext";
+import { useTranslation } from "../../i18n/useTranslation";
 import PageHero from "../../components/PageHero/PageHero";
 import CardCourseBase from "../../UIComplement/CardCourseBase/CardCourseBase";
 import { getPublishedCourses, subscribeCourses, refreshCourses } from "../../store/courseStore";

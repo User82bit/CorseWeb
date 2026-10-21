@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - master
+      - Homologa
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate frontend and backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: corseweb.client/package-lock.json
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install frontend dependencies
+        working-directory: corseweb.client
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: corseweb.client
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: corseweb.client
+        run: npm run build
+
+      - name: Restore .NET solution
+        run: dotnet restore CorseWeb.slnx
+
+      - name: Build .NET solution
+        run: dotnet build CorseWeb.slnx --no-restore --configuration Release

@@ -1,6 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Locale, Translations } from "./types";
+import { LanguageContext } from "./languageContext";
+import type { LanguageContextValue } from "./languageContext";
 import { defaultLocale, locales } from "./types";
 import { ptBR } from "./translations/pt-BR";
 import { en } from "./translations/en";
@@ -33,14 +35,6 @@ function getInitialLocale(): Locale {
     return match ?? defaultLocale;
 }
 
-interface LanguageContextValue {
-    locale: Locale;
-    setLocale: (locale: Locale) => void;
-    t: Translations;
-}
-
-const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
-
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const [locale, setLocaleState] = useState<Locale>(getInitialLocale);
 
@@ -60,14 +54,4 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     );
 
     return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
-}
-
-export function useTranslation(): LanguageContextValue {
-    const context = useContext(LanguageContext);
-
-    if (!context) {
-        throw new Error("useTranslation deve ser usado dentro de <LanguageProvider>.");
-    }
-
-    return context;
 }

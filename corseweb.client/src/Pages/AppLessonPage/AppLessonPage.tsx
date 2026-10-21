@@ -11,7 +11,7 @@ function AppLessonPage() {
   const course = courseSlug ? getCourseBySlugStore(courseSlug) : undefined;
   const allLessons: Lesson[] = course ? course.modules.flatMap((m) => m.lessons) : [];
   const lesson = allLessons.find((l) => l.slug === lessonSlug);
-  const [_, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => subscribeCourses(() => setTick((x) => x + 1)), []);
 
   if (!course || !lesson) {

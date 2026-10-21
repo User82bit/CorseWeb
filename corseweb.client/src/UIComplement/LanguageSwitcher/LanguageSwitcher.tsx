@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "../../i18n/LanguageContext";
+import { useTranslation } from "../../i18n/useTranslation";
 import type { Locale } from "../../i18n/types";
 import { locales } from "../../i18n/types";
 import "./LanguageSwitcher.scss";
