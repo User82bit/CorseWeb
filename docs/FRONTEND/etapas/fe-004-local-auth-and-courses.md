@@ -1,5 +1,12 @@
 # FE-004 — Autenticação local e reconstrução de Login/Catálogo
 
+## Identificação
+- **Estado:** EM REVISÃO
+- **Branch:** `feat/local-auth-and-public-pages`
+- **PR:** [#17 — login local e redesign de Login/Courses](https://github.com/User82bit/CorseWeb/pull/17)
+- **Base:** `Homologa`; nenhuma alteração direta em `master`.
+- **CI do código:** [execução #39617697496](https://github.com/User82bit/CorseWeb/actions/runs/39617697496) passou no commit `c95155813f2fa86f4984801d8de6c2f6a2f69c30`. O commit de documentação atualiza apenas os TODOs e esta etapa.
+
 ## Escopo
 - Adicionar cadastro e login por e-mail/senha usando o banco do backend.
 - Preservar a autenticação Google existente.
@@ -32,7 +39,7 @@
 - `docs/FRONTEND/TODO.md`
 
 ## Validação
-- [ ] CI completa: lint, testes de idiomas, build frontend, restore e build .NET.
+- [x] CI aprovada: [execução #39617697496](https://github.com/User82bit/CorseWeb/actions/runs/39617697496) no commit de código `c95155813f2fa86f4984801d8de6c2f6a2f69c30`; passaram `npm ci`, lint, testes de idioma, build frontend, restore e build .NET.
 - [ ] Testar cadastro local com e-mail novo e verificar que uma sessão é criada.
 - [ ] Sair, entrar com o e-mail/senha recém-cadastrados e confirmar o redirecionamento.
 - [ ] Confirmar que senha incorreta e e-mail desconhecido recebem a mesma mensagem genérica.
