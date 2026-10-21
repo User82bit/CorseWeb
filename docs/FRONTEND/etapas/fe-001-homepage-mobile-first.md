@@ -63,7 +63,7 @@ Iniciar a reconstrução visual e funcional do frontend por uma entrega pública
 - [x] Adicionar as novas chaves de tradução aos três idiomas.
 - [x] Executar lint e build pelo CI após publicar a branch.
 - [x] Inspecionar o diff completo antes de abrir PR.
-- [ ] Abrir PR para `Homologa), registrar seus resultados e aguardar revisão do proprietário.
+- [x] Abrir PR #4 para `Homologa` e registrar a validação inicial; revisão do proprietário pendente.
 
 ## Testes e resultados
 
