@@ -3,9 +3,9 @@
 ## Identificação
 
 - **Tipo:** `feat` + `style`
-- **Estado:** EM DESENVOLVIMENTO
+- **Estado:** EM REVISÃO
 - **Branch:** `feat/homepage-mobile-first`
-- **PR:** será registrado após a primeira validação automatizada
+- **PR:** [#4 — feat(home): reconstrói a Home pública mobile-first](https://github.com/User82bit/CorseWeb/pull/4)
 - **Base:** `master` em `1789405eb5c7654e49ef9aa496ae7b42201ce899`
 
 ## Objetivo
@@ -61,15 +61,17 @@ Iniciar a reconstrução visual e funcional do frontend por uma entrega pública
 - [x] Implementar uma nova composição mobile-first.
 - [x] Adaptar layout para tablet e desktop.
 - [x] Adicionar as novas chaves de tradução aos três idiomas.
-- [ ] Executar lint e build pelo CI após publicar a branch.
-- [ ] Inspecionar o diff completo antes de abrir PR.
+- [x] Executar lint e build pelo CI após publicar a branch.
+- [x] Inspecionar o diff completo antes de abrir PR.
 - [ ] Abrir PR para `Homologa), registrar seus resultados e aguardar revisão do proprietário.
 
 ## Testes e resultados
 
 - **Execução local:** não disponível neste ambiente; a validação será realizada pelo GitHub Actions.
-- **Lint e build:** pendentes para esta branch.
-- **Teste manual em celular/tablet/desktop:** pendente.
+- **CI do push:** aprovado em [execução #39591632969](https://github.com/User82bit/CorseWeb/actions/runs/39591632969). Passaram `npm ci`, `npm run lint`, `npm run build`, `dotnet restore CorseWeb.slnx` e `dotnet build CorseWeb.slnx --no-restore --configuration Release`.
+- **CI do Pull Request:** execução [#39591849630](https://github.com/User82bit/CorseWeb/actions/runs/39591849630) iniciada; aguardar resultado para confirmar o estado final do PR.
+- **Consistência de tradução:** conferidas as chaves de Home utilizadas no TSX contra o tipo e as três traduções; nenhum campo ausente.
+- **Teste manual em celular/tablet/desktop:** pendente; o build não comprova ausência de overflow nem qualidade visual real.
 - **Testes funcionais de API/autenticação:** fora do escopo e não presumidos como funcionando.
 
 ## Critérios de aceitação
