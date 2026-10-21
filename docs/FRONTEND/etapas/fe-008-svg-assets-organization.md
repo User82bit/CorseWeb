@@ -3,7 +3,7 @@
 ## Identificação
 
 - **Tipo:** `refactor`
-- **Estado:** EM REVISÃO
+- **Estado:** INTEGRADA em `master` (validação visual pendente)
 - **Branch:** `refactor/svg-assets-organization`
 - **PR:** [#8 — refactor(assets): centraliza os SVGs em src/assets](https://github.com/User82bit/CorseWeb/pull/8)
 - **Base:** `master` atualizada após a integração do PR #6.
