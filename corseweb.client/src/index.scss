@@ -78,9 +78,6 @@ a {
 // ============================================================
 // UTILITÁRIOS DE TEXTO
 // ============================================================
-.text-muted { color: var(--color-text-muted); }
-.text-secondary { color: var(--color-text-secondary); }
-.text-brand { color: var(--color-brand); }
 .text-inverse { color: var(--color-text-inverse); }
 
 .text-center { text-align: center; }
@@ -137,10 +134,13 @@ a {
 // CONTAINER + GRID
 // ============================================================
 .container {
-  width: min(100% - 2rem, 1280px);
+  width: min(calc(100% - var(--container-inline-space)), var(--container-max-width));
   margin-inline: auto;
-  @include respond(md) { width: min(100% - 3rem, 1280px); }
-  @include respond(xl) { width: min(100% - 4rem, 1440px); }
+  @include respond(md) { --container-inline-space: 3rem; }
+  @include respond(xl) {
+    --container-inline-space: 4rem;
+    --container-max-width: 90rem;
+  }
 }
 
 .grid {
