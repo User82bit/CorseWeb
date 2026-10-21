@@ -152,6 +152,8 @@ public class AuthController : ControllerBase
     {
         if (req == null || string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrEmpty(req.Password))
             return BadRequest(new { error = "Informe e-mail e senha." });
+        if (req.Password.Length > 128)
+            return BadRequest(new { error = "Senha inválida." });
 
         var email = req.Email.Trim().ToLowerInvariant();
         if (!MailAddress.TryCreate(email, out var parsedEmail) ||
@@ -160,9 +162,10 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "Informe um e-mail válido." });
 
         var user = await _db.Users.FirstOrDefaultAsync(candidate => candidate.Email.ToLower() == email);
-        if (user?.PasswordHash is not { Length: > 0 } passwordHash)
+        if (user == null || string.IsNullOrWhiteSpace(user.PasswordHash))
             return Unauthorized(new { error = "E-mail ou senha incorretos." });
 
+        var passwordHash = user.PasswordHash;
         var verification = _passwordHasher.VerifyHashedPassword(user, passwordHash, req.Password);
         if (verification == PasswordVerificationResult.Failed)
             return Unauthorized(new { error = "E-mail ou senha incorretos." });
