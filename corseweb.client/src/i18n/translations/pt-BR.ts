@@ -222,6 +222,7 @@ export const ptBR: Translations = {
         emptyModulesDescription: "Este curso ainda não possui módulos para exibir.",
         startCourse: "Inscrever-se e começar",
         continueCourse: "Continuar estudando",
+        reviewCourse: "Revisar curso",
         enrolling: "Inscrevendo...",
         enrollmentError: "Não foi possível registrar sua inscrição. Tente novamente.",
         enrolledLabel: "Inscrito",
