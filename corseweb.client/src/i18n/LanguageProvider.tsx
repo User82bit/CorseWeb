@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { LanguageContext } from "./languageContext";
 import type { LanguageContextValue } from "./languageContext";
-import { defaultLocale, type Locale, type Translations } from "./types";
+import { defaultLocale, locales, type Locale, type Translations } from "./types";
 import { resolveLocale } from "./locale";
 import { ptBR } from "./translations/pt-BR";
 import { en } from "./translations/en";
@@ -39,7 +39,7 @@ function getInitialLocale(): Locale {
         return defaultLocale;
     }
 
-    return resolveLocale(readStoredLocale(), window.navigator.language);
+    return resolveLocale(readStoredLocale(), window.navigator.language, locales, defaultLocale);
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
