@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Net.Mail;
+using Microsoft.AspNetCore.Identity;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -20,10 +22,20 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<AuthController> _logger;
+    private readonly IPasswordHasher<AppUser> _passwordHasher;
 
-    public AuthController(AppDbContext db, IConfiguration config, IWebHostEnvironment env, ILogger<AuthController> logger)
+    public AuthController(
+        AppDbContext db,
+        IConfiguration config,
+        IWebHostEnvironment env,
+        ILogger<AuthController> logger,
+        IPasswordHasher<AppUser> passwordHasher)
     {
-        _db = db; _config = config; _env = env; _logger = logger;
+        _db = db;
+        _config = config;
+        _env = env;
+        _logger = logger;
+        _passwordHasher = passwordHasher;
     }
 
     [HttpGet("me")]
@@ -80,6 +92,101 @@ public class AuthController : ControllerBase
             return Unauthorized(new { error = "E-mail Google não verificado" });
 
         var user = await FindOrCreateUser(payload.Subject, payload.Email, payload.Name ?? payload.Email.Split('@')[0], payload.Picture);
+        await SignInAsync(user);
+        return Ok(new UserDto(user.Id, user.Name, user.Email, user.AvatarUrl, user.Role));
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] LocalRegisterRequest req)
+    {
+        if (req == null) return BadRequest(new { error = "Dados de cadastro inválidos." });
+
+        var name = req.Name?.Trim();
+        var email = req.Email?.Trim().ToLowerInvariant();
+        var password = req.Password;
+
+        if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || name.Length > 80)
+            return BadRequest(new { error = "Informe um nome entre 2 e 80 caracteres." });
+
+        if (string.IsNullOrWhiteSpace(email) ||
+            !MailAddress.TryCreate(email, out var parsedEmail) ||
+            !string.Equals(parsedEmail.Address, email, StringComparison.OrdinalIgnoreCase) ||
+            email.Length > 254)
+            return BadRequest(new { error = "Informe um e-mail válido." });
+
+        if (string.IsNullOrEmpty(password) || password.Length < 8 || password.Length > 128)
+            return BadRequest(new { error = "A senha deve ter entre 8 e 128 caracteres." });
+
+        var alreadyExists = await _db.Users.AnyAsync(user => user.Email.ToLower() == email);
+        if (alreadyExists)
+            return Conflict(new { error = "Este e-mail já está cadastrado. Entre com sua conta existente ou use o Google." });
+
+        var user = new AppUser
+        {
+            Id = $"local-{Guid.NewGuid():N}",
+            Email = email,
+            Name = name,
+            Role = AdminHelper.ResolveRole(email, _config),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        user.PasswordHash = _passwordHasher.HashPassword(user, password);
+
+        _db.Users.Add(user);
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogInformation(ex, "Cadastro local não concluído; possível conflito de e-mail.");
+            return Conflict(new { error = "Não foi possível criar a conta com esse e-mail. Confira os dados ou entre na conta existente." });
+        }
+
+        await SignInAsync(user);
+        return Ok(new UserDto(user.Id, user.Name, user.Email, user.AvatarUrl, user.Role));
+    }
+
+    [HttpPost("local-login")]
+    public async Task<IActionResult> LocalLogin([FromBody] LocalLoginRequest req)
+    {
+        if (req == null || string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrEmpty(req.Password))
+            return BadRequest(new { error = "Informe e-mail e senha." });
+
+        var email = req.Email.Trim().ToLowerInvariant();
+        if (!MailAddress.TryCreate(email, out var parsedEmail) ||
+            !string.Equals(parsedEmail.Address, email, StringComparison.OrdinalIgnoreCase) ||
+            email.Length > 254)
+            return BadRequest(new { error = "Informe um e-mail válido." });
+
+        var user = await _db.Users.FirstOrDefaultAsync(candidate => candidate.Email.ToLower() == email);
+        if (user?.PasswordHash is not { Length: > 0 } passwordHash)
+            return Unauthorized(new { error = "E-mail ou senha incorretos." });
+
+        var verification = _passwordHasher.VerifyHashedPassword(user, passwordHash, req.Password);
+        if (verification == PasswordVerificationResult.Failed)
+            return Unauthorized(new { error = "E-mail ou senha incorretos." });
+
+        var expectedRole = AdminHelper.ResolveRole(user.Email, _config);
+        var changed = false;
+        if (user.Role != expectedRole)
+        {
+            user.Role = expectedRole;
+            changed = true;
+        }
+
+        if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.PasswordHash = _passwordHasher.HashPassword(user, req.Password);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            user.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+
         await SignInAsync(user);
         return Ok(new UserDto(user.Id, user.Name, user.Email, user.AvatarUrl, user.Role));
     }
