@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { Locale, Translations } from "./types";
 import { LanguageContext } from "./languageContext";
 import type { LanguageContextValue } from "./languageContext";
-import { defaultLocale, locales } from "./types";
+import { defaultLocale, locales, type Locale, type Translations } from "./types";
+import { resolveLocale } from "./locale";
 import { ptBR } from "./translations/pt-BR";
 import { en } from "./translations/en";
 import { es } from "./translations/es";
@@ -16,23 +16,30 @@ const translations: Record<Locale, Translations> = {
 
 const storageKey = "corseweb.locale";
 
+function readStoredLocale(): unknown {
+    try {
+        return window.localStorage.getItem(storageKey);
+    } catch {
+        // Storage may be blocked by browser privacy settings. The UI still works
+        // with the browser locale and in-memory state when persistence is unavailable.
+        return undefined;
+    }
+}
+
+function persistLocale(locale: Locale): void {
+    try {
+        window.localStorage.setItem(storageKey, locale);
+    } catch {
+        // Keep locale switching functional even when localStorage is unavailable.
+    }
+}
+
 function getInitialLocale(): Locale {
     if (typeof window === "undefined") {
         return defaultLocale;
     }
 
-    const stored = window.localStorage.getItem(storageKey) as Locale | null;
-
-    if (stored && locales.includes(stored)) {
-        return stored;
-    }
-
-    const browserLocale = window.navigator.language;
-    const match = locales.find(
-        (locale) => browserLocale === locale || browserLocale.startsWith(locale.split("-")[0])
-    );
-
-    return match ?? defaultLocale;
+    return resolveLocale(readStoredLocale(), window.navigator.language, locales, defaultLocale);
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
@@ -40,9 +47,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const setLocale = useCallback((nextLocale: Locale) => {
         setLocaleState(nextLocale);
-        window.localStorage.setItem(storageKey, nextLocale);
-        document.documentElement.lang = nextLocale;
+        persistLocale(nextLocale);
     }, []);
+
+    useEffect(() => {
+        document.documentElement.lang = locale;
+    }, [locale]);
 
     const value = useMemo<LanguageContextValue>(
         () => ({
@@ -50,7 +60,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             setLocale,
             t: translations[locale],
         }),
-        [locale, setLocale]
+        [locale, setLocale],
     );
 
     return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

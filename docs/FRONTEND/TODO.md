@@ -14,11 +14,11 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 
 | ID | Entrega | Estado | Critério principal |
 |---|---|---|---|
-| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | CONCLUÍDA em `Homologa` (validação manual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4) mesclada em `Homologa`; inspeção visual manual em celular/tablet/desktop ainda pendente |
-| FE-006 | Corrigir carregamento do provedor de idioma em Windows | CONCLUÍDA em `Homologa` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
+| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | INTEGRADA em `master` (validação visual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4); inspeção visual manual em celular/tablet/desktop ainda pendente |
+| FE-006 | Corrigir carregamento do provedor de idioma em Windows | INTEGRADA em `master` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
 | FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | INTEGRADA em `master` (validação visual pendente) | [PR #6](https://github.com/User82bit/CorseWeb/pull/6); CI passou; inspeção visual responsiva ainda pendente |
-| FE-008 | Centralizar SVGs inline na pasta `src/assets` | EM REVISÃO | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
-| FE-002 | Revalidar e completar o sistema de tradução | NÃO INICIADA | Idiomas existentes e fallback verificados, sem hardcode de textos nas telas reconstruídas |
+| FE-008 | Centralizar SVGs inline na pasta `src/assets` | INTEGRADA em `master` (validação visual pendente) | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
+| FE-002 | Revalidar e completar o sistema de tradução | EM REVISÃO | [PR #10](https://github.com/User82bit/CorseWeb/pull/10); testes de fallback e CI aprovados; conferência manual de `html lang` no navegador pendente |
 | FE-003 | Estabelecer fundamentos visuais responsivos e acessíveis | NÃO INICIADA | Tokens e componentes base definidos após auditoria, com validação móvel antes de tablet/desktop |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | NÃO INICIADA | Cada entrega com resultado verificável, sem regressões nos contratos necessários |
 | FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
