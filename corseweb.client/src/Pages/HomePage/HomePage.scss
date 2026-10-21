@@ -396,7 +396,7 @@
     place-items: center;
     margin: 0.65rem auto 0;
     width: min(100%, 14rem);
-    height: 6.6rem;
+    height: 5.8rem;
     border-radius: 1.2rem;
     background: linear-gradient(135deg, #e6edff, #f6f8ff);
     svg { width: min(100%, 12rem); height: auto; }
@@ -871,6 +871,7 @@
 
   .home-button { width: auto; }
   .home-hero-art { min-height: 18rem; }
+  .home-hero-art__book { height: 6.6rem; }
   .home-hero-art__panel { inset: 1.15rem 1.8rem 1rem; padding: 1.2rem; }
   .home-course-state { padding: 1.8rem; }
   .home-cta__panel { padding: 1.8rem; }
