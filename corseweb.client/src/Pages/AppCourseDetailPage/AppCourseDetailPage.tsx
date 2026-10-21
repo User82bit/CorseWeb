@@ -158,7 +158,7 @@ function AppCourseDetailPage() {
 
           {enrollment && continuationLesson ? (
             <Link to={`/app/courses/${course.slug}/lessons/${continuationLesson.slug}`} className="student-course-detail__button student-course-detail__button--light">
-              {enrollment.overallPercent >= 100 ? t.learning.courseCompleted : t.learning.continueCourse}
+              {enrollment.overallPercent >= 100 ? t.learning.reviewCourse : t.learning.continueCourse}
               <SvgIcon name="arrow-right" size="1rem" />
             </Link>
           ) : enrollment ? (
