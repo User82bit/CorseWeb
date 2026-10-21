@@ -30,7 +30,7 @@ function AdminLayout() {
         <nav className="admin-nav">
           <div className="admin-nav__brand">
             <Link to="/admin" className="admin-nav__logo">
-              <span className="admin-nav__logo-mark">C</span>
+              <img className="admin-nav__logo-image" src="/favicon.ico" alt="" width={36} height={36} decoding="async" />
               <span>CorseWeb</span>
               <span className="admin-nav__badge">Admin</span>
             </Link>
