@@ -20,11 +20,6 @@ function formatDate(value: string, locale: string) {
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
-function interpolate(template: string, values: Record<string, string | number>) {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
-}
-
 function AppMyCourses() {
   const { t, locale } = useTranslation();
   const [courses, setCourses] = useState<Course[]>(() => getPublishedCourses());
@@ -223,7 +218,7 @@ function AppMyCourses() {
             {filtered.map(({ course, enrollment }) => {
               const progress = Math.round(enrollment.overallPercent);
               const isCompleted = progress >= 100;
-              const progressText = interpolate(t.learning.courseProgress, {});
+              const progressText = t.learning.courseProgress;
               return (
                 <article className="student-course-card" key={enrollment.courseId}>
                   <Link to={`/app/courses/${course.slug}`} className="student-course-card__media">
@@ -246,7 +241,7 @@ function AppMyCourses() {
                     </div>
                     <p className="student-course-card__accessed">{t.learning.lastAccessed}: {formatDate(enrollment.lastAccessedAt, locale)}</p>
                     <Link to={getContinuePath(course, enrollment)} className={isCompleted ? "student-course-card__action student-course-card__action--secondary" : "student-course-card__action"}>
-                      {isCompleted ? t.learning.continueCourse : t.learning.continueCourse}
+                      {isCompleted ? t.learning.reviewCourse : t.learning.continueCourse}
                       <SvgIcon name="arrow-right" size="1rem" />
                     </Link>
                   </div>
