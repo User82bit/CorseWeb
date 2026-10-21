@@ -86,6 +86,28 @@ export async function loginWithGoogle(idToken: string): Promise<User> {
   return user;
 }
 
+export async function loginWithEmail(email: string, password: string): Promise<User> {
+  const user = await apiJson<User>("/api/auth/local-login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  currentUser = user;
+  saveUser(user);
+  refreshCourses().catch(() => {});
+  return user;
+}
+
+export async function registerWithEmail(name: string, email: string, password: string): Promise<User> {
+  const user = await apiJson<User>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
+  });
+  currentUser = user;
+  saveUser(user);
+  refreshCourses().catch(() => {});
+  return user;
+}
+
 export async function devLogin(email: string, name?: string): Promise<User> {
   const user = await apiJson<User>("/api/auth/dev-login", {
     method: "POST",
