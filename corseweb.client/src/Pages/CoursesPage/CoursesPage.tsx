@@ -214,8 +214,8 @@ function CoursesPage() {
                 )}
               </label>
               <div className="catalog-hero__highlights" aria-label={t.catalog.filtersLabel}>
-                <span><SvgIcon name="book-open" size="1rem" />{interpolate(t.catalog.resultCount, publishedCourses.length)}</span>
-                <span><SvgIcon name="check" size="1rem" />{t.catalog.sortFeatured}</span>
+                <span><SvgIcon name="book-open" size="1rem" />{interpolate(t.catalog.availableCount, publishedCourses.length)}</span>
+                <span><SvgIcon name="check" size="1rem" />{t.catalog.learnAtYourPace}</span>
               </div>
             </div>
             <div className="catalog-hero-art" aria-hidden="true">
@@ -264,9 +264,9 @@ function CoursesPage() {
               <span>{t.catalog.levelLabel}</span>
               <select name="level" value={level} onChange={handleSelectChange}>
                 <option value="">{t.catalog.allLevels}</option>
-                <option value="Iniciante">Iniciante</option>
-                <option value="Intermediário">Intermediário</option>
-                <option value="Avançado">Avançado</option>
+                <option value="Iniciante">{t.catalog.levelBeginner}</option>
+                <option value="Intermediário">{t.catalog.levelIntermediate}</option>
+                <option value="Avançado">{t.catalog.levelAdvanced}</option>
               </select>
             </label>
             {hasActiveFilters && (
@@ -278,7 +278,12 @@ function CoursesPage() {
           </div>
 
           {loadError && publishedCourses.length > 0 && (
-            <p className="catalog-status catalog-status--warning" role="status">{t.catalog.errorDescription}</p>
+            <div className="catalog-status catalog-status--warning" role="status">
+              <span>{t.catalog.errorDescription}</span>
+              <button type="button" className="catalog-status__retry" onClick={retryLoading} disabled={coursesLoading}>
+                {coursesLoading ? t.common.loading : t.catalog.retryAction}
+              </button>
+            </div>
           )}
 
           {coursesLoading && publishedCourses.length === 0 ? (
@@ -334,7 +339,13 @@ function CoursesPage() {
                   <div className="catalog-course__body">
                     <div className="catalog-course__tags">
                       <span className="catalog-course__tag">{course.category}</span>
-                      <span className="catalog-course__tag catalog-course__tag--level">{course.level}</span>
+                      <span className="catalog-course__tag catalog-course__tag--level">
+                        {course.level === "Iniciante"
+                          ? t.catalog.levelBeginner
+                          : course.level === "Intermediário"
+                            ? t.catalog.levelIntermediate
+                            : t.catalog.levelAdvanced}
+                      </span>
                     </div>
                     <h3><Link to={`/courses/${course.slug}`}>{course.title}</Link></h3>
                     <p className="catalog-course__description">{course.shortDescription || course.description}</p>
