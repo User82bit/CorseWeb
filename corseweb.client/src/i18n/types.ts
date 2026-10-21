@@ -68,6 +68,37 @@ export interface Translations {
     app: {
         continueStudying: string;
         whyNot: string;
+        welcomeEyebrow: string;
+        greeting: string;
+        dashboardDescription: string;
+        exploreCatalog: string;
+        catalogStatsTitle: string;
+        availableCourses: string;
+        catalogLessons: string;
+        topicAreas: string;
+        coursesEyebrow: string;
+        coursesTitle: string;
+        coursesDescription: string;
+        viewCatalog: string;
+        openCourse: string;
+        openCourseNamed: string;
+        oneLesson: string;
+        manyLessons: string;
+        noLessonsYet: string;
+        loadingCatalog: string;
+        catalogSyncWarning: string;
+        catalogErrorTitle: string;
+        catalogErrorDescription: string;
+        retryCatalog: string;
+        emptyCatalogTitle: string;
+        emptyCatalogDescription: string;
+        skipToContent: string;
+        primaryNavigation: string;
+        openMenu: string;
+        closeMenu: string;
+        sectionLabel: string;
+        returnToSite: string;
+        defaultLearnerName: string;
     };
     navbar: {
         home: string;
