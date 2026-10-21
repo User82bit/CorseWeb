@@ -3,8 +3,12 @@ export async function apiFetch(input: RequestInfo, init: RequestInit = {}): Prom
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
   };
-  // auto JSON when body is object
-  if (init.body && typeof init.body === "object" && !(init.body instanceof FormData) && !headers["Content-Type"]) {
+  // API callers pass JSON.stringify(...) strings. Fetch does not infer their
+  // media type, so ASP.NET [FromBody] actions may reject them without this.
+  const body = init.body;
+  const isJsonObjectOrArray =
+    typeof body === "string" && /^\s*[\[{]/.test(body);
+  if (isJsonObjectOrArray && !Object.keys(headers).some(key => key.toLowerCase() === "content-type")) {
     headers["Content-Type"] = "application/json";
   }
   return fetch(input, {
