@@ -162,6 +162,11 @@ export interface Translations {
         sortTitle: string;
         filtersLabel: string;
         resultCount: string;
+        availableCount: string;
+        learnAtYourPace: string;
+        levelBeginner: string;
+        levelIntermediate: string;
+        levelAdvanced: string;
         loadingTitle: string;
         loadingDescription: string;
         errorTitle: string;
