@@ -18,19 +18,16 @@ import type { User } from "../../store/authStore";
 import type { Course } from "../../types/course";
 import "./HomePage.scss";
 
-function BrandSymbol() {
+function BrandLogo() {
   return (
-    <svg viewBox="0 0 44 44" aria-hidden="true" focusable="false">
-      <rect width="44" height="44" rx="14" fill="#2b63e5" />
-      <path
-        d="M30.5 13.4a13.2 13.2 0 1 0 0 17.2"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="6.2"
-        strokeLinecap="round"
-      />
-      <path d="m21 17.2 10.1 4.8L21 26.8Z" fill="#8cece2" />
-    </svg>
+    <img
+      className="home-brand__logo"
+      src="/favicon.ico"
+      alt=""
+      width={44}
+      height={44}
+      decoding="async"
+    />
   );
 }
 
@@ -177,7 +174,7 @@ function HomePage() {
       <header className="home-header">
         <div className="home-header__inner home-container">
           <Link to="/" className="home-brand" aria-label={t.home.homeLinkLabel} onClick={closeMenu}>
-            <BrandSymbol />
+            <BrandLogo />
             <span>CorseWeb</span>
           </Link>
 
@@ -411,7 +408,7 @@ function HomePage() {
       <footer className="home-footer">
         <div className="home-container home-footer__inner">
           <Link to="/" className="home-brand home-brand--footer" onClick={closeMenu}>
-            <BrandSymbol />
+            <BrandLogo />
             <span>CorseWeb</span>
           </Link>
           <p>{t.home.footerDescription}</p>
