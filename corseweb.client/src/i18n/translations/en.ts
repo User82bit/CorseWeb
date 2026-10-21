@@ -222,6 +222,7 @@ export const en: Translations = {
         emptyModulesDescription: "There are no modules to display for this course yet.",
         startCourse: "Enroll and start",
         continueCourse: "Continue learning",
+        reviewCourse: "Review course",
         enrolling: "Enrolling...",
         enrollmentError: "Your enrollment couldn't be saved. Please try again.",
         enrolledLabel: "Enrolled",
