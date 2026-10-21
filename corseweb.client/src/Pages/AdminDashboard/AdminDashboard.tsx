@@ -30,6 +30,7 @@ function AdminDashboard() {
   const [courses, setCourses] = useState<Course[]>(() => getAllCourses());
   const [loading, setLoading] = useState(() => getAllCourses().length === 0);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,10 +73,11 @@ function AdminDashboard() {
 
   const handleTogglePublish = async (course: Course) => {
     setBusy(course.slug);
+    setActionError(null);
     try {
       await togglePublish(course.slug);
     } catch {
-      setLoadFailed(true);
+      setActionError(t.admin.actionError);
     } finally {
       setBusy(null);
     }
@@ -117,6 +119,16 @@ function AdminDashboard() {
           <SvgIcon name="bell" size="1.125rem" />
           <span>{t.admin.syncWarning}</span>
           <button type="button" onClick={retryLoad}>{t.admin.retry}</button>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="admin-notice admin-notice--error" role="alert">
+          <SvgIcon name="bell" size="1.125rem" />
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} aria-label={t.admin.dismissNotice}>
+            <SvgIcon name="close" size="1rem" />
+          </button>
         </div>
       )}
 
