@@ -288,7 +288,7 @@ function AppLessonPage() {
     }
   };
 
-  if (loading && !course) {
+  if (loading) {
     return (
       <div className="student-lesson__state" role="status" aria-live="polite">
         <span className="student-lesson__state-icon"><SvgIcon name="book-open" size="1.4rem" /></span>
