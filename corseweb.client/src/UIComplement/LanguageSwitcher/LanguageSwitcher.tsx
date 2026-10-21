@@ -7,10 +7,10 @@ import englishFlag from "../../assets/flags/en.svg?url";
 import spanishFlag from "../../assets/flags/es.svg?url";
 import "./LanguageSwitcher.scss";
 
-const flags: Record<Locale, { src: string; label: string }> = {
-    "pt-BR": { src: brazilFlag, label: "Português (Brasil)" },
-    en: { src: englishFlag, label: "English" },
-    es: { src: spanishFlag, label: "Español" },
+const flags: Record<Locale, { src: string }> = {
+    "pt-BR": { src: brazilFlag },
+    en: { src: englishFlag },
+    es: { src: spanishFlag },
 };
 
 function LanguageSwitcher() {
@@ -63,8 +63,8 @@ function LanguageSwitcher() {
                 onClick={() => setOpen((value) => !value)}
                 aria-expanded={open}
                 aria-haspopup="listbox"
-                aria-label={`${t.language.label}: ${flags[locale].label}`}
-                title={flags[locale].label}
+                aria-label={`${t.language.label}: ${t.language[locale]}`}
+                title={t.language[locale]}
             >
                 <span className="language-switcher__flag">
                     <img src={activeFlag.src} alt="" />
@@ -83,8 +83,8 @@ function LanguageSwitcher() {
                             aria-selected={false}
                             className="language-switcher__button"
                             onClick={() => handleSelect(item)}
-                            aria-label={flags[item].label}
-                            title={flags[item].label}
+                            aria-label={t.language[item]}
+                            title={t.language[item]}
                             tabIndex={open ? 0 : -1}
                         >
                             <span className="language-switcher__flag">
