@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { CourseCreateInput } from "../../types/course";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
+import CourseStructureEditor from "./CourseStructureEditor";
 import "./AdminCourseEditor.scss";
 
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
@@ -25,6 +26,8 @@ function AdminCourseEditor() {
     allowFork: existing?.allowFork ?? true,
   }));
 
+  const [modules, setModules] = useState(() => existing?.modules ?? []);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
@@ -49,6 +52,7 @@ function AdminCourseEditor() {
           allowComments: c.allowComments,
           allowFork: c.allowFork,
         });
+        setModules(c.modules ?? []);
       }
     });
   }, [courseSlug]);
@@ -70,8 +74,9 @@ function AdminCourseEditor() {
           language: form.language,
           allowComments: form.allowComments,
           allowFork: form.allowFork,
+          modules,
         });
-        navigate("/admin/courses");
+        setSaveMessage("Curso e estrutura salvos.");
       } else {
         const created = await createCourse(form) as unknown as { slug: string };
         navigate(`/admin/courses/${created.slug}/editor`);
@@ -126,6 +131,7 @@ function AdminCourseEditor() {
       </header>
 
       {err && <p role="alert" style={{ color: "crimson", margin: "12px 0" }}>{err}</p>}
+      {saveMessage && <p className="admin-editor__status" role="status">{saveMessage}</p>}
       {isEditing && !existing && (
         <p className="text-secondary">Curso não encontrado. Pode ter sido removido ou você não tem permissão.</p>
       )}
@@ -205,12 +211,20 @@ function AdminCourseEditor() {
             <div className="admin-editor__panel">
               <h2 className="admin-editor__panel-title">Estrutura educacional</h2>
               <p className="text-secondary" style={{ margin: 0 }}>
-                Curso → Módulo → Aula → Blocos → Componentes. Esta tela cria o Curso; módulos e aulas são gerenciados no editor de conteúdo
-                (próxima etapa).
+                Curso → Módulo → Aula → Blocos. As alterações na estrutura são salvas junto com os metadados do curso.
               </p>
-              <div className="admin-editor__placeholder">
-                <span>Editor de Módulos e Aulas (visual, estilo Figma/Scratch) — em breve</span>
-              </div>
+              {isEditing && existing ? (
+                <CourseStructureEditor
+                  courseId={existing.id}
+                  actorId={existing.authorId || "local-user"}
+                  modules={modules}
+                  onChange={(nextModules) => { setModules(nextModules); setSaveMessage(null); }}
+                />
+              ) : (
+                <div className="admin-editor__placeholder">
+                  <span>Salve o rascunho do curso primeiro para começar a organizar seus módulos e aulas.</span>
+                </div>
+              )}
             </div>
           </div>
 
