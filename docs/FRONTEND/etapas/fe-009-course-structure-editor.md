@@ -40,6 +40,7 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - `corseweb.client/src/Pages/AdminCourseEditor/CourseStructureEditor.tsx`
 - `corseweb.client/src/Pages/AdminCourseEditor/CourseStructureEditor.scss`
 - `corseweb.client/src/store/courseStore.ts`
+- `CorseWeb.Server/Helpers/CourseMapper.cs` (recalcula métricas de módulos/aulas/minutos ao persistir conteúdo)
 - `corseweb.client/src/i18n/types.ts`
 - `corseweb.client/src/i18n/translations/pt-BR.ts`
 - `corseweb.client/src/i18n/translations/en.ts`
@@ -51,6 +52,7 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 
 - Preservar React, TypeScript/TSX, SCSS e as rotas atuais.
 - Reutilizar o contrato atual de módulos/aulas serializado na propriedade `modules`.
+- Recalcular no backend os totais derivados de módulos, aulas e minutos a partir do conteúdo recebido; expor valores derivados coerentes também em respostas de cursos antigos.
 - A coleção de scripts não faz parte desta entrega e não é embutida nos módulos nesta fase.
 - Não executar conteúdo fornecido pelo usuário.
 - Priorizar layouts móveis; em telas estreitas, o quadro permite rolagem horizontal intencional para navegar entre módulos.
@@ -65,8 +67,9 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - [x] Confirmação antes de excluir módulo ou aula.
 - [x] Traduções pt-BR, en e es.
 - [x] Envio de módulos ao atualizar rascunhos e cursos publicados.
+- [x] Recalcular os totais de módulos, aulas e minutos no mapper .NET ao persistir o conteúdo.
 - [x] Revisar as alterações e validar TypeScript, lint e teste de resolução de idioma no CI.
-- [x] CI verde no commit de implementação `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0` (lint, testes de idioma, build frontend, restore/build .NET).\n- [ ] Reexecutar a CI após a atualização documental desta revisão.
+- [x] CI verde no commit de implementação `a9d09fb1d2f5b6632e93881f7da73981d3c27a8c` (lint, testes de idioma, build frontend, restore/build .NET).\n- [ ] Reexecutar a CI após a atualização documental desta revisão.
 - [x] Abrir PR em rascunho para `Homologa`: [PR #23](https://github.com/User82bit/CorseWeb/pull/23).\n- [ ] Tornar o PR pronto para revisão após a CI mais recente passar.
 
 ## Critérios de aceitação
@@ -80,9 +83,9 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - [ ] pt-BR, en e es possuem rótulos para todos os controles novos.
 - [ ] Lint, testes disponíveis, build frontend e build backend são verificados; nenhuma verificação é declarada aprovada sem evidência.
 
-## Evidências de validação\n\n- CI run `39770612200` (commit `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0`): sucesso.\n- `npm run lint`, `npm run test:i18n` e `npm run build` executados pela GitHub Actions; restauração e build .NET também concluídos com sucesso.\n- Não executado localmente, nem testado em navegador real nesta sessão.\n\n## Riscos e problemas conhecidos
+## Evidências de validação\n\n- CI run `39771167536` (commit `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0`): sucesso.\n- `npm run lint`, `npm run test:i18n` e `npm run build` executados pela GitHub Actions; restauração e build .NET também concluídos com sucesso.\n- Não executado localmente, nem testado em navegador real nesta sessão.\n\n## Riscos e problemas conhecidos
 
-- A CI precisa ser reexecutada após as atualizações documentais mais recentes; a revisão de implementação anterior passou.
+- A CI precisa ser reexecutada após esta atualização documental; a revisão de implementação anterior passou no frontend e no backend.
 - Build e lint não puderam ser executados localmente nesta sessão; há evidência de sucesso apenas pela GitHub Actions.
 - O canvas e os scripts ainda não existem nesta entrega.
 - A validação visual manual em navegador real continua necessária após a CI.
