@@ -329,7 +329,7 @@ function CoursesPage() {
                     aria-label={`${t.catalog.openCourse}: ${course.title}`}
                   >
                     <img
-                      src={course.thumbnail?.url || "/hero.png"}
+                      src={course.thumbnail?.url || "/course-cover-placeholder.svg"}
                       alt={course.thumbnail?.alt || course.title}
                       loading="lazy"
                       decoding="async"
