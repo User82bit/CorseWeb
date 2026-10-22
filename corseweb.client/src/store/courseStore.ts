@@ -235,7 +235,7 @@ export async function createCourse(input: CourseCreateInput, authorId = "local-u
   return res as Course;
 }
 
-export async function updateDraft(draftId: string, patch: Partial<CourseCreateInput> & { slug?: string }): Promise<CourseDraftClient> {
+export async function updateDraft(draftId: string, patch: Partial<CourseCreateInput> & { slug?: string; modules?: Course["modules"] }): Promise<CourseDraftClient> {
   const body: Record<string, unknown> = {};
   if (patch.title !== undefined) body["title"] = patch.title;
   if (patch.subtitle !== undefined) body["subtitle"] = patch.subtitle ?? null;
@@ -248,6 +248,7 @@ export async function updateDraft(draftId: string, patch: Partial<CourseCreateIn
   if (patch.allowComments !== undefined) body["allowComments"] = patch.allowComments;
   if (patch.allowFork !== undefined) body["allowFork"] = patch.allowFork;
   if (patch.slug !== undefined) body["slug"] = patch.slug;
+  if (patch.modules !== undefined) body["modules"] = patch.modules;
   const raw = await apiJson<unknown>(`/api/drafts/${encodeURIComponent(draftId)}`, { method: "PUT", body: JSON.stringify(body) });
   const updated = draftToCourse(raw);
   draftsCache = draftsCache.map(d => d.draftId === draftId ? updated : d);
@@ -288,8 +289,8 @@ export async function updatePublishedCourse(slug: string, patch: Partial<Course>
   if (patch.allowComments !== undefined) body["allowComments"] = patch.allowComments;
   if (patch.allowFork !== undefined) body["allowFork"] = patch.allowFork;
   if (patch.isFeatured !== undefined) body["isFeatured"] = patch.isFeatured;
-  // modules/thumbnail/tags as JSON objects
-  if ((patch as unknown as Record<string, unknown>)["modules"] !== undefined) body["modules"] = (patch as unknown as Record<string, unknown>)["modules"];
+  // Nested course content remains data-only; scripts are not executed by the editor.
+  if (patch.modules !== undefined) body["modules"] = patch.modules;
   const raw = await apiJson<unknown>(`/api/courses/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(body) });
   const updated = normalizeCourse(raw);
   // slug pode não mudar; se mudar, remove antigo
@@ -316,7 +317,7 @@ export async function updateCourse(slug: string, patch: Partial<Course>): Promis
         title: patch.title, subtitle: patch.subtitle, description: patch.description,
         category: patch.category, level: patch.level as Course["level"], language: patch.language,
         tags: patch.tags as CourseCreateInput["tags"], thumbnail: patch.thumbnail,
-        allowComments: patch.allowComments, allowFork: patch.allowFork,
+        allowComments: patch.allowComments, allowFork: patch.allowFork, modules: patch.modules,
       });
       return upd as unknown as Course;
     } catch {
