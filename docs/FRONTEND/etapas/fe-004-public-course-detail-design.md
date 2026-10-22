@@ -45,12 +45,12 @@ A ação **Visualizar** no painel administrativo abre `/courses/:courseSlug`, cu
 - [ ] Metadados e currículo são renderizados a partir dos dados existentes.
 - [ ] Estado de carregamento, curso indisponível e curso sem módulos são compreensíveis e acessíveis.
 - [ ] Todos os textos adicionados possuem traduções pt-BR, en e es.
-- [x] `npm run lint`, `npm run test:i18n`, `npm run build` e build .NET passaram na CI #39806223709 para o commit de código `88361228eba10262634826b765cfd2c5bcb6d62e`.
-- [ ] Confirmar CI após a atualização documental desta revisão.
+- [x] `npm run lint`, `npm run test:i18n`, `npm run build` e build .NET passaram na CI #39806415448 para o commit `bc93cdc04c0ae3fc722977eb614973fd7b9fe647`.
+- [ ] Confirmar CI após esta atualização final de evidência documental.
 - [ ] O proprietário verifica manualmente a rota aberta pela ação **Visualizar** no painel administrativo.
 
 ## Validação
-- CI do commit de código `88361228eba10262634826b765cfd2c5bcb6d62e`: [execução #39806223709](https://github.com/User82bit/CorseWeb/actions/runs/39806223709) concluída com sucesso (lint, teste de idioma, build frontend, restore e build .NET). A execução anterior falhou no lint por atualização síncrona de estado em effect; o problema foi corrigido. A atualização documental desta revisão gera uma nova execução, que precisa ser verificada antes de retirar o draft.
+- CI do código e da documentação até o commit `bc93cdc04c0ae3fc722977eb614973fd7b9fe647`: [execução #39806415448](https://github.com/User82bit/CorseWeb/actions/runs/39806415448) concluída com sucesso (lint, teste de idioma, build frontend, restore e build .NET). A execução inicial falhou no lint por atualização síncrona de estado em um efeito React; o problema foi corrigido antes da execução aprovada. Esta atualização de evidência documental é seguida por uma última execução CI no head final.
 - Validação visual manual em navegador: pendente; não é possível reproduzi-la neste ambiente.
 
 ## Riscos e limitações
@@ -59,6 +59,6 @@ A ação **Visualizar** no painel administrativo abre `/courses/:courseSlug`, cu
 
 ## Próximos passos
 1. Revisar o diff e corrigir falhas reportadas pela CI.
-2. Manter o PR #29 para `Homologa` em draft até a CI mais recente passar; depois torná-lo pronto para revisão.
+2. Manter o PR #29 para `Homologa` em draft até a CI do head final passar; depois torná-lo pronto para revisão.
 3. Aguardar a revisão e a integração do proprietário em `master`.
 4. Só então iniciar a próxima etapa independente do editor visual de aulas.
