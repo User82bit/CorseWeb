@@ -38,7 +38,6 @@ function reorder<T>(items: T[], index: number, offset: number): T[] {
 function normalizeModules(modules: Module[], courseId: string): Module[] {
   return modules.map((module, index) => {
     const lessons = [...(module.lessons ?? [])]
-      .sort((a, b) => a.order - b.order)
       .map((lesson, lessonIndex) => ({
         ...lesson,
         courseId,
