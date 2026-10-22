@@ -343,6 +343,7 @@ export const ptBR: Translations = {
         moduleTitle: "Nome do módulo",
         moduleDescription: "Descrição do módulo",
         deleteModule: "Excluir módulo",
+        deleteLesson: "Excluir aula",
         lessonSettings: "AULA",
         editLesson: "Configurar aula",
         lessonTitle: "Título da aula",
