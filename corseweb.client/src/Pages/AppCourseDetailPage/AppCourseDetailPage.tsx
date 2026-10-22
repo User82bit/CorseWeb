@@ -174,7 +174,7 @@ function AppCourseDetailPage() {
           {actionError && <p className="student-course-detail__action-error" role="alert">{t.learning.enrollmentError}</p>}
         </div>
         <div className="student-course-detail__hero-media">
-          <img src={course.thumbnail?.url || "/hero.png"} alt={course.thumbnail?.alt || course.title} />
+          <img src={course.thumbnail?.url || "/course-cover-placeholder.svg"} alt={course.thumbnail?.alt || course.title} />
           <span className="student-course-detail__media-shine" />
           <span className="student-course-detail__media-icon"><SvgIcon name="book-open" size="1.6rem" /></span>
         </div>

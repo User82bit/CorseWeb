@@ -26,7 +26,13 @@ public sealed class CourseMediaController : ControllerBase
 
         await using var input = file.OpenReadStream();
         var signature = new byte[12];
-        var bytesRead = await input.ReadAsync(signature.AsMemory(0, signature.Length), cancellationToken);
+        var bytesRead = 0;
+        while (bytesRead < signature.Length)
+        {
+            var read = await input.ReadAsync(signature.AsMemory(bytesRead), cancellationToken);
+            if (read == 0) break;
+            bytesRead += read;
+        }
         var extension = GetImageExtension(signature, bytesRead);
         if (extension is null)
             return BadRequest(new { error = "Formato não suportado. Use uma imagem PNG, JPEG ou WebP." });

@@ -310,17 +310,19 @@ function HomePage() {
                   <article className="home-course-card" key={course.id}>
                     <div className="home-course-card__media">
                       <span className="home-course-card__media-pattern" aria-hidden="true" />
-                      {course.thumbnail?.url && (
-                        <img
-                          src={course.thumbnail.url}
-                          alt={course.thumbnail.alt ?? ""}
-                          width="480"
-                          height="300"
-                          loading="lazy"
-                          decoding="async"
-                          onError={(event) => { event.currentTarget.hidden = true; }}
-                        />
-                      )}
+                      <img
+                        src={course.thumbnail?.url?.trim() || "/course-cover-placeholder.svg"}
+                        alt={course.thumbnail?.alt || course.title}
+                        width="480"
+                        height="300"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          if (!event.currentTarget.src.endsWith("/course-cover-placeholder.svg")) {
+                            event.currentTarget.src = "/course-cover-placeholder.svg";
+                          }
+                        }}
+                      />
                       <span className="home-course-card__category">{course.category}</span>
                     </div>
                     <div className="home-course-card__body">

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Capa padrão do curso</title>
+  <desc id="desc">Ilustração abstrata de um livro aberto em tons de verde e azul.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#173b3a"/>
+      <stop offset="1" stop-color="#244f50"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f5e9"/>
+      <stop offset="1" stop-color="#dce9d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="1090" cy="118" r="220" fill="#8caf91" opacity=".16"/>
+  <circle cx="160" cy="650" r="300" fill="#82a88d" opacity=".12"/>
+  <path d="M0 524C192 436 333 621 520 552s340-171 760-20v188H0Z" fill="#102f30" opacity=".45"/>
+  <g transform="translate(640 292)">
+    <path d="M-232-83c76-34 154-20 232 24 78-44 156-58 232-24v210c-78-32-154-18-232 24-78-42-154-56-232-24Z" fill="#0f2e2e" opacity=".3" transform="translate(0 22)"/>
+    <path d="M-232-95c76-34 154-20 232 24v211c-78-42-156-56-232-24Z" fill="url(#page)" stroke="#bfd2bf" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M232-95c-76-34-154-20-232 24v211c78-42 156-56 232-24Z" fill="url(#page)" stroke="#bfd2bf" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M0-71v211" fill="none" stroke="#a5bda8" stroke-width="5"/>
+    <g fill="none" stroke="#9bb5a1" stroke-width="7" stroke-linecap="round" opacity=".9">
+      <path d="M-187-42c44-13 82-10 126 9M-187-2c44-13 82-10 126 9M-187 38c44-13 82-10 126 9"/>
+      <path d="M61-33c44-19 82-22 126-9M61 7c44-19 82-22 126-9M61 47c44-19 82-22 126-9"/>
+    </g>
+    <path d="M-22-150 0-181l22 31-22 20Z" fill="#d3b16e"/>
+    <path d="M-9-136 0-148l9 12-9 9Z" fill="#f5e5b5"/>
+  </g>
+  <g fill="#e8eedf" font-family="system-ui,-apple-system,Segoe UI,sans-serif" text-anchor="middle">
+    <text x="640" y="514" font-size="20" letter-spacing="7" opacity=".8">CORSEWEB</text>
+    <text x="640" y="572" font-size="33" font-weight="600">Seu próximo aprendizado começa aqui</text>
+  </g>
+</svg>

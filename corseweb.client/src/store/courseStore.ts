@@ -1,5 +1,5 @@
 import { apiFetch, apiJson } from "../lib/api";
-import type { Course, CourseCreateInput, CourseLevel } from "../types/course";
+import type { Course, CourseCreateInput, CourseLevel, Media } from "../types/course";
 import { courseCatalog as seedCatalog } from "../content/courses";
 
 // ── Cache backend (publicados + drafts do usuário) ──
@@ -33,10 +33,28 @@ function saveLegacy(courses: Course[]) {
   try { localStorage.setItem(LS_LEGACY, JSON.stringify(courses)); } catch { /* quota */ }
 }
 
+const DEFAULT_COURSE_THUMBNAIL = "/course-cover-placeholder.svg";
+
+function normalizeThumbnail(raw: unknown, title: string): Media {
+  const candidate = typeof raw === "object" && raw !== null
+    ? raw as Partial<Media>
+    : {};
+  const url = typeof candidate.url === "string" && candidate.url.trim()
+    ? candidate.url.trim()
+    : DEFAULT_COURSE_THUMBNAIL;
+
+  return {
+    id: typeof candidate.id === "string" && candidate.id.trim() ? candidate.id : "thumb-default",
+    type: "image",
+    url,
+    alt: typeof candidate.alt === "string" && candidate.alt.trim() ? candidate.alt : title,
+  };
+}
+
 function normalizeCourse(raw: unknown): Course {
   const r = raw as Record<string, unknown>;
   // server returns camelCase; thumbnail/tags/modules already deserialized as objects
-  const thumb = (r["thumbnail"] ?? r["thumbnailJson"] ?? { id: "thumb-default", type: "image", url: "/hero.png", alt: String(r["title"] ?? "") }) as Course["thumbnail"];
+  const thumb = r["thumbnail"] ?? r["thumbnailJson"];
   return {
     id: String(r["id"] ?? ""),
     slug: String(r["slug"] ?? ""),
@@ -44,7 +62,7 @@ function normalizeCourse(raw: unknown): Course {
     subtitle: (r["subtitle"] as string | undefined) ?? undefined,
     description: String(r["description"] ?? ""),
     shortDescription: (r["shortDescription"] as string | undefined) ?? String(r["description"] ?? "").slice(0, 140),
-    thumbnail: thumb as Course["thumbnail"],
+    thumbnail: normalizeThumbnail(thumb, String(r["title"] ?? "")),
     category: String(r["category"] ?? "Geral"),
     tags: (r["tags"] ?? []) as Course["tags"],
     level: (r["level"] ?? "Iniciante") as Course["level"],
@@ -85,7 +103,7 @@ function draftToCourse(raw: unknown): CourseDraftClient {
     subtitle: (r["subtitle"] as string | undefined) ?? undefined,
     description: String(r["description"] ?? ""),
     shortDescription: (r["shortDescription"] as string | undefined) ?? String(r["description"] ?? "").slice(0, 140),
-    thumbnail: (r["thumbnail"] ?? { id: "thumb-default", type: "image", url: "/hero.png", alt: String(r["title"] ?? "") }) as Course["thumbnail"],
+    thumbnail: normalizeThumbnail(r["thumbnail"], String(r["title"] ?? "")),
     category: String(r["category"] ?? "Geral"),
     tags: (r["tags"] ?? []) as Course["tags"],
     level: (r["level"] ?? "Iniciante") as CourseLevel,
@@ -195,7 +213,7 @@ function legacyCreateCourse(input: CourseCreateInput, authorId = "local-user", a
     id: `course-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     slug, title: input.title.trim(), subtitle: input.subtitle?.trim() || undefined,
     description: input.description.trim(), shortDescription: input.description.trim().slice(0, 140),
-    thumbnail: input.thumbnail ?? { id: "thumb-default", type: "image", url: "/hero.png", alt: input.title },
+    thumbnail: normalizeThumbnail(input.thumbnail, input.title),
     category: input.category, tags: input.tags ?? [], level: input.level, status: "rascunho" as const,
     language: input.language ?? "pt-BR", modules: [], totalModules: 0, totalLessons: 0, totalMinutes: 0,
     allowComments: input.allowComments ?? true, allowFork: input.allowFork ?? true, isFeatured: false,
@@ -209,7 +227,7 @@ export async function createDraft(input: CourseCreateInput, authorId?: string, a
   const body = {
     title: input.title, subtitle: input.subtitle ?? null, description: input.description,
     category: input.category, level: input.level, language: input.language ?? "pt-BR",
-    tags: input.tags ?? [], thumbnail: input.thumbnail ?? null, modules: [],
+    tags: input.tags ?? [], thumbnail: normalizeThumbnail(input.thumbnail, input.title), modules: [],
     allowComments: input.allowComments ?? true, allowFork: input.allowFork ?? true,
   };
   try {
