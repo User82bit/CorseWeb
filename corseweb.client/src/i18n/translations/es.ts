@@ -343,6 +343,7 @@ export const es: Translations = {
         moduleTitle: "Nombre del módulo",
         moduleDescription: "Descripción del módulo",
         deleteModule: "Eliminar módulo",
+        deleteLesson: "Eliminar lección",
         lessonSettings: "LECCIÓN",
         editLesson: "Configurar lección",
         lessonTitle: "Título de la lección",
