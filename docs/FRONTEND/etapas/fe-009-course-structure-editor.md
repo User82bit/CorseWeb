@@ -65,9 +65,9 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - [x] Confirmação antes de excluir módulo ou aula.
 - [x] Traduções pt-BR, en e es.
 - [x] Envio de módulos ao atualizar rascunhos e cursos publicados.
-- [ ] Revisar alterações completas e validar TypeScript, lint e testes.
-- [ ] Obter resultado verde de CI para o commit final.
-- [ ] Abrir PR para `Homologa`.
+- [x] Revisar as alterações e validar TypeScript, lint e teste de resolução de idioma no CI.
+- [x] CI verde no commit de implementação `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0` (lint, testes de idioma, build frontend, restore/build .NET).\n- [ ] Reexecutar a CI após a atualização documental desta revisão.
+- [x] Abrir PR em rascunho para `Homologa`: [PR #23](https://github.com/User82bit/CorseWeb/pull/23).\n- [ ] Tornar o PR pronto para revisão após a CI mais recente passar.
 
 ## Critérios de aceitação
 
@@ -80,7 +80,7 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - [ ] pt-BR, en e es possuem rótulos para todos os controles novos.
 - [ ] Lint, testes disponíveis, build frontend e build backend são verificados; nenhuma verificação é declarada aprovada sem evidência.
 
-## Riscos e problemas conhecidos
+## Evidências de validação\n\n- CI run `39770612200` (commit `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0`): sucesso.\n- \\`npm run lint\\`, \\`npm run test:i18n\\` e \\`npm run build\\` executados pela GitHub Actions; restauração e build .NET também concluídos com sucesso.\n- Não executado localmente, nem testado em navegador real nesta sessão.\n\n## Riscos e problemas conhecidos
 
 - A CI ainda precisa compilar os arquivos novos e executar os testes do projeto.
 - Não foi possível executar build/lint localmente nesta sessão; a validação dependerá do CI.
