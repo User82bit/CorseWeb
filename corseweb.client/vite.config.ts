@@ -44,10 +44,12 @@ const httpsPortTarget = env.ASPNETCORE_HTTPS_PORT
     : undefined;
 const target =
     env.VITE_API_PROXY_TARGET?.trim() ||
-    (httpsPortTarget && configuredUrls.includes(httpsPortTarget) ? httpsPortTarget : undefined) ||
-    configuredUrls[0] ||
     httpsPortTarget ||
+    configuredUrls.find((url) => url.startsWith('https://')) ||
+    configuredUrls[0] ||
     'https://localhost:7028';
+
+console.info(`[vite] ASP.NET Core API/media proxy target: ${target}`);
 
 // https://vitejs.dev/config/
 export default defineConfig({

@@ -4,10 +4,10 @@ import type { CourseCreateInput, Media } from "../../types/course";
 import { apiFetch } from "../../lib/api";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
 import CourseStructureEditor from "./CourseStructureEditor";
+import { DEFAULT_COURSE_COVER_URL, resolveCourseCoverUrl } from "../../utils/courseCoverUrl";
 import "./AdminCourseEditor.scss";
 
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
-
 function AdminCourseEditor() {
   const navigate = useNavigate();
   const { courseSlug } = useParams<{ courseSlug?: string }>();
@@ -35,6 +35,7 @@ function AdminCourseEditor() {
   const [publishBusy, setPublishBusy] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
+  const [coverUrlDraft, setCoverUrlDraft] = useState(() => existing?.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
 
   useEffect(() => {
     refreshCourses().catch(() => {});
@@ -57,6 +58,7 @@ function AdminCourseEditor() {
           allowComments: c.allowComments,
           allowFork: c.allowFork,
         });
+        setCoverUrlDraft(c.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
         setModules(c.modules ?? []);
       }
     });
@@ -92,9 +94,11 @@ function AdminCourseEditor() {
         throw new Error(payload?.error ?? "Não foi possível enviar a capa.");
       }
       const uploaded = await response.json() as Media;
+      const uploadedCover = { ...uploaded, alt: form.title.trim() || "Capa do curso" };
+      setCoverUrlDraft(uploadedCover.url);
       setForm((current) => ({
         ...current,
-        thumbnail: { ...uploaded, alt: current.title.trim() || "Capa do curso" },
+        thumbnail: { ...uploadedCover, alt: current.title.trim() || "Capa do curso" },
       }));
     } catch (error) {
       setCoverError(error instanceof Error ? error.message : "Não foi possível enviar a capa.");
@@ -103,9 +107,47 @@ function AdminCourseEditor() {
     }
   };
 
+  const handleCoverUrlBlur = () => {
+    const url = resolveCourseCoverUrl(coverUrlDraft);
+    if (!url) {
+      setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
+      return;
+    }
+
+    setCoverError(null);
+    setCoverUrlDraft(url);
+    setForm((current) => ({
+      ...current,
+      thumbnail: {
+        ...(current.thumbnail ?? { id: "course-cover", type: "image" as const, alt: current.title }),
+        url,
+        alt: current.thumbnail?.alt || current.title,
+      },
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSave || saving) return;
+
+    const coverUrl = resolveCourseCoverUrl(coverUrlDraft);
+    if (!coverUrl) {
+      setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
+      return;
+    }
+
+    const formToSave: CourseCreateInput = {
+      ...form,
+      thumbnail: {
+        ...(form.thumbnail ?? { id: "course-cover", type: "image" as const, alt: form.title }),
+        url: coverUrl,
+        alt: form.thumbnail?.alt?.trim() || form.title.trim() || "Capa do curso",
+      },
+    };
+
+    setCoverError(null);
+    setCoverUrlDraft(coverUrl);
+    setForm(formToSave);
     setSaving(true); setErr(null);
     try {
       if (isEditing && courseSlug) {
@@ -113,7 +155,7 @@ function AdminCourseEditor() {
           title: form.title.trim(),
           subtitle: form.subtitle?.trim() || undefined,
           description: form.description.trim(),
-          thumbnail: form.thumbnail,
+          thumbnail: formToSave.thumbnail,
           category: form.category,
           level: form.level,
           language: form.language,
@@ -123,7 +165,7 @@ function AdminCourseEditor() {
         });
         setSaveMessage("Curso e estrutura salvos.");
       } else {
-        const created = await createCourse(form) as unknown as { slug: string };
+        const created = await createCourse(formToSave) as unknown as { slug: string };
         navigate(`/admin/courses/${created.slug}/editor`);
       }
     } catch (e2: unknown) {
@@ -221,10 +263,10 @@ function AdminCourseEditor() {
             <section className="admin-editor__cover" aria-labelledby="course-cover-title">
               <div className="admin-editor__cover-preview">
                 <img
-                  src={form.thumbnail?.url || "/course-cover-placeholder.svg"}
+                  src={form.thumbnail?.url?.trim() || DEFAULT_COURSE_COVER_URL}
                   alt={form.thumbnail?.alt || form.title || "Capa do curso"}
                   loading="lazy"
-                  onError={(event) => { event.currentTarget.src = "/course-cover-placeholder.svg"; }}
+                  onError={(event) => { if (!event.currentTarget.src.endsWith(DEFAULT_COURSE_COVER_URL)) event.currentTarget.src = DEFAULT_COURSE_COVER_URL; }}
                 />
               </div>
               <div className="admin-editor__cover-controls">
@@ -238,14 +280,16 @@ function AdminCourseEditor() {
                   <span className="field__label">URL da imagem</span>
                   <input
                     className="field__input"
-                    type="url"
-                    value={form.thumbnail?.url ?? ""}
-                    placeholder="https://exemplo.com/capa.webp"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    value={coverUrlDraft}
+                    placeholder="https://exemplo.com/capa.webp ou /uploads/..."
                     onChange={(event) => {
                       setCoverError(null);
-                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/course-cover-placeholder.svg", alt: form.title };
-                      setForm({ ...form, thumbnail: { ...current, url: event.target.value, alt: current.alt || form.title } });
+                      setCoverUrlDraft(event.target.value);
                     }}
+                    onBlur={handleCoverUrlBlur}
                   />
                 </label>
                 <label className="field">
