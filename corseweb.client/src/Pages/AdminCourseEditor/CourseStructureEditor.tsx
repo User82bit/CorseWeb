@@ -212,6 +212,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
             onChange={(event) => setNewModuleTitle(event.target.value)}
             placeholder={copy.modulePlaceholder}
             maxLength={120}
+            onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); handleAddModule(); } }}
           />
         </label>
         <button className="course-structure__button course-structure__button--primary" type="button" onClick={handleAddModule}>
@@ -278,6 +279,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                   onChange={(event) => { setSelectedModuleId(module.id); setNewLessonTitle(event.target.value); }}
                   placeholder={copy.lessonPlaceholder}
                   maxLength={120}
+                  onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); handleAddLesson(module); } }}
                 />
                 <button type="button" onClick={() => handleAddLesson(module)} aria-label={copy.addLesson} title={copy.addLesson}>+</button>
               </div>
