@@ -23,7 +23,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | EM DESENVOLVIMENTO | Rotas públicas e do aluno integradas em master ([PR #14](https://github.com/User82bit/CorseWeb/pull/14), [PR #17](https://github.com/User82bit/CorseWeb/pull/17), [PR #19](https://github.com/User82bit/CorseWeb/pull/19)); administração em revisão ([PR #21](https://github.com/User82bit/CorseWeb/pull/21)); CI aprovada no commit 936d3f4928b7d5c20baf5bf1ef4661d675e992d5 ([run #39629101208]); validação visual manual pendente. O sistema de criação/edição de cursos está explicitamente reservado para outra branch. |
 | FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
 
-| FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | EM DESENVOLVIMENTO | `feat/course-visual-authoring-studio`; critérios e testes em `etapas/fe-009-course-structure-editor.md`. Canvas, blocos Scratch e scripts ficam para etapas posteriores |
+| FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | EM DESENVOLVIMENTO | [PR #23 (rascunho)](https://github.com/User82bit/CorseWeb/pull/23); lint, teste de idioma e builds passaram no commit `2b3436a`; aguardar nova CI após esta atualização documental. Critérios em `etapas/fe-009-course-structure-editor.md`; canvas, Scratch e scripts ficam para etapas posteriores |
 
 ## Regras para imagens manuais
 
