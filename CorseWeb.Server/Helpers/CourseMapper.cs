@@ -62,7 +62,7 @@ public static class CourseMapper
         {
             id = "thumb-default",
             type = "image",
-            url = "/hero.png",
+            url = "/course-cover-placeholder.svg",
             alt = title ?? string.Empty
         }, JsonOpts);
     }
