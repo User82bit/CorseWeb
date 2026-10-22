@@ -61,7 +61,7 @@ const COPY: Record<Locale, {
   addComponent: string; componentType: string; emptyComponents: string; remove: string; up: string; down: string;
   columns: string; background: string; content: string; headingLevel: string; listItems: string; orderedList: string;
   imageUrl: string; altText: string; caption: string; videoUrl: string; codeLanguage: string; code: string;
-  question: string; options: string; correctIndex: string; correctAnswer: string; explanation: string;
+  question: string; options: string; correctIndex: string; correctAnswer: string; trueLabel: string; falseLabel: string; explanation: string;
   instruction: string; starterCode: string; solution: string; style: string; url: string; embedTitle: string;
   backgrounds: Record<"transparent" | "subtle" | "accent", string>;
 }> = {
@@ -73,7 +73,7 @@ const COPY: Record<Locale, {
     content: "Conteúdo", headingLevel: "Nível do título", listItems: "Itens (um por linha)", orderedList: "Lista numerada",
     imageUrl: "URL da imagem", altText: "Texto alternativo", caption: "Legenda", videoUrl: "URL do vídeo", codeLanguage: "Linguagem",
     code: "Código", question: "Pergunta", options: "Opções (uma por linha)", correctIndex: "Índice da resposta correta (começa em 0)",
-    correctAnswer: "Resposta correta", explanation: "Explicação", instruction: "Instrução", starterCode: "Código inicial", solution: "Solução",
+    correctAnswer: "Resposta correta", trueLabel: "Verdadeiro", falseLabel: "Falso", explanation: "Explicação", instruction: "Instrução", starterCode: "Código inicial", solution: "Solução",
     style: "Estilo", url: "URL", embedTitle: "Título da incorporação",
     backgrounds: { transparent: "Transparente", subtle: "Suave", accent: "Destaque" },
   },
@@ -85,7 +85,7 @@ const COPY: Record<Locale, {
     content: "Content", headingLevel: "Heading level", listItems: "Items (one per line)", orderedList: "Numbered list",
     imageUrl: "Image URL", altText: "Alternative text", caption: "Caption", videoUrl: "Video URL", codeLanguage: "Language",
     code: "Code", question: "Question", options: "Options (one per line)", correctIndex: "Correct answer index (starts at 0)",
-    correctAnswer: "Correct answer", explanation: "Explanation", instruction: "Instructions", starterCode: "Starter code", solution: "Solution",
+    correctAnswer: "Correct answer", trueLabel: "True", falseLabel: "False", explanation: "Explanation", instruction: "Instructions", starterCode: "Starter code", solution: "Solution",
     style: "Style", url: "URL", embedTitle: "Embed title",
     backgrounds: { transparent: "Transparent", subtle: "Subtle", accent: "Accent" },
   },
@@ -97,7 +97,7 @@ const COPY: Record<Locale, {
     content: "Contenido", headingLevel: "Nivel del título", listItems: "Elementos (uno por línea)", orderedList: "Lista numerada",
     imageUrl: "URL de la imagen", altText: "Texto alternativo", caption: "Leyenda", videoUrl: "URL del vídeo", codeLanguage: "Lenguaje",
     code: "Código", question: "Pregunta", options: "Opciones (una por línea)", correctIndex: "Índice de la respuesta correcta (empieza en 0)",
-    correctAnswer: "Respuesta correcta", explanation: "Explicación", instruction: "Instrucción", starterCode: "Código inicial", solution: "Solución",
+    correctAnswer: "Respuesta correcta", trueLabel: "Verdadero", falseLabel: "Falso", explanation: "Explicación", instruction: "Instrucción", starterCode: "Código inicial", solution: "Solución",
     style: "Estilo", url: "URL", embedTitle: "Título de la incrustación",
     backgrounds: { transparent: "Transparente", subtle: "Suave", accent: "Destacado" },
   },
@@ -208,7 +208,7 @@ function LessonCanvasEditor({ lesson, onChange }: Props) {
     <section className="lesson-canvas" aria-labelledby="lesson-canvas-title">
       <header className="lesson-canvas__header">
         <div>
-          <p className="lesson-canvas__eyebrow">{copy.title}</p>
+          <h3 id="lesson-canvas-title" className="lesson-canvas__eyebrow">{copy.title}</h3>
           <p>{copy.description}</p>
         </div>
         <div className="lesson-canvas__add">
@@ -330,7 +330,7 @@ function LessonCanvasEditor({ lesson, onChange }: Props) {
                     {component.type === "quiz-verdadeiro-falso" && (
                       <>
                         <label className="lesson-canvas__field"><span>{copy.question}</span><textarea rows={2} value={propText("question")} onChange={(event) => patch({ question: event.target.value })} /></label>
-                        <label className="lesson-canvas__checkbox"><input type="checkbox" checked={props.correct !== false} onChange={(event) => patch({ correct: event.target.checked })} /><span>{copy.correctAnswer}: {props.correct === false ? "False" : "True"}</span></label>
+                        <label className="lesson-canvas__checkbox"><input type="checkbox" checked={props.correct !== false} onChange={(event) => patch({ correct: event.target.checked })} /><span>{copy.correctAnswer}: {props.correct === false ? copy.falseLabel : copy.trueLabel}</span></label>
                         <label className="lesson-canvas__field"><span>{copy.explanation}</span><textarea rows={2} value={propText("explanation")} onChange={(event) => patch({ explanation: event.target.value })} /></label>
                       </>
                     )}
