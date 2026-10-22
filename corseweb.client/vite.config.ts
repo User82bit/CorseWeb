@@ -54,6 +54,10 @@ export default defineConfig({
             '^/api': {
                 target,
                 secure: false
+            },
+            '^/uploads': {
+                target,
+                secure: false
             }
         },
         port: parseInt(env.DEV_SERVER_PORT || '49188'),
