@@ -406,7 +406,7 @@ function AppLessonPage() {
               {sortedBlocks.map(block => (
                 <section
                   className={`student-lesson__block student-lesson__block--${block.layout?.background ?? "transparent"} student-lesson__block--padding-${block.layout?.padding ?? "md"} student-lesson__block--gap-${block.layout?.gap ?? "md"}`}
-                  style={{ "--student-block-columns": block.layout?.columns ?? 1 } as CSSProperties}
+                  style={{ "--student-block-columns": block.layout?.columns ?? 1 } as CSSProperties & { "--student-block-columns": number }}
                   key={block.id}
                 >
                   {block.components.slice().sort((a, b) => a.order - b.order).map(component =>
