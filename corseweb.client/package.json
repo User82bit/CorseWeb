@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:i18n": "node --experimental-strip-types --test src/i18n/locale.test.mjs src/utils/formatEstimatedDuration.test.mjs"
+    "test:i18n": "node --experimental-strip-types --test src/i18n/locale.test.mjs src/utils/formatEstimatedDuration.test.mjs src/utils/courseCoverUrl.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
