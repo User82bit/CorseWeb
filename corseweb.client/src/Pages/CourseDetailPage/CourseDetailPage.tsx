@@ -190,7 +190,7 @@ function CourseDetailPage() {
             <Link to="/courses" className="course-detail-page__nav-link">{t.courseDetail.backToCatalog}</Link>
             <Link to={accountTarget} className="course-detail-page__nav-account">
               {user ? t.catalog.accountAction : t.home.login}
-              <SvgIcon name="arrow-up-right" size="1rem" />
+              <SvgIcon name="arrow-right" size="1rem" />
             </Link>
             <LanguageSwitcher />
           </nav>
@@ -230,16 +230,16 @@ function CourseDetailPage() {
             <p className="course-detail-page__description">{course.description}</p>
 
             <div className="course-detail-page__meta" aria-label={t.courseDetail.aboutTitle}>
-              <span><SvgIcon name="layers" size="1rem" />{formatCount(t.learning.moduleCount, moduleCount, locale)}</span>
+              <span><SvgIcon name="book-open" size="1rem" />{formatCount(t.learning.moduleCount, moduleCount, locale)}</span>
               <span><SvgIcon name="book-open" size="1rem" />{formatCount(t.learning.lessonCount, lessonCount, locale)}</span>
               {estimatedDuration && <span><SvgIcon name="clock" size="1rem" />{estimatedDuration}</span>}
             </div>
             <p className="course-detail-page__author">
-              <SvgIcon name="user-round" size="1rem" />
+              <SvgIcon name="user" size="1rem" />
               {t.learning.authorLabel.replace("{name}", course.authorName)}
             </p>
 
-            {isDraft && <p className="course-detail-page__draft-note"><SvgIcon name="info" size="1rem" />{t.courseDetail.draftNotice}</p>}
+            {isDraft && <p className="course-detail-page__draft-note"><SvgIcon name="check" size="1rem" />{t.courseDetail.draftNotice}</p>}
 
             <div className="course-detail-page__hero-actions">
               {!isDraft && (
