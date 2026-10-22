@@ -193,7 +193,11 @@ function LessonCanvasEditor({ lesson, onChange }: Props) {
   };
 
   const deleteComponent = (block: Block, componentId: string) => {
-    updateBlock(block.id, { components: block.components.filter((component) => component.id !== componentId) });
+    const components = [...block.components]
+      .filter((component) => component.id !== componentId)
+      .sort((a, b) => a.order - b.order)
+      .map((component, index) => ({ ...component, order: index + 1 }));
+    updateBlock(block.id, { components });
   };
 
   const moveComponent = (block: Block, componentId: string, offset: number) => {
