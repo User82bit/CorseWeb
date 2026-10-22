@@ -28,27 +28,27 @@ function getLessons(module: Module): Lesson[] {
 function CourseDetailPage() {
   const { t, locale } = useTranslation();
   const { courseSlug } = useParams<{ courseSlug: string }>();
-  const [course, setCourse] = useState<Course | undefined>(() => (
+  const [courseState, setCourseState] = useState<Course | undefined>(() => (
     courseSlug ? getCourseBySlugStore(courseSlug) : undefined
   ));
+  const course = courseState?.slug === courseSlug ? courseState : undefined;
   const [loading, setLoading] = useState(() => !courseSlug || !getCourseBySlugStore(courseSlug));
   const [loadError, setLoadError] = useState(false);
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
 
   useEffect(() => {
     let active = true;
-    if (!courseSlug) {
-      setCourse(undefined);
-      setLoading(false);
-      return;
-    }
+    if (!courseSlug) return;
 
-    const syncCourse = () => setCourse(getCourseBySlugStore(courseSlug));
+    const syncCourse = () => {
+      const nextCourse = getCourseBySlugStore(courseSlug);
+      setCourseState(nextCourse);
+      if (nextCourse) {
+        setLoadError(false);
+        setLoading(false);
+      }
+    };
     const unsubscribeCourses = subscribeCourses(syncCourse);
-    const cachedCourse = getCourseBySlugStore(courseSlug);
-    setCourse(cachedCourse);
-    setLoading(!cachedCourse);
-    setLoadError(false);
 
     refreshCourses()
       .then(() => {
@@ -154,7 +154,7 @@ function CourseDetailPage() {
                 <button type="button" className="course-detail-page__button course-detail-page__button--primary" onClick={() => {
                   setLoading(true);
                   refreshCourses()
-                    .then(() => { setCourse(courseSlug ? getCourseBySlugStore(courseSlug) : undefined); setLoadError(false); })
+                    .then(() => { setCourseState(courseSlug ? getCourseBySlugStore(courseSlug) : undefined); setLoadError(false); })
                     .catch(() => setLoadError(true))
                     .finally(() => setLoading(false));
                 }}>
