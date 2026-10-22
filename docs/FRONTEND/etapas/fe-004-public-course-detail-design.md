@@ -1,8 +1,9 @@
 # FE-004 — Redesign da página pública de detalhes do curso
 
 ## Identificação
-- **Estado:** EM DESENVOLVIMENTO.
+- **Estado:** EM REVISÃO.
 - **Branch:** `fix/public-course-detail-redesign`.
+- **PR:** [#29 — modernizar página pública de detalhes do curso](https://github.com/User82bit/CorseWeb/pull/29), aberto como draft para validação automatizada.
 - **Área:** Frontend público.
 - **Rota:** `/courses/:courseSlug`.
 - **Objetivo:** substituir a tela antiga e simplificada de detalhe por uma experiência moderna e responsiva coerente com o catálogo e a área de aprendizagem.
@@ -44,11 +45,11 @@ A ação **Visualizar** no painel administrativo abre `/courses/:courseSlug`, cu
 - [ ] Metadados e currículo são renderizados a partir dos dados existentes.
 - [ ] Estado de carregamento, curso indisponível e curso sem módulos são compreensíveis e acessíveis.
 - [ ] Todos os textos adicionados possuem traduções pt-BR, en e es.
-- [ ] `npm run lint`, `npm run test:i18n`, `npm run build` e build .NET passam na CI.
+- [ ] `npm run lint`, `npm run test:i18n`, `npm run build` e build .NET passam na CI do commit mais recente.
 - [ ] O proprietário verifica manualmente a rota aberta pela ação **Visualizar** no painel administrativo.
 
 ## Validação
-- CI: aguardando a execução na branch desta entrega.
+- CI: execução inicial [#39805909216](https://github.com/User82bit/CorseWeb/actions/runs/39805909216) foi iniciada para o commit de código, mas o commit de documentação atualiza o head; confirmar o resultado da execução mais recente antes de retirar o draft.
 - Validação visual manual em navegador: pendente; não é possível reproduzi-la neste ambiente.
 
 ## Riscos e limitações
