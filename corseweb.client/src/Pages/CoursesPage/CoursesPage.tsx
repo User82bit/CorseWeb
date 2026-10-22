@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import {
   getCurrentUser,
   getLoginRedirectPath,
@@ -352,7 +353,7 @@ function CoursesPage() {
                     <div className="catalog-course__bottom">
                       <div className="catalog-course__meta">
                         <span><SvgIcon name="book-open" size="0.95rem" />{interpolate(t.catalog.lessonMeta, course.totalLessons)}</span>
-                        {course.totalMinutes > 0 && <span><SvgIcon name="clock" size="0.95rem" />{interpolate(t.catalog.hourMeta, Math.max(1, Math.round(course.totalMinutes / 60)))}</span>}
+                        {course.totalMinutes > 0 && <span><SvgIcon name="clock" size="0.95rem" />{formatEstimatedDuration(course.totalMinutes, locale)}</span>}
                       </div>
                       <Link to={`/courses/${course.slug}`} className="catalog-course__open">
                         {t.catalog.openCourse}<SvgIcon name="arrow-right" size="0.95rem" />
