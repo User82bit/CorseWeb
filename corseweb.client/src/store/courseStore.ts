@@ -33,7 +33,7 @@ function saveLegacy(courses: Course[]) {
   try { localStorage.setItem(LS_LEGACY, JSON.stringify(courses)); } catch { /* quota */ }
 }
 
-const DEFAULT_COURSE_THUMBNAIL = "/hero.png";
+const DEFAULT_COURSE_THUMBNAIL = "/course-cover-placeholder.svg";
 
 function normalizeThumbnail(raw: unknown, title: string): Media {
   const candidate = typeof raw === "object" && raw !== null
