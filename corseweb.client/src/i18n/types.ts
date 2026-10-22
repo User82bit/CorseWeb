@@ -340,6 +340,7 @@ export interface Translations {
         moduleTitle: string;
         moduleDescription: string;
         deleteModule: string;
+        deleteLesson: string;
         lessonSettings: string;
         editLesson: string;
         lessonTitle: string;
