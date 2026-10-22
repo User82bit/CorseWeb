@@ -221,10 +221,10 @@ function AdminCourseEditor() {
             <section className="admin-editor__cover" aria-labelledby="course-cover-title">
               <div className="admin-editor__cover-preview">
                 <img
-                  src={form.thumbnail?.url || "/hero.png"}
+                  src={form.thumbnail?.url || "/course-cover-placeholder.svg"}
                   alt={form.thumbnail?.alt || form.title || "Capa do curso"}
                   loading="lazy"
-                  onError={(event) => { event.currentTarget.src = "/hero.png"; }}
+                  onError={(event) => { event.currentTarget.src = "/course-cover-placeholder.svg"; }}
                 />
               </div>
               <div className="admin-editor__cover-controls">
@@ -243,7 +243,7 @@ function AdminCourseEditor() {
                     placeholder="https://exemplo.com/capa.webp"
                     onChange={(event) => {
                       setCoverError(null);
-                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/hero.png", alt: form.title };
+                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/course-cover-placeholder.svg", alt: form.title };
                       setForm({ ...form, thumbnail: { ...current, url: event.target.value, alt: current.alt || form.title } });
                     }}
                   />
@@ -256,7 +256,7 @@ function AdminCourseEditor() {
                     maxLength={180}
                     placeholder="Descreva a capa para leitores de tela"
                     onChange={(event) => {
-                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/hero.png", alt: "" };
+                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/course-cover-placeholder.svg", alt: "" };
                       setForm({ ...form, thumbnail: { ...current, alt: event.target.value } });
                     }}
                   />
