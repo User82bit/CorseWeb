@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { CourseCreateInput } from "../../types/course";
+import type { CourseCreateInput, Media } from "../../types/course";
+import { apiFetch } from "../../lib/api";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
 import CourseStructureEditor from "./CourseStructureEditor";
+import { DEFAULT_COURSE_COVER_URL, resolveCourseCoverUrl } from "../../utils/courseCoverUrl";
 import "./AdminCourseEditor.scss";
 
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
-
 function AdminCourseEditor() {
   const navigate = useNavigate();
   const { courseSlug } = useParams<{ courseSlug?: string }>();
@@ -18,6 +19,7 @@ function AdminCourseEditor() {
     title: existing?.title ?? "",
     subtitle: existing?.subtitle ?? "",
     description: existing?.description ?? "",
+    thumbnail: existing?.thumbnail,
     category: existing?.category ?? CATEGORIES[0],
     tags: (existing?.tags as CourseCreateInput["tags"]) ?? [],
     level: (existing?.level as CourseCreateInput["level"]) ?? "Iniciante",
@@ -31,6 +33,9 @@ function AdminCourseEditor() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const [coverUrlDraft, setCoverUrlDraft] = useState(() => existing?.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
 
   useEffect(() => {
     refreshCourses().catch(() => {});
@@ -45,6 +50,7 @@ function AdminCourseEditor() {
           title: c.title,
           subtitle: c.subtitle ?? "",
           description: c.description,
+          thumbnail: c.thumbnail,
           category: c.category,
           tags: c.tags as CourseCreateInput["tags"],
           level: c.level as CourseCreateInput["level"],
@@ -52,6 +58,7 @@ function AdminCourseEditor() {
           allowComments: c.allowComments,
           allowFork: c.allowFork,
         });
+        setCoverUrlDraft(c.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
         setModules(c.modules ?? []);
       }
     });
@@ -59,9 +66,88 @@ function AdminCourseEditor() {
 
   const canSave = form.title.trim().length >= 3 && form.description.trim().length >= 20;
 
+  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+
+    // Some systems leave File.type empty; in that case let the backend
+    // validate the actual file signature instead of rejecting a valid image.
+    if (file.type && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setCoverError("Use uma imagem PNG, JPEG ou WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setCoverError("A imagem deve ter no máximo 5 MB.");
+      return;
+    }
+
+    setCoverUploading(true);
+    setCoverError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await apiFetch("/api/course-media/covers", { method: "POST", body });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error ?? "Não foi possível enviar a capa.");
+      }
+      const uploaded = await response.json() as Media;
+      const uploadedCover = { ...uploaded, alt: form.title.trim() || "Capa do curso" };
+      setCoverUrlDraft(uploadedCover.url);
+      setForm((current) => ({
+        ...current,
+        thumbnail: { ...uploadedCover, alt: current.title.trim() || "Capa do curso" },
+      }));
+    } catch (error) {
+      setCoverError(error instanceof Error ? error.message : "Não foi possível enviar a capa.");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  const handleCoverUrlBlur = () => {
+    const url = resolveCourseCoverUrl(coverUrlDraft);
+    if (!url) {
+      setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
+      return;
+    }
+
+    setCoverError(null);
+    setCoverUrlDraft(url);
+    setForm((current) => ({
+      ...current,
+      thumbnail: {
+        ...(current.thumbnail ?? { id: "course-cover", type: "image" as const, alt: current.title }),
+        url,
+        alt: current.thumbnail?.alt || current.title,
+      },
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSave || saving) return;
+
+    const coverUrl = resolveCourseCoverUrl(coverUrlDraft);
+    if (!coverUrl) {
+      setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
+      return;
+    }
+
+    const formToSave: CourseCreateInput = {
+      ...form,
+      thumbnail: {
+        ...(form.thumbnail ?? { id: "course-cover", type: "image" as const, alt: form.title }),
+        url: coverUrl,
+        alt: form.thumbnail?.alt?.trim() || form.title.trim() || "Capa do curso",
+      },
+    };
+
+    setCoverError(null);
+    setCoverUrlDraft(coverUrl);
+    setForm(formToSave);
     setSaving(true); setErr(null);
     try {
       if (isEditing && courseSlug) {
@@ -69,6 +155,7 @@ function AdminCourseEditor() {
           title: form.title.trim(),
           subtitle: form.subtitle?.trim() || undefined,
           description: form.description.trim(),
+          thumbnail: formToSave.thumbnail,
           category: form.category,
           level: form.level,
           language: form.language,
@@ -78,7 +165,7 @@ function AdminCourseEditor() {
         });
         setSaveMessage("Curso e estrutura salvos.");
       } else {
-        const created = await createCourse(form) as unknown as { slug: string };
+        const created = await createCourse(formToSave) as unknown as { slug: string };
         navigate(`/admin/courses/${created.slug}/editor`);
       }
     } catch (e2: unknown) {
@@ -172,6 +259,56 @@ function AdminCourseEditor() {
               />
               <span className="field__hint">{form.description.length} caracteres (mín. 20)</span>
             </label>
+
+            <section className="admin-editor__cover" aria-labelledby="course-cover-title">
+              <div className="admin-editor__cover-preview">
+                <img
+                  src={form.thumbnail?.url?.trim() || DEFAULT_COURSE_COVER_URL}
+                  alt={form.thumbnail?.alt || form.title || "Capa do curso"}
+                  loading="lazy"
+                  onError={(event) => { if (!event.currentTarget.src.endsWith(DEFAULT_COURSE_COVER_URL)) event.currentTarget.src = DEFAULT_COURSE_COVER_URL; }}
+                />
+              </div>
+              <div className="admin-editor__cover-controls">
+                <h2 id="course-cover-title" className="admin-editor__panel-title">Capa do curso</h2>
+                <p className="text-secondary">Envie uma imagem ou informe o endereço de uma capa existente.</p>
+                <label className="field">
+                  <span className="field__label">Enviar imagem (PNG, JPEG ou WebP · até 5 MB)</span>
+                  <input className="field__input" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleCoverUpload} disabled={coverUploading} />
+                </label>
+                <label className="field">
+                  <span className="field__label">URL da imagem</span>
+                  <input
+                    className="field__input"
+                    type="text"
+                    inputMode="url"
+                    autoComplete="url"
+                    value={coverUrlDraft}
+                    placeholder="https://exemplo.com/capa.webp ou /uploads/..."
+                    onChange={(event) => {
+                      setCoverError(null);
+                      setCoverUrlDraft(event.target.value);
+                    }}
+                    onBlur={handleCoverUrlBlur}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field__label">Texto alternativo da imagem</span>
+                  <input
+                    className="field__input"
+                    value={form.thumbnail?.alt ?? ""}
+                    maxLength={180}
+                    placeholder="Descreva a capa para leitores de tela"
+                    onChange={(event) => {
+                      const current = form.thumbnail ?? { id: "course-cover", type: "image" as const, url: "/course-cover-placeholder.svg", alt: "" };
+                      setForm({ ...form, thumbnail: { ...current, alt: event.target.value } });
+                    }}
+                  />
+                </label>
+                {coverUploading && <p role="status" className="field__hint">Enviando capa…</p>}
+                {coverError && <p role="alert" className="field__hint admin-editor__cover-error">{coverError}</p>}
+              </div>
+            </section>
 
             <div className="field-row">
               <label className="field">

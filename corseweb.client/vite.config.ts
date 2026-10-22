@@ -34,8 +34,22 @@ if (!fs.existsSync(certFilePath) || !fs.existsSync(keyFilePath)) {
     }
 }
 
-const target = env.ASPNETCORE_HTTPS_PORT ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}` :
-    env.ASPNETCORE_URLS ? env.ASPNETCORE_URLS.split(';')[0] : 'https://localhost:7028';
+// An explicit target helps when Vite is started outside the ASP.NET Core SpaProxy.
+const configuredUrls = (env.ASPNETCORE_URLS ?? '')
+    .split(';')
+    .map((url) => url.trim())
+    .filter(Boolean);
+const httpsPortTarget = env.ASPNETCORE_HTTPS_PORT
+    ? `https://localhost:${env.ASPNETCORE_HTTPS_PORT}`
+    : undefined;
+const target =
+    env.VITE_API_PROXY_TARGET?.trim() ||
+    httpsPortTarget ||
+    configuredUrls.find((url) => url.startsWith('https://')) ||
+    configuredUrls[0] ||
+    'https://localhost:7028';
+
+console.info(`[vite] ASP.NET Core API/media proxy target: ${target}`);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -52,6 +66,10 @@ export default defineConfig({
                 secure: false
             },
             '^/api': {
+                target,
+                secure: false
+            },
+            '^/uploads': {
                 target,
                 secure: false
             }

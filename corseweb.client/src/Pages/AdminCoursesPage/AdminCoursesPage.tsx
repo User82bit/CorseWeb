@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import { deleteCourse, getAllCourses, refreshCourses, subscribeCourses, togglePublish } from "../../store/courseStore";
 import type { Course } from "../../types/course";
 import "./AdminCoursesPage.scss";
@@ -259,7 +260,7 @@ function AdminCoursesPage() {
               {filteredCourses.map((course) => (
                 <article className="admin-course-row" key={course.id}>
                   <div className="admin-course-row__thumbnail">
-                    <img src={course.thumbnail.url} alt={course.thumbnail.alt ?? course.title} loading="lazy" />
+                    <img src={course.thumbnail?.url?.trim() || "/course-cover-placeholder.svg"} alt={course.thumbnail?.alt || course.title} loading="lazy" />
                   </div>
                   <div className="admin-course-row__main">
                     <div className="admin-course-row__badges">
@@ -273,7 +274,7 @@ function AdminCoursesPage() {
                       <span>{course.level}</span>
                       <span>{course.totalLessons} {t.admin.lessons}</span>
                       {course.totalModules > 0 && <span>{course.totalModules} {t.admin.modules}</span>}
-                      {course.totalMinutes > 0 && <span>{t.admin.hoursEstimate.replace("{count}", String(Math.max(1, Math.round(course.totalMinutes / 60))))}</span>}
+                      {course.totalMinutes > 0 && <span>{t.admin.hoursEstimate.replace("{count}", formatEstimatedDuration(course.totalMinutes, locale))}</span>}
                       <span>{t.admin.byAuthor.replace("{name}", course.authorName)}</span>
                       <span>{t.admin.updatedAt} {formatDate(course.updatedAt, locale)}</span>
                     </div>

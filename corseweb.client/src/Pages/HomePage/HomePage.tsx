@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
 import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import {
   getPublishedCourses,
   refreshCourses,
@@ -77,7 +78,7 @@ function BookIcon() {
 }
 
 function HomePage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(() => getPublishedCourses());
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -309,17 +310,19 @@ function HomePage() {
                   <article className="home-course-card" key={course.id}>
                     <div className="home-course-card__media">
                       <span className="home-course-card__media-pattern" aria-hidden="true" />
-                      {course.thumbnail?.url && (
-                        <img
-                          src={course.thumbnail.url}
-                          alt={course.thumbnail.alt ?? ""}
-                          width="480"
-                          height="300"
-                          loading="lazy"
-                          decoding="async"
-                          onError={(event) => { event.currentTarget.hidden = true; }}
-                        />
-                      )}
+                      <img
+                        src={course.thumbnail?.url?.trim() || "/course-cover-placeholder.svg"}
+                        alt={course.thumbnail?.alt || course.title}
+                        width="480"
+                        height="300"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          if (!event.currentTarget.src.endsWith("/course-cover-placeholder.svg")) {
+                            event.currentTarget.src = "/course-cover-placeholder.svg";
+                          }
+                        }}
+                      />
                       <span className="home-course-card__category">{course.category}</span>
                     </div>
                     <div className="home-course-card__body">
@@ -337,7 +340,7 @@ function HomePage() {
                         {course.totalMinutes > 0 && (
                           <span>
                             <SvgIcon name="clock" size="1rem" />
-                            {Math.max(1, Math.round(course.totalMinutes / 60))} {t.home.hourUnit}
+                            {formatEstimatedDuration(course.totalMinutes, locale)}
                           </span>
                         )}
                       </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import { getCourseBySlugStore, refreshCourses, subscribeCourses } from "../../store/courseStore";
 import { enrollInCourse, getMyEnrollments, type CourseEnrollment } from "../../store/enrollmentStore";
 import type { Course } from "../../types/course";
@@ -73,7 +74,7 @@ function AppCourseDetailPage() {
       (module.lessons ?? []).filter(lesson => lesson.status === "concluido").map(lesson => lesson.lessonId)),
   );
   const number = (value: number) => new Intl.NumberFormat(locale).format(value);
-  const estimatedHours = course ? Math.max(1, Math.round(course.totalMinutes / 60)) : 0;
+  const estimatedDuration = course ? formatEstimatedDuration(course.totalMinutes, locale) : "";
 
   async function handleEnroll() {
     if (!course || enrolling) return;
@@ -140,7 +141,7 @@ function AppCourseDetailPage() {
           <div className="student-course-detail__meta">
             <span><SvgIcon name="book-open" size="1rem" />{interpolate(t.learning.moduleCount, { count: number(course.totalModules || modules.length) })}</span>
             <span><SvgIcon name="check" size="1rem" />{interpolate(t.learning.lessonCount, { count: number(course.totalLessons || allLessons.length) })}</span>
-            {course.totalMinutes > 0 && <span><SvgIcon name="clock" size="1rem" />{interpolate(t.learning.estimatedTime, { count: number(estimatedHours) })}</span>}
+            {course.totalMinutes > 0 && <span><SvgIcon name="clock" size="1rem" />{interpolate(t.learning.estimatedTime, { count: estimatedDuration })}</span>}
           </div>
           <p className="student-course-detail__author">{interpolate(t.learning.authorLabel, { name: course.authorName })}</p>
 
@@ -173,7 +174,7 @@ function AppCourseDetailPage() {
           {actionError && <p className="student-course-detail__action-error" role="alert">{t.learning.enrollmentError}</p>}
         </div>
         <div className="student-course-detail__hero-media">
-          <img src={course.thumbnail?.url || "/hero.png"} alt={course.thumbnail?.alt || course.title} />
+          <img src={course.thumbnail?.url || "/course-cover-placeholder.svg"} alt={course.thumbnail?.alt || course.title} />
           <span className="student-course-detail__media-shine" />
           <span className="student-course-detail__media-icon"><SvgIcon name="book-open" size="1.6rem" /></span>
         </div>

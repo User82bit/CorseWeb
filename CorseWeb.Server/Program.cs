@@ -3,6 +3,7 @@ using System.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using CorseWeb.Server.Data;
 using CorseWeb.Server.Models;
 
@@ -105,6 +106,17 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseDefaultFiles();
+
+// Inicializa a pasta antes de criar o provedor: ela pode não existir em uma
+// instalação nova, mas as capas enviadas precisam ficar acessíveis imediatamente.
+var webRoot = app.Environment.WebRootPath;
+if (string.IsNullOrWhiteSpace(webRoot))
+    webRoot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "course-covers"));
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRoot)
+});
 app.MapStaticAssets();
 
 if (app.Environment.IsDevelopment())

@@ -222,7 +222,7 @@ function AppMyCourses() {
               return (
                 <article className="student-course-card" key={enrollment.courseId}>
                   <Link to={`/app/courses/${course.slug}`} className="student-course-card__media">
-                    <img src={course.thumbnail?.url || "/hero.png"} alt={course.thumbnail?.alt || course.title} loading="lazy" decoding="async" />
+                    <img src={course.thumbnail?.url || "/course-cover-placeholder.svg"} alt={course.thumbnail?.alt || course.title} loading="lazy" decoding="async" />
                     <span className={isCompleted ? "student-course-card__status student-course-card__status--completed" : "student-course-card__status"}>
                       {isCompleted ? t.learning.completedLabel : t.learning.enrolledLabel}
                     </span>
