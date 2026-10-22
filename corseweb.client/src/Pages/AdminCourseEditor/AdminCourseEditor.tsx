@@ -70,7 +70,9 @@ function AdminCourseEditor() {
     input.value = "";
     if (!file) return;
 
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    // Some systems leave File.type empty; in that case let the backend
+    // validate the actual file signature instead of rejecting a valid image.
+    if (file.type && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setCoverError("Use uma imagem PNG, JPEG ou WebP.");
       return;
     }
