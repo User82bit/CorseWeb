@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -404,7 +404,11 @@ function AppLessonPage() {
           ) : (
             <div className="student-lesson__content">
               {sortedBlocks.map(block => (
-                <section className="student-lesson__block" key={block.id}>
+                <section
+                  className={`student-lesson__block student-lesson__block--${block.layout?.background ?? "transparent"} student-lesson__block--padding-${block.layout?.padding ?? "md"} student-lesson__block--gap-${block.layout?.gap ?? "md"}`}
+                  style={{ "--student-block-columns": block.layout?.columns ?? 1 } as CSSProperties}
+                  key={block.id}
+                >
                   {block.components.slice().sort((a, b) => a.order - b.order).map(component =>
                     <ContentComponent key={component.id} component={component} />)}
                 </section>
