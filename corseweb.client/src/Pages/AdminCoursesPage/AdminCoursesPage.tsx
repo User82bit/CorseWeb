@@ -260,7 +260,7 @@ function AdminCoursesPage() {
               {filteredCourses.map((course) => (
                 <article className="admin-course-row" key={course.id}>
                   <div className="admin-course-row__thumbnail">
-                    <img src={course.thumbnail?.url?.trim() || "/hero.png"} alt={course.thumbnail?.alt || course.title} loading="lazy" />
+                    <img src={course.thumbnail?.url?.trim() || "/course-cover-placeholder.svg"} alt={course.thumbnail?.alt || course.title} loading="lazy" />
                   </div>
                   <div className="admin-course-row__main">
                     <div className="admin-course-row__badges">
