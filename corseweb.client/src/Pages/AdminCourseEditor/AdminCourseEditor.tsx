@@ -4,28 +4,10 @@ import type { CourseCreateInput, Media } from "../../types/course";
 import { apiFetch } from "../../lib/api";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
 import CourseStructureEditor from "./CourseStructureEditor";
+import { DEFAULT_COURSE_COVER_URL, resolveCourseCoverUrl } from "../../utils/courseCoverUrl";
 import "./AdminCourseEditor.scss";
 
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
-const DEFAULT_COURSE_COVER_URL = "/course-cover-placeholder.svg";
-
-function resolveCoverUrl(value: string): string | null {
-  const candidate = value.trim();
-  if (!candidate) return DEFAULT_COURSE_COVER_URL;
-
-  // Uploaded files use root-relative paths, while external covers use HTTP(S).
-  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
-
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") return candidate;
-  } catch {
-    // An invalid URL should not replace a currently visible cover.
-  }
-
-  return null;
-}
-
 function AdminCourseEditor() {
   const navigate = useNavigate();
   const { courseSlug } = useParams<{ courseSlug?: string }>();
@@ -124,7 +106,7 @@ function AdminCourseEditor() {
   };
 
   const handleCoverUrlBlur = () => {
-    const url = resolveCoverUrl(coverUrlDraft);
+    const url = resolveCourseCoverUrl(coverUrlDraft);
     if (!url) {
       setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
       return;
@@ -146,7 +128,7 @@ function AdminCourseEditor() {
     e.preventDefault();
     if (!canSave || saving) return;
 
-    const coverUrl = resolveCoverUrl(coverUrlDraft);
+    const coverUrl = resolveCourseCoverUrl(coverUrlDraft);
     if (!coverUrl) {
       setCoverError("Use uma URL HTTP(S) válida ou um caminho local iniciado por /.");
       return;
