@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { CourseCreateInput } from "../../types/course";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
+import CourseStructureEditor from "./CourseStructureEditor";
 import "./AdminCourseEditor.scss";
 
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
@@ -25,6 +26,8 @@ function AdminCourseEditor() {
     allowFork: existing?.allowFork ?? true,
   }));
 
+  const [modules, setModules] = useState(() => existing?.modules ?? []);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
@@ -49,6 +52,7 @@ function AdminCourseEditor() {
           allowComments: c.allowComments,
           allowFork: c.allowFork,
         });
+        setModules(c.modules ?? []);
       }
     });
   }, [courseSlug]);
@@ -70,8 +74,9 @@ function AdminCourseEditor() {
           language: form.language,
           allowComments: form.allowComments,
           allowFork: form.allowFork,
+          modules,
         });
-        navigate("/admin/courses");
+        setSaveMessage("Curso e estrutura salvos.");
       } else {
         const created = await createCourse(form) as unknown as { slug: string };
         navigate(`/admin/courses/${created.slug}/editor`);
@@ -126,6 +131,7 @@ function AdminCourseEditor() {
       </header>
 
       {err && <p role="alert" style={{ color: "crimson", margin: "12px 0" }}>{err}</p>}
+      {saveMessage && <p className="admin-editor__status" role="status">{saveMessage}</p>}
       {isEditing && !existing && (
         <p className="text-secondary">Curso não encontrado. Pode ter sido removido ou você não tem permissão.</p>
       )}
@@ -138,7 +144,7 @@ function AdminCourseEditor() {
               <input
                 className="field__input"
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, title: e.target.value }); }}
                 placeholder="Ex: Inglês do Zero ao Intermediário"
                 maxLength={120}
               />
@@ -149,7 +155,7 @@ function AdminCourseEditor() {
               <input
                 className="field__input"
                 value={form.subtitle}
-                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, subtitle: e.target.value }); }}
                 placeholder="Uma frase curta sobre o curso"
                 maxLength={160}
               />
@@ -160,7 +166,7 @@ function AdminCourseEditor() {
               <textarea
                 className="field__input field__input--textarea"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, description: e.target.value }); }}
                 placeholder="Descreva o curso, público e o que será aprendido"
                 rows={5}
               />
@@ -170,7 +176,7 @@ function AdminCourseEditor() {
             <div className="field-row">
               <label className="field">
                 <span className="field__label">Categoria</span>
-                <select className="field__input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                <select className="field__input" value={form.category} onChange={(e) => { setSaveMessage(null); setForm({ ...form, category: e.target.value }); }}>
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -184,7 +190,7 @@ function AdminCourseEditor() {
                 <select
                   className="field__input"
                   value={form.level}
-                  onChange={(e) => setForm({ ...form, level: e.target.value as CourseCreateInput["level"] })}
+                  onChange={(e) => { setSaveMessage(null); setForm({ ...form, level: e.target.value as CourseCreateInput["level"] }); }}
                 >
                   <option value="Iniciante">Iniciante</option>
                   <option value="Intermediário">Intermediário</option>
@@ -194,7 +200,7 @@ function AdminCourseEditor() {
 
               <label className="field">
                 <span className="field__label">Idioma</span>
-                <select className="field__input" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+                <select className="field__input" value={form.language} onChange={(e) => { setSaveMessage(null); setForm({ ...form, language: e.target.value }); }}>
                   <option value="pt-BR">pt-BR</option>
                   <option value="en">en</option>
                   <option value="es">es</option>
@@ -205,12 +211,20 @@ function AdminCourseEditor() {
             <div className="admin-editor__panel">
               <h2 className="admin-editor__panel-title">Estrutura educacional</h2>
               <p className="text-secondary" style={{ margin: 0 }}>
-                Curso → Módulo → Aula → Blocos → Componentes. Esta tela cria o Curso; módulos e aulas são gerenciados no editor de conteúdo
-                (próxima etapa).
+                Curso → Módulo → Aula → Blocos. As alterações na estrutura são salvas junto com os metadados do curso.
               </p>
-              <div className="admin-editor__placeholder">
-                <span>Editor de Módulos e Aulas (visual, estilo Figma/Scratch) — em breve</span>
-              </div>
+              {isEditing && existing ? (
+                <CourseStructureEditor
+                  courseId={existing.id}
+                  actorId={existing.authorId || "local-user"}
+                  modules={modules}
+                  onChange={(nextModules) => { setModules(nextModules); setSaveMessage(null); }}
+                />
+              ) : (
+                <div className="admin-editor__placeholder">
+                  <span>Salve o rascunho do curso primeiro para começar a organizar seus módulos e aulas.</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -218,11 +232,11 @@ function AdminCourseEditor() {
             <div className="admin-editor__card">
               <h3 className="admin-editor__card-title">Configurações</h3>
               <label className="field field--check">
-                <input type="checkbox" checked={form.allowComments} onChange={(e) => setForm({ ...form, allowComments: e.target.checked })} />
+                <input type="checkbox" checked={form.allowComments} onChange={(e) => { setSaveMessage(null); setForm({ ...form, allowComments: e.target.checked }); }} />
                 <span>Permitir comentários</span>
               </label>
               <label className="field field--check">
-                <input type="checkbox" checked={form.allowFork} onChange={(e) => setForm({ ...form, allowFork: e.target.checked })} />
+                <input type="checkbox" checked={form.allowFork} onChange={(e) => { setSaveMessage(null); setForm({ ...form, allowFork: e.target.checked }); }} />
                 <span>Permitir fork / remix</span>
               </label>
             </div>

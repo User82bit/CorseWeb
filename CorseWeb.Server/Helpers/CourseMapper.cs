@@ -34,14 +34,68 @@ public static class CourseMapper
 
     private static string StringifyArray(JsonElement? el) => Stringify(el, "[]");
 
+    private static (int Modules, int Lessons, int Minutes) CalculateContentTotals(string? modulesJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(modulesJson) ? "[]" : modulesJson);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Array) return (0, 0, 0);
+
+            var moduleCount = 0;
+            var lessonCount = 0;
+            var totalMinutes = 0;
+
+            foreach (var module in root.EnumerateArray())
+            {
+                if (module.ValueKind != JsonValueKind.Object) continue;
+                moduleCount++;
+
+                if (!module.TryGetProperty("lessons", out var lessons) || lessons.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                foreach (var lesson in lessons.EnumerateArray())
+                {
+                    if (lesson.ValueKind != JsonValueKind.Object) continue;
+                    lessonCount++;
+                    if (lesson.TryGetProperty("estimatedMinutes", out var duration) && duration.TryGetInt32(out var minutes))
+                        totalMinutes += Math.Clamp(minutes, 0, 600);
+                }
+            }
+
+            return (moduleCount, lessonCount, totalMinutes);
+        }
+        catch (JsonException)
+        {
+            return (0, 0, 0);
+        }
+    }
+
+    private static void ApplyContentTotals(Course course)
+    {
+        var totals = CalculateContentTotals(course.ModulesJson);
+        course.TotalModules = totals.Modules;
+        course.TotalLessons = totals.Lessons;
+        course.TotalMinutes = totals.Minutes;
+    }
+
+    private static void ApplyContentTotals(CourseDraft draft)
+    {
+        var totals = CalculateContentTotals(draft.ModulesJson);
+        draft.TotalModules = totals.Modules;
+        draft.TotalLessons = totals.Lessons;
+        draft.TotalMinutes = totals.Minutes;
+    }
+
     public static CourseListDto ToDto(Course c)
     {
+        var totals = CalculateContentTotals(c.ModulesJson);
         return new CourseListDto(
             c.Id, c.Slug, c.Title, c.Subtitle, c.Description, c.ShortDescription,
             ParseJsonElement(c.ThumbnailJson),
             c.Category, ParseJsonElement(c.TagsJson, "[]"), c.Level, c.Status, c.Language,
             ParseJsonElement(c.ModulesJson, "[]"),
-            c.TotalModules, c.TotalLessons, c.TotalMinutes,
+            totals.Modules, totals.Lessons, totals.Minutes,
             c.SeoTitle, c.SeoDescription, ParseNullable(c.OgImageJson),
             c.AllowComments, c.AllowFork, c.IsFeatured,
             c.AuthorId, c.AuthorName, ParseNullable(c.AuthorAvatarJson),
@@ -52,12 +106,13 @@ public static class CourseMapper
 
     public static CourseDraftDto ToDto(CourseDraft d)
     {
+        var totals = CalculateContentTotals(d.ModulesJson);
         return new CourseDraftDto(
             d.Id, d.OwnerId, d.SourceCourseId, d.Slug, d.Title, d.Subtitle,
             d.Description, d.ShortDescription,
             ParseJsonElement(d.ThumbnailJson),
             d.Category, ParseJsonElement(d.TagsJson, "[]"), d.Level, d.Language,
-            ParseJsonElement(d.ModulesJson, "[]"), d.TotalModules, d.TotalLessons, d.TotalMinutes,
+            ParseJsonElement(d.ModulesJson, "[]"), totals.Modules, totals.Lessons, totals.Minutes,
             d.AllowComments, d.AllowFork,
             d.CreatedAt, d.UpdatedAt
         );
@@ -66,6 +121,8 @@ public static class CourseMapper
     public static Course FromCreateDto(CourseCreateDto dto, string authorId, string authorName, string slug, string id)
     {
         var now = DateTime.UtcNow;
+        var modulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]";
+        var totals = CalculateContentTotals(modulesJson);
         return new Course
         {
             Id = id,
@@ -80,10 +137,10 @@ public static class CourseMapper
             Level = dto.Level,
             Status = "publicado",
             Language = dto.Language ?? "pt-BR",
-            ModulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]",
-            TotalModules = 0,
-            TotalLessons = 0,
-            TotalMinutes = 0,
+            ModulesJson = modulesJson,
+            TotalModules = totals.Modules,
+            TotalLessons = totals.Lessons,
+            TotalMinutes = totals.Minutes,
             SeoTitle = dto.SeoTitle,
             SeoDescription = dto.SeoDescription,
             OgImageJson = dto.OgImage != null ? JsonSerializer.Serialize(dto.OgImage.Value, JsonOpts) : null,
@@ -110,7 +167,11 @@ public static class CourseMapper
         if (dto.Level != null) c.Level = dto.Level;
         if (dto.Language != null) c.Language = dto.Language;
         if (dto.Thumbnail != null) c.ThumbnailJson = JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts);
-        if (dto.Modules != null) c.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
+        if (dto.Modules != null)
+        {
+            c.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
+            ApplyContentTotals(c);
+        }
         if (dto.AllowComments != null) c.AllowComments = dto.AllowComments.Value;
         if (dto.AllowFork != null) c.AllowFork = dto.AllowFork.Value;
         if (dto.IsFeatured != null) c.IsFeatured = dto.IsFeatured.Value;
@@ -126,6 +187,8 @@ public static class CourseMapper
     public static CourseDraft FromDraftCreate(DraftCreateDto dto, string ownerId, string slug, string id)
     {
         var now = DateTime.UtcNow;
+        var modulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]";
+        var totals = CalculateContentTotals(modulesJson);
         return new CourseDraft
         {
             Id = id,
@@ -141,7 +204,10 @@ public static class CourseMapper
             TagsJson = dto.Tags != null ? JsonSerializer.Serialize(dto.Tags.Value, JsonOpts) : "[]",
             Level = dto.Level,
             Language = dto.Language ?? "pt-BR",
-            ModulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]",
+            ModulesJson = modulesJson,
+            TotalModules = totals.Modules,
+            TotalLessons = totals.Lessons,
+            TotalMinutes = totals.Minutes,
             AllowComments = dto.AllowComments ?? true,
             AllowFork = dto.AllowFork ?? true,
             CreatedAt = now,
@@ -159,7 +225,11 @@ public static class CourseMapper
         if (dto.Level != null) d.Level = dto.Level;
         if (dto.Language != null) d.Language = dto.Language;
         if (dto.Thumbnail != null) d.ThumbnailJson = JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts);
-        if (dto.Modules != null) d.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
+        if (dto.Modules != null)
+        {
+            d.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
+            ApplyContentTotals(d);
+        }
         if (dto.AllowComments != null) d.AllowComments = dto.AllowComments.Value;
         if (dto.AllowFork != null) d.AllowFork = dto.AllowFork.Value;
         if (dto.Slug != null) d.Slug = dto.Slug.Trim();
