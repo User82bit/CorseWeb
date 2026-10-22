@@ -34,7 +34,8 @@ function AdminCourseEditor() {
   const [err, setErr] = useState<string | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
-  const [coverError, setCoverError] = useState<string | null>(null);\n  const [coverUrlDraft, setCoverUrlDraft] = useState(() => existing?.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const [coverUrlDraft, setCoverUrlDraft] = useState(() => existing?.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
 
   useEffect(() => {
     refreshCourses().catch(() => {});
@@ -57,7 +58,8 @@ function AdminCourseEditor() {
           allowComments: c.allowComments,
           allowFork: c.allowFork,
         });
-        setCoverUrlDraft(c.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);\n        setModules(c.modules ?? []);
+        setCoverUrlDraft(c.thumbnail?.url ?? DEFAULT_COURSE_COVER_URL);
+        setModules(c.modules ?? []);
       }
     });
   }, [courseSlug]);
