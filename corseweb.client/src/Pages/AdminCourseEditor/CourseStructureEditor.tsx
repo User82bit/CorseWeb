@@ -37,6 +37,7 @@ function reorder<T>(items: T[], index: number, offset: number): T[] {
 function normalizeModules(modules: Module[], courseId: string): Module[] {
   return modules.map((module, index) => {
     const lessons = [...(module.lessons ?? [])]
+      .sort((a, b) => a.order - b.order)
       .map((lesson, lessonIndex) => ({
         ...lesson,
         courseId,
@@ -169,8 +170,12 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
     if (!selectedModule || !selectedLesson) return;
     const lessons = [...selectedModule.lessons].sort((a, b) => a.order - b.order);
     const index = lessons.findIndex((lesson) => lesson.id === selectedLesson.id);
+    const movedLessons = reorder(lessons, index, offset).map((lesson, lessonIndex) => ({
+      ...lesson,
+      order: lessonIndex + 1,
+    }));
     commit(orderedModules.map((module) => module.id === selectedModule.id
-      ? { ...module, lessons: reorder(lessons, index, offset) }
+      ? { ...module, lessons: movedLessons }
       : module));
   };
 
