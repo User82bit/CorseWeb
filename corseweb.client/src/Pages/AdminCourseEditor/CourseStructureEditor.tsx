@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { Lesson, Module } from "../../types/course";
 import "./CourseStructureEditor.scss";
@@ -67,26 +66,14 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
     () => [...modules].sort((a, b) => a.order - b.order),
     [modules],
   );
-  const selectedModule = orderedModules.find((module) => module.id === selectedModuleId) ?? null;
+  const selectedModule = orderedModules.find((module) => module.id === selectedModuleId) ?? orderedModules[0] ?? null;
+  const activeModuleId = selectedModule?.id ?? null;
   const selectedLesson = selectedModule?.lessons.find((lesson) => lesson.id === selectedLessonId) ?? null;
 
-  useEffect(() => {
-    if (!selectedModuleId || !orderedModules.some((module) => module.id === selectedModuleId)) {
-      setSelectedModuleId(orderedModules[0]?.id ?? null);
-      setSelectedLessonId(null);
-    }
-  }, [orderedModules, selectedModuleId]);
-
-  useEffect(() => {
-    if (selectedModule && !selectedModule.lessons.some((lesson) => lesson.id === selectedLessonId)) {
-      setSelectedLessonId(null);
-    }
-  }, [selectedModule, selectedLessonId]);
 
   const commit = (nextModules: Module[]) => onChange(normalizeModules(nextModules, courseId));
 
-  const handleAddModule = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleAddModule = () => {
     const title = newModuleTitle.trim();
     if (!title) return;
     const now = new Date().toISOString();
@@ -117,8 +104,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
     setNewModuleTitle("");
   };
 
-  const handleAddLesson = (event: FormEvent<HTMLFormElement>, module: Module) => {
-    event.preventDefault();
+  const handleAddLesson = (module: Module) => {
     const title = newLessonTitle.trim();
     if (!title) return;
     const now = new Date().toISOString();
@@ -218,7 +204,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
         </span>
       </header>
 
-      <form className="course-structure__add-module" onSubmit={handleAddModule}>
+      <div className="course-structure__add-module">
         <label className="course-structure__field course-structure__field--grow">
           <span>{copy.newModule}</span>
           <input
@@ -226,13 +212,12 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
             onChange={(event) => setNewModuleTitle(event.target.value)}
             placeholder={copy.modulePlaceholder}
             maxLength={120}
-            required
           />
         </label>
-        <button className="course-structure__button course-structure__button--primary" type="submit">
+        <button className="course-structure__button course-structure__button--primary" type="button" onClick={handleAddModule}>
           <span aria-hidden="true">+</span> {copy.addModule}
         </button>
-      </form>
+      </div>
 
       {orderedModules.length === 0 ? (
         <div className="course-structure__empty">
@@ -244,14 +229,14 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
         <div className="course-structure__board" aria-label={copy.boardLabel}>
           {orderedModules.map((module, index) => (
             <article
-              className={`course-structure__column${module.id === selectedModuleId ? " course-structure__column--selected" : ""}`}
+              className={`course-structure__column${module.id === activeModuleId ? " course-structure__column--selected" : ""}`}
               key={module.id}
             >
               <div className="course-structure__column-header">
                 <button
                   type="button"
                   className="course-structure__module-select"
-                  aria-pressed={module.id === selectedModuleId && selectedLessonId === null}
+                  aria-pressed={module.id === activeModuleId && selectedLessonId === null}
                   onClick={() => { setSelectedModuleId(module.id); setSelectedLessonId(null); }}
                 >
                   <span className="course-structure__module-order">{String(index + 1).padStart(2, "0")}</span>
@@ -284,19 +269,18 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                 ))}
               </div>
 
-              <form className="course-structure__add-lesson" onSubmit={(event) => handleAddLesson(event, module)}>
+              <div className="course-structure__add-lesson">
                 <label className="course-structure__sr-only" htmlFor={`new-lesson-${module.id}`}>{copy.newLesson}</label>
                 <input
                   id={`new-lesson-${module.id}`}
-                  value={module.id === selectedModuleId ? newLessonTitle : ""}
+                  value={module.id === activeModuleId ? newLessonTitle : ""}
                   onFocus={() => { setSelectedModuleId(module.id); setSelectedLessonId(null); }}
                   onChange={(event) => { setSelectedModuleId(module.id); setNewLessonTitle(event.target.value); }}
                   placeholder={copy.lessonPlaceholder}
                   maxLength={120}
-                  required
                 />
-                <button type="submit" aria-label={copy.addLesson} title={copy.addLesson}>+</button>
-              </form>
+                <button type="button" onClick={() => handleAddLesson(module)} aria-label={copy.addLesson} title={copy.addLesson}>+</button>
+              </div>
             </article>
           ))}
         </div>
