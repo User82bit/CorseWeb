@@ -96,6 +96,8 @@ function CourseDetailPage() {
   const estimatedDuration = course && course.totalMinutes > 0
     ? formatEstimatedDuration(course.totalMinutes, locale)
     : null;
+  const heroDescription = course?.shortDescription?.trim() || course?.description?.trim() || "";
+  const showFullDescription = Boolean(course && heroDescription !== course.description.trim());
 
   if (loading) {
     return (
@@ -227,7 +229,7 @@ function CourseDetailPage() {
             </div>
             <h1 id="course-detail-title">{course.title}</h1>
             {course.subtitle && <p className="course-detail-page__subtitle">{course.subtitle}</p>}
-            <p className="course-detail-page__description">{course.description}</p>
+            <p className="course-detail-page__description">{heroDescription}</p>
 
             <div className="course-detail-page__meta" aria-label={t.courseDetail.aboutTitle}>
               <span><SvgIcon name="book-open" size="1rem" />{formatCount(t.learning.moduleCount, moduleCount, locale)}</span>
@@ -271,9 +273,8 @@ function CourseDetailPage() {
         <section className="course-detail-page__overview" aria-labelledby="course-detail-about-title">
           <article className="course-detail-page__about-card">
             <p className="course-detail-page__section-eyebrow">{t.courseDetail.aboutTitle}</p>
-            <h2 id="course-detail-about-title">{course.title}</h2>
-            <p>{course.description}</p>
-            {course.subtitle && <p className="course-detail-page__about-subtitle">{course.subtitle}</p>}
+            <h2 id="course-detail-about-title">{t.courseDetail.aboutTitle}</h2>
+            {showFullDescription && <p>{course.description}</p>}
             <dl className="course-detail-page__facts">
               <div><dt>{t.courseDetail.categoryLabel}</dt><dd>{course.category}</dd></div>
               <div><dt>{t.courseDetail.levelLabel}</dt><dd>{course.level}</dd></div>
