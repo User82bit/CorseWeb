@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import PageHero from "../../components/PageHero/PageHero";
 import { getCourseBySlugStore, getAllCourses, subscribeCourses, refreshCourses } from "../../store/courseStore";
 import type { Course } from "../../types/course";
 import "./CourseDetailPage.scss";
 
 function CourseDetailPage() {
+  const { locale } = useTranslation();
   const { courseSlug } = useParams<{ courseSlug: string }>();
   const [course, setCourse] = useState<Course | undefined>(() => (courseSlug ? getCourseBySlugStore(courseSlug) : undefined));
 
@@ -53,7 +56,7 @@ function CourseDetailPage() {
         eyebrow={`${course.category} · ${course.level}${isDraft ? " · rascunho (só você vê)" : ""}`}
         title={course.title}
         description={course.description}
-        meta={`${course.totalLessons} aulas · ${Math.round(course.totalMinutes / 60)}h · por ${course.authorName}`}
+        meta={`${course.totalLessons} aulas · ${formatEstimatedDuration(course.totalMinutes, locale)} · por ${course.authorName}`}
         actions={[
           ...(isDraft ? [] : [{ label: "Começar agora", to: `/app/courses/${course.slug}`, variant: "primary" as const }]),
           { label: "Voltar ao catálogo", to: "/courses", variant: "glass" as const },

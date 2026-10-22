@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import LanguageSwitcher from "../../UIComplement/LanguageSwitcher/LanguageSwitcher";
 import { useTranslation } from "../../i18n/useTranslation";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import {
   getPublishedCourses,
   refreshCourses,
@@ -77,7 +78,7 @@ function BookIcon() {
 }
 
 function HomePage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>(() => getPublishedCourses());
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -337,7 +338,7 @@ function HomePage() {
                         {course.totalMinutes > 0 && (
                           <span>
                             <SvgIcon name="clock" size="1rem" />
-                            {Math.max(1, Math.round(course.totalMinutes / 60))} {t.home.hourUnit}
+                            {formatEstimatedDuration(course.totalMinutes, locale)}
                           </span>
                         )}
                       </div>

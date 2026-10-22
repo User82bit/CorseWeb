@@ -198,3 +198,6 @@
 @media (prefers-reduced-motion: reduce) {
   .course-structure__board { scroll-behavior: auto; }
 }
+
+
+.course-structure__inspector > .lesson-canvas { grid-column: 1 / -1; }

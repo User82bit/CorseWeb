@@ -105,6 +105,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseDefaultFiles();
+// Também serve arquivos enviados durante a execução (ex.: capas de cursos).
+app.UseStaticFiles();
 app.MapStaticAssets();
 
 if (app.Environment.IsDevelopment())

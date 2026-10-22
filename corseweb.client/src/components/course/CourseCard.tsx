@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "../../i18n/useTranslation";
 import type { Course } from "../../types/course";
+import { formatEstimatedDuration } from "../../utils/formatEstimatedDuration";
 import "./CourseCard.scss";
 
 export type CourseCardVariant = "default" | "continue" | "admin" | "compact";
@@ -15,6 +17,7 @@ interface Props {
 }
 
 function CourseCard({ course, variant = "default", progress, currentLessonLabel, to, actionLabel, footer }: Props) {
+  const { locale } = useTranslation();
   const levelClass =
     course.level === "Iniciante" ? "level--beginner" :
     course.level === "Intermediário" ? "level--intermediate" : "level--advanced";
@@ -63,7 +66,7 @@ function CourseCard({ course, variant = "default", progress, currentLessonLabel,
 
         <div className="course-card__meta">
           <span className="course-card__meta-item">{course.totalLessons} aulas</span>
-          <span className="course-card__meta-item">{Math.round(course.totalMinutes / 60)}h</span>
+          {course.totalMinutes > 0 && <span className="course-card__meta-item">{formatEstimatedDuration(course.totalMinutes, locale)}</span>}
           <span className="course-card__meta-item">{course.category}</span>
         </div>
 

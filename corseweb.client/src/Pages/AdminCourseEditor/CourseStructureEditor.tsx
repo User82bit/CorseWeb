@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { Lesson, Module } from "../../types/course";
+import LessonCanvasEditor from "./LessonCanvasEditor";
 import "./CourseStructureEditor.scss";
 
 interface CourseStructureEditorProps {
@@ -316,6 +317,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
           </section>
 
           {selectedLesson ? (
+            <>
             <section className="course-structure__panel">
               <div className="course-structure__panel-heading">
                 <div>
@@ -347,6 +349,8 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                 <button type="button" className="course-structure__button" onClick={() => handleMoveLesson(1)} disabled={selectedLesson.order >= selectedModule.lessons.length}>{copy.moveLessonDown}</button>
               </div>
             </section>
+            <LessonCanvasEditor lesson={selectedLesson} onChange={(blocks) => updateLesson({ blocks })} />
+            </>
           ) : (
             <div className="course-structure__hint">
               <strong>{copy.lessonCanvasNextTitle}</strong>
