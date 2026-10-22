@@ -34,6 +34,39 @@ public static class CourseMapper
 
     private static string StringifyArray(JsonElement? el) => Stringify(el, "[]");
 
+    // Courses must always have a usable cover URL. Empty URLs can exist in old
+    // browser caches or in drafts created before cover validation was added.
+    private static string EnsureThumbnailJson(string? json, string? title)
+    {
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(json);
+                var root = document.RootElement;
+                if (root.ValueKind == JsonValueKind.Object
+                    && root.TryGetProperty("url", out var url)
+                    && url.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(url.GetString()))
+                {
+                    return root.GetRawText();
+                }
+            }
+            catch (JsonException)
+            {
+                // Replace malformed legacy thumbnail data with the default cover.
+            }
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            id = "thumb-default",
+            type = "image",
+            url = "/hero.png",
+            alt = title ?? string.Empty
+        }, JsonOpts);
+    }
+
     private static (int Modules, int Lessons, int Minutes) CalculateContentTotals(string? modulesJson)
     {
         try
@@ -92,7 +125,7 @@ public static class CourseMapper
         var totals = CalculateContentTotals(c.ModulesJson);
         return new CourseListDto(
             c.Id, c.Slug, c.Title, c.Subtitle, c.Description, c.ShortDescription,
-            ParseJsonElement(c.ThumbnailJson),
+            ParseJsonElement(EnsureThumbnailJson(c.ThumbnailJson, c.Title)),
             c.Category, ParseJsonElement(c.TagsJson, "[]"), c.Level, c.Status, c.Language,
             ParseJsonElement(c.ModulesJson, "[]"),
             totals.Modules, totals.Lessons, totals.Minutes,
@@ -110,7 +143,7 @@ public static class CourseMapper
         return new CourseDraftDto(
             d.Id, d.OwnerId, d.SourceCourseId, d.Slug, d.Title, d.Subtitle,
             d.Description, d.ShortDescription,
-            ParseJsonElement(d.ThumbnailJson),
+            ParseJsonElement(EnsureThumbnailJson(d.ThumbnailJson, d.Title)),
             d.Category, ParseJsonElement(d.TagsJson, "[]"), d.Level, d.Language,
             ParseJsonElement(d.ModulesJson, "[]"), totals.Modules, totals.Lessons, totals.Minutes,
             d.AllowComments, d.AllowFork,
@@ -131,7 +164,7 @@ public static class CourseMapper
             Subtitle = dto.Subtitle?.Trim(),
             Description = dto.Description.Trim(),
             ShortDescription = dto.Description.Trim().Length > 140 ? dto.Description.Trim()[..140] : dto.Description.Trim(),
-            ThumbnailJson = dto.Thumbnail != null ? JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts) : "{\"id\":\"thumb-default\",\"type\":\"image\",\"url\":\"/hero.png\",\"alt\":\"" + dto.Title.Replace("\"", "") + "\"}",
+            ThumbnailJson = EnsureThumbnailJson(dto.Thumbnail.HasValue ? dto.Thumbnail.Value.GetRawText() : null, dto.Title),
             Category = dto.Category,
             TagsJson = dto.Tags != null ? JsonSerializer.Serialize(dto.Tags.Value, JsonOpts) : "[]",
             Level = dto.Level,
@@ -166,7 +199,7 @@ public static class CourseMapper
         if (dto.Tags != null) c.TagsJson = JsonSerializer.Serialize(dto.Tags.Value, JsonOpts);
         if (dto.Level != null) c.Level = dto.Level;
         if (dto.Language != null) c.Language = dto.Language;
-        if (dto.Thumbnail != null) c.ThumbnailJson = JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts);
+        if (dto.Thumbnail != null) c.ThumbnailJson = EnsureThumbnailJson(dto.Thumbnail.Value.GetRawText(), c.Title);
         if (dto.Modules != null)
         {
             c.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
@@ -199,7 +232,7 @@ public static class CourseMapper
             Subtitle = dto.Subtitle?.Trim(),
             Description = dto.Description.Trim(),
             ShortDescription = dto.Description.Trim().Length > 140 ? dto.Description.Trim()[..140] : dto.Description.Trim(),
-            ThumbnailJson = dto.Thumbnail != null ? JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts) : "{\"id\":\"thumb-default\",\"type\":\"image\",\"url\":\"/hero.png\",\"alt\":\"" + dto.Title.Replace("\"", "") + "\"}",
+            ThumbnailJson = EnsureThumbnailJson(dto.Thumbnail.HasValue ? dto.Thumbnail.Value.GetRawText() : null, dto.Title),
             Category = dto.Category,
             TagsJson = dto.Tags != null ? JsonSerializer.Serialize(dto.Tags.Value, JsonOpts) : "[]",
             Level = dto.Level,
@@ -224,7 +257,7 @@ public static class CourseMapper
         if (dto.Tags != null) d.TagsJson = JsonSerializer.Serialize(dto.Tags.Value, JsonOpts);
         if (dto.Level != null) d.Level = dto.Level;
         if (dto.Language != null) d.Language = dto.Language;
-        if (dto.Thumbnail != null) d.ThumbnailJson = JsonSerializer.Serialize(dto.Thumbnail.Value, JsonOpts);
+        if (dto.Thumbnail != null) d.ThumbnailJson = EnsureThumbnailJson(dto.Thumbnail.Value.GetRawText(), d.Title);
         if (dto.Modules != null)
         {
             d.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
