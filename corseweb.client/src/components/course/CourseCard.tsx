@@ -26,7 +26,7 @@ function CourseCard({ course, variant = "default", progress, currentLessonLabel,
     <article className={`course-card course-card--${variant}`}>
       <Link to={to} className="course-card__banner-link" aria-label={course.title}>
         <div className="course-card__banner">
-          <img src={course.thumbnail.url} alt={course.thumbnail.alt || course.title} loading="lazy" />
+          <img src={course.thumbnail?.url?.trim() || "/hero.png"} alt={course.thumbnail?.alt || course.title} loading="lazy" />
           {typeof progress === "number" && progress > 0 && progress < 100 && (
             <div className="course-card__progress-overlay" aria-hidden>
               <div className="course-card__progress-bar" style={{ width: `${progress}%` }} />
