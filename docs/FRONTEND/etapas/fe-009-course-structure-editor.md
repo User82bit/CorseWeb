@@ -80,10 +80,10 @@ Essas funcionalidades permanecem previstas para etapas posteriores; scripts impo
 - [ ] pt-BR, en e es possuem rótulos para todos os controles novos.
 - [ ] Lint, testes disponíveis, build frontend e build backend são verificados; nenhuma verificação é declarada aprovada sem evidência.
 
-## Evidências de validação\n\n- CI run `39770612200` (commit `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0`): sucesso.\n- \\`npm run lint\\`, \\`npm run test:i18n\\` e \\`npm run build\\` executados pela GitHub Actions; restauração e build .NET também concluídos com sucesso.\n- Não executado localmente, nem testado em navegador real nesta sessão.\n\n## Riscos e problemas conhecidos
+## Evidências de validação\n\n- CI run `39770612200` (commit `2b3436a8e1b5c82a8dc0b5068aece5f35c0d93d0`): sucesso.\n- `npm run lint`, `npm run test:i18n` e `npm run build` executados pela GitHub Actions; restauração e build .NET também concluídos com sucesso.\n- Não executado localmente, nem testado em navegador real nesta sessão.\n\n## Riscos e problemas conhecidos
 
-- A CI ainda precisa compilar os arquivos novos e executar os testes do projeto.
-- Não foi possível executar build/lint localmente nesta sessão; a validação dependerá do CI.
+- A CI precisa ser reexecutada após as atualizações documentais mais recentes; a revisão de implementação anterior passou.
+- Build e lint não puderam ser executados localmente nesta sessão; há evidência de sucesso apenas pela GitHub Actions.
 - O canvas e os scripts ainda não existem nesta entrega.
 - A validação visual manual em navegador real continua necessária após a CI.
 
