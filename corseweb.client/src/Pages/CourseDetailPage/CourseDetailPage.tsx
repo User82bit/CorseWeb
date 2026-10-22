@@ -339,7 +339,9 @@ function CourseDetailPage() {
                               <strong>{lesson.title}</strong>
                               <span>{formatCount(t.learning.lessonNumber.replace("{index}", String(lessonIndex + 1)), lessons.length, locale)}</span>
                             </div>
-                            <span className="course-detail-page__lesson-time">{formatEstimatedDuration(lesson.estimatedMinutes || 0, locale)}</span>
+                            {lesson.estimatedMinutes > 0 && (
+                              <span className="course-detail-page__lesson-time">{formatEstimatedDuration(lesson.estimatedMinutes, locale)}</span>
+                            )}
                           </li>
                         ))}
                       </ol>
