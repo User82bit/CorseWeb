@@ -190,7 +190,7 @@ function AdminDashboard() {
             {recentCourses.map((course) => (
               <article className="admin-recent-course" key={course.id}>
                 <div className="admin-recent-course__image">
-                  <img src={course.thumbnail.url} alt={course.thumbnail.alt ?? course.title} loading="lazy" />
+                  <img src={course.thumbnail?.url?.trim() || "/hero.png"} alt={course.thumbnail?.alt || course.title} loading="lazy" />
                 </div>
                 <div className="admin-recent-course__main">
                   <div className="admin-recent-course__badges">
