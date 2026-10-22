@@ -11,7 +11,7 @@ import type { Course, Block, Component, ComponentType, Tag, Media } from '../typ
 const placeholderImage: Media = {
   id: 'placeholder-image',
   type: 'image',
-  url: '/hero.png',
+  url: '/course-cover-placeholder.svg',
   alt: 'Imagem do curso',
   width: 1280,
   height: 720,
@@ -22,7 +22,7 @@ const _placeholderVideo: Media = {
   type: 'video',
   url: '/sample-video.mp4',
   duration: 300,
-  thumbnailUrl: '/hero.png',
+  thumbnailUrl: '/course-cover-placeholder.svg',
 };
 void _placeholderVideo;
 void placeholderImage;
