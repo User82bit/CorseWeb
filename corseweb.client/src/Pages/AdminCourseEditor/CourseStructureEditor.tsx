@@ -232,7 +232,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
           <p>{copy.emptyDescription}</p>
         </div>
       ) : (
-        <div className="course-structure__board" aria-label={copy.boardLabel}>
+        <div className="course-structure__board" role="region" aria-label={copy.boardLabel}>
           {orderedModules.map((module, index) => (
             <article
               className={`course-structure__column${module.id === activeModuleId ? " course-structure__column--selected" : ""}`}
@@ -280,7 +280,7 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                 <input
                   id={`new-lesson-${module.id}`}
                   value={module.id === activeModuleId ? newLessonTitle : ""}
-                  onFocus={() => { setSelectedModuleId(module.id); setSelectedLessonId(null); }}
+                  onFocus={() => { if (selectedModuleId !== module.id) setNewLessonTitle(""); setSelectedModuleId(module.id); setSelectedLessonId(null); }}
                   onChange={(event) => { setSelectedModuleId(module.id); setNewLessonTitle(event.target.value); }}
                   placeholder={copy.lessonPlaceholder}
                   maxLength={120}
