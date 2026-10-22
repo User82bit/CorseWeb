@@ -187,6 +187,24 @@ export interface Translations {
         footerDescription: string;
         footerAction: string;
     };
+    courseDetail: {
+        skipToContent: string;
+        primaryNavigation: string;
+        breadcrumbLabel: string;
+        backToCatalog: string;
+        aboutTitle: string;
+        categoryLabel: string;
+        levelLabel: string;
+        languageLabel: string;
+        statusLabel: string;
+        curriculumEyebrow: string;
+        loadingTitle: string;
+        loadingDescription: string;
+        notFoundTitle: string;
+        notFoundDescription: string;
+        startLearning: string;
+        draftNotice: string;
+    };
     learning: {
         myCoursesEyebrow: string;
         myCoursesTitle: string;
