@@ -311,15 +311,15 @@ function HomePage() {
                     <div className="home-course-card__media">
                       <span className="home-course-card__media-pattern" aria-hidden="true" />
                       <img
-                        src={course.thumbnail?.url?.trim() || "/hero.png"}
+                        src={course.thumbnail?.url?.trim() || "/course-cover-placeholder.svg"}
                         alt={course.thumbnail?.alt || course.title}
                         width="480"
                         height="300"
                         loading="lazy"
                         decoding="async"
                         onError={(event) => {
-                          if (!event.currentTarget.src.endsWith("/hero.png")) {
-                            event.currentTarget.src = "/hero.png";
+                          if (!event.currentTarget.src.endsWith("/course-cover-placeholder.svg")) {
+                            event.currentTarget.src = "/course-cover-placeholder.svg";
                           }
                         }}
                       />
