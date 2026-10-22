@@ -144,7 +144,7 @@ function AdminCourseEditor() {
               <input
                 className="field__input"
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, title: e.target.value }); }}
                 placeholder="Ex: Inglês do Zero ao Intermediário"
                 maxLength={120}
               />
@@ -155,7 +155,7 @@ function AdminCourseEditor() {
               <input
                 className="field__input"
                 value={form.subtitle}
-                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, subtitle: e.target.value }); }}
                 placeholder="Uma frase curta sobre o curso"
                 maxLength={160}
               />
@@ -166,7 +166,7 @@ function AdminCourseEditor() {
               <textarea
                 className="field__input field__input--textarea"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => { setSaveMessage(null); setForm({ ...form, description: e.target.value }); }}
                 placeholder="Descreva o curso, público e o que será aprendido"
                 rows={5}
               />
@@ -176,7 +176,7 @@ function AdminCourseEditor() {
             <div className="field-row">
               <label className="field">
                 <span className="field__label">Categoria</span>
-                <select className="field__input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                <select className="field__input" value={form.category} onChange={(e) => { setSaveMessage(null); setForm({ ...form, category: e.target.value }); }}>
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -190,7 +190,7 @@ function AdminCourseEditor() {
                 <select
                   className="field__input"
                   value={form.level}
-                  onChange={(e) => setForm({ ...form, level: e.target.value as CourseCreateInput["level"] })}
+                  onChange={(e) => { setSaveMessage(null); setForm({ ...form, level: e.target.value as CourseCreateInput["level"] }); }}
                 >
                   <option value="Iniciante">Iniciante</option>
                   <option value="Intermediário">Intermediário</option>
@@ -200,7 +200,7 @@ function AdminCourseEditor() {
 
               <label className="field">
                 <span className="field__label">Idioma</span>
-                <select className="field__input" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+                <select className="field__input" value={form.language} onChange={(e) => { setSaveMessage(null); setForm({ ...form, language: e.target.value }); }}>
                   <option value="pt-BR">pt-BR</option>
                   <option value="en">en</option>
                   <option value="es">es</option>
@@ -232,11 +232,11 @@ function AdminCourseEditor() {
             <div className="admin-editor__card">
               <h3 className="admin-editor__card-title">Configurações</h3>
               <label className="field field--check">
-                <input type="checkbox" checked={form.allowComments} onChange={(e) => setForm({ ...form, allowComments: e.target.checked })} />
+                <input type="checkbox" checked={form.allowComments} onChange={(e) => { setSaveMessage(null); setForm({ ...form, allowComments: e.target.checked }); }} />
                 <span>Permitir comentários</span>
               </label>
               <label className="field field--check">
-                <input type="checkbox" checked={form.allowFork} onChange={(e) => setForm({ ...form, allowFork: e.target.checked })} />
+                <input type="checkbox" checked={form.allowFork} onChange={(e) => { setSaveMessage(null); setForm({ ...form, allowFork: e.target.checked }); }} />
                 <span>Permitir fork / remix</span>
               </label>
             </div>
