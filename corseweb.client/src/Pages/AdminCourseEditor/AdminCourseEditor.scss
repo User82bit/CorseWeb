@@ -50,12 +50,8 @@
 
   &__grid {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-6);
-
-    @include respond(lg) {
-      grid-template-columns: minmax(0, 1fr) 320px;
-      align-items: start;
-    }
   }
 
   &__main {

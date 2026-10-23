@@ -110,7 +110,32 @@ export interface Block {
   };
 }
 
-/** Aula individual */
+/** Tipos de cards do novo canvas livre da aula. */
+export type CanvasElementType =
+  | "heading"
+  | "paragraph"
+  | "list"
+  | "image"
+  | "video"
+  | "code"
+  | "quiz"
+  | "exercise"
+  | "callout"
+  | "divider"
+  | "embed";
+
+/** Card posicionado livremente no canvas. x/y/largura/altura são pixels encaixados à grade de 24 px. */
+export interface CanvasElement {
+  id: string;
+  type: CanvasElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  props: Record<string, unknown>;
+}
+
+/** Aula individual — o conteúdo novo é uma coleção de cards em canvas, não blocos/colunas. */
 export interface Lesson extends BaseEntity {
   courseId: string;
   moduleId: string;
@@ -119,7 +144,7 @@ export interface Lesson extends BaseEntity {
   description?: string;
   order: number;
   estimatedMinutes: number;
-  blocks: Block[];
+  elements: CanvasElement[];
   // Progresso
   isPublished: boolean;
   isFree: boolean; // aula gratuita para preview

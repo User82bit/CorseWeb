@@ -581,3 +581,38 @@
 @media (prefers-reduced-motion: reduce) {
   .student-lesson__top-progress-bar span { transition: none; }
 }
+
+
+/* Novo contrato de aula: cards livres posicionados no canvas, sem grid de blocos legado. */
+.student-lesson__content-viewport {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.student-lesson__content-canvas {
+  position: relative;
+  transform-origin: top left;
+  background: #ffffff;
+}
+
+.student-lesson__canvas-element {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 12px rgba(18, 27, 43, .08);
+
+  .student-lesson__figure { margin: 0; }
+  .student-lesson__figure img { max-height: 100%; object-fit: contain; }
+  .student-lesson__code { margin: 0; }
+  .student-lesson__divider { margin: var(--space-3) 0; }
+  .student-lesson__activity { margin: 0; }
+}

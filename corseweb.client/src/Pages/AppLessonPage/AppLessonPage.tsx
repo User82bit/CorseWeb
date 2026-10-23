@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -11,7 +11,7 @@ import {
   type EnrollmentModuleProgress,
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
-import type { Component, Course, Lesson, Module } from "../../types/course";
+import type { CanvasElement, Course, Lesson, Module } from "../../types/course";
 import "./AppLessonPage.scss";
 
 function interpolate(template: string, values: Record<string, string | number>) {
@@ -19,93 +19,55 @@ function interpolate(template: string, values: Record<string, string | number>) 
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
 }
 
-function ContentComponent({ component }: { component: Component }) {
-  const props = component.props as Record<string, unknown>;
-  const safeText = (value: unknown) => String(value ?? "");
+function CanvasElementContent({ element }: { element: CanvasElement }) {
+  const props = element.props ?? {};
+  const text = (value: unknown) => String(value ?? "");
   const safeUrl = (value: unknown) => {
-    const text = safeText(value).trim();
-    if (!text) return "";
+    const source = text(value).trim();
+    if (!source) return "";
     try {
-      const parsed = new URL(text, window.location.origin);
+      const parsed = new URL(source, window.location.origin);
       return parsed.protocol === "https:" || parsed.origin === window.location.origin ? parsed.href : "";
     } catch {
       return "";
     }
   };
 
-  switch (component.type) {
-    case "paragrafo":
-      return <p className="student-lesson__text">{safeText(props.content)}</p>;
-    case "titulo": {
+  switch (element.type) {
+    case "heading": {
       const level = Number(props.level ?? 2);
-      const Tag = level === 1 ? "h2" : level === 2 ? "h3" : "h4";
-      return <Tag className="student-lesson__content-heading">{safeText(props.content)}</Tag>;
+      const Tag = level === 1 ? "h2" : level === 3 ? "h4" : "h3";
+      return <Tag className="student-lesson__content-heading">{text(props.content)}</Tag>;
     }
-    case "lista": {
-      const items = Array.isArray(props.items) ? props.items.map(item => String(item)) : [];
-      const ListTag = props.ordered ? "ol" : "ul";
-      return <ListTag className="student-lesson__list">{items.map((item, index) => <li key={index}>{item}</li>)}</ListTag>;
+    case "paragraph":
+      return <p className="student-lesson__text">{text(props.content)}</p>;
+    case "list": {
+      const items = Array.isArray(props.items) ? props.items.map((item) => String(item)) : [];
+      const Tag = props.ordered ? "ol" : "ul";
+      return <Tag className="student-lesson__list">{items.map((item, index) => <li key={index}>{item}</li>)}</Tag>;
     }
-    case "bloco-codigo":
-      return (
-        <pre className="student-lesson__code">
-          {typeof props.language === "string" && props.language && <span className="student-lesson__code-language">{safeText(props.language)}</span>}
-          <code>{safeText(props.code)}</code>
-        </pre>
-      );
-    case "imagem": {
-      const src = safeUrl(props.url ?? props.src);
-      if (!src) return <p className="student-lesson__unsupported">{safeText(props.alt || props.caption || "")}</p>;
-      return (
-        <figure className="student-lesson__figure">
-          <img src={src} alt={safeText(props.alt)} loading="lazy" decoding="async" />
-          {typeof props.caption === "string" && props.caption && <figcaption>{safeText(props.caption)}</figcaption>}
-        </figure>
-      );
+    case "code":
+      return <pre className="student-lesson__code">{typeof props.language === "string" && props.language && <span className="student-lesson__code-language">{text(props.language)}</span>}<code>{text(props.code)}</code></pre>;
+    case "image": {
+      const src = safeUrl(props.url);
+      return src ? <figure className="student-lesson__figure"><img src={src} alt={text(props.alt)} loading="lazy" decoding="async" />{typeof props.caption === "string" && props.caption && <figcaption>{text(props.caption)}</figcaption>}</figure> : <p className="student-lesson__unsupported">{text(props.alt || props.caption)}</p>;
     }
     case "video": {
-      const src = safeUrl(props.url ?? props.src);
-      return src ? (
-        <div className="student-lesson__video">
-          <video controls preload="metadata" src={src}>
-            <track kind="captions" />
-          </video>
-          {typeof props.caption === "string" && props.caption && <p>{safeText(props.caption)}</p>}
-        </div>
-      ) : <p className="student-lesson__unsupported">{safeText(props.caption || "")}</p>;
+      const src = safeUrl(props.url);
+      return src ? <div className="student-lesson__video"><video controls preload="metadata" src={src}><track kind="captions" /></video>{typeof props.caption === "string" && props.caption && <p>{text(props.caption)}</p>}</div> : <p className="student-lesson__unsupported">{text(props.caption)}</p>;
     }
-    case "divisor":
-      return <hr className={`student-lesson__divider student-lesson__divider--${safeText(props.style || "solid")}`} />;
-    default:
-      if (String(component.type).startsWith("callout")) {
-        const variant = String(component.type).replace("callout-", "");
-        return (
-          <aside className={`student-lesson__callout student-lesson__callout--${variant}`}>
-            {typeof props.title === "string" && props.title && <strong>{safeText(props.title)}</strong>}
-            <p>{safeText(props.content)}</p>
-          </aside>
-        );
-      }
-      if (String(component.type).startsWith("quiz")) {
-        return (
-          <section className="student-lesson__activity">
-            <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />{safeText(component.type).includes("verdadeiro") ? "Verdadeiro ou falso" : "Atividade"}</span>
-            <h3>{safeText(props.question)}</h3>
-            <p>{safeText(props.instruction)}</p>
-            <p className="student-lesson__activity-note">{"Esta atividade interativa ainda não está disponível."}</p>
-          </section>
-        );
-      }
-      if (String(component.type).startsWith("embed-")) {
-        const url = safeUrl(props.url);
-        return url ? (
-          <div className="student-lesson__embed">
-            <strong>{safeText(props.title || component.type.replace("embed-", ""))}</strong>
-            <a href={url} target="_blank" rel="noreferrer">{url}<SvgIcon name="arrow-right" size="0.9rem" /></a>
-          </div>
-        ) : null;
-      }
-      return <p className="student-lesson__unsupported">{component.type}</p>;
+    case "quiz":
+      return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Atividade</span><h3>{text(props.question)}</h3><p className="student-lesson__activity-note">Esta atividade interativa ainda não está disponível.</p></section>;
+    case "exercise":
+      return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Exercício</span><p>{text(props.instruction)}</p><pre className="student-lesson__code"><code>{text(props.starterCode)}</code></pre></section>;
+    case "callout":
+      return <aside className="student-lesson__callout student-lesson__callout--info">{typeof props.title === "string" && props.title && <strong>{text(props.title)}</strong>}<p>{text(props.content)}</p></aside>;
+    case "divider":
+      return <hr className="student-lesson__divider student-lesson__divider--solid" />;
+    case "embed": {
+      const url = safeUrl(props.url);
+      return url ? <div className="student-lesson__embed"><strong>{text(props.title || "Incorporação")}</strong><a href={url} target="_blank" rel="noreferrer">{url}<SvgIcon name="arrow-right" size="0.9rem" /></a></div> : null;
+    }
   }
 }
 
@@ -113,6 +75,8 @@ function AppLessonPage() {
   const { t, locale } = useTranslation();
   const { courseSlug, lessonSlug } = useParams<{ courseSlug: string; lessonSlug: string }>();
   const [course, setCourse] = useState<Course | undefined>(() => courseSlug ? getCourseBySlugStore(courseSlug) : undefined);
+  const contentCanvasViewportRef = useRef<HTMLDivElement>(null);
+  const [contentCanvasScale, setContentCanvasScale] = useState(1);
   const [enrollment, setEnrollment] = useState<CourseEnrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -174,6 +138,18 @@ function AppLessonPage() {
   const isLessonComplete = lessonProgress?.status === "concluido";
   const number = (value: number) => new Intl.NumberFormat(locale).format(value);
   const accessKey = course && lesson ? `${course.id}:${lesson.id}` : null;
+
+  useEffect(() => {
+    const viewport = contentCanvasViewportRef.current;
+    if (!viewport) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? viewport.clientWidth;
+      const scale = Math.min(1, width / 1200);
+      setContentCanvasScale((current) => Math.abs(current - scale) < 0.001 ? current : scale);
+    });
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [lesson?.id, Boolean(enrollment), loading]);
 
   useEffect(() => {
     if (!course || course.status !== "publicado" || !lesson || !enrollment || !accessKey) return;
@@ -348,7 +324,8 @@ function AppLessonPage() {
   }
 
   const completionPercent = Math.round(enrollment.overallPercent);
-  const sortedBlocks = [...lesson.blocks].sort((a, b) => a.order - b.order);
+  const sortedElements = [...(lesson.elements ?? [])].sort((a, b) => a.y - b.y || a.x - b.x);
+  const canvasHeight = Math.max(900, ...sortedElements.map((element) => element.y + element.height + 24));
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -395,31 +372,32 @@ function AppLessonPage() {
             </div>
           </header>
 
-          {sortedBlocks.length === 0 ? (
+          {sortedElements.length === 0 ? (
             <div className="student-lesson__empty-content">
               <span className="student-lesson__state-icon"><SvgIcon name="book-open" size="1.35rem" /></span>
               <h2>{t.learning.noLessonContentTitle}</h2>
               <p>{t.learning.noLessonContentDescription}</p>
             </div>
           ) : (
-            <div className="student-lesson__content">
-              {sortedBlocks.map(block => (
-                <section
-                  className={`student-lesson__block student-lesson__block--${block.layout?.background ?? "transparent"} student-lesson__block--padding-${block.layout?.padding ?? "md"} student-lesson__block--gap-${block.layout?.gap ?? "md"}`}
-                  style={{ "--student-block-columns": block.layout?.columns ?? 1 } as CSSProperties & { "--student-block-columns": number }}
-                  key={block.id}
-                >
-                  {block.components.slice().sort((a, b) => a.order - b.order).map(component => (
-                    <div
-                      className="student-lesson__component"
-                      key={component.id}
-                      style={{ "--student-component-span": Math.min(component.layout?.columnSpan ?? 1, block.layout?.columns ?? 1) } as CSSProperties & { "--student-component-span": number }}
-                    >
-                      <ContentComponent component={component} />
-                    </div>
-                  ))}
-                </section>
-              ))}
+            <div
+              className="student-lesson__content-viewport"
+              ref={contentCanvasViewportRef}
+              style={{ height: canvasHeight * contentCanvasScale }}
+            >
+              <div
+                className="student-lesson__content-canvas"
+                style={{ width: 1200, height: canvasHeight, transform: `scale(${contentCanvasScale})` }}
+              >
+                {sortedElements.map((element) => (
+                  <section
+                    className="student-lesson__canvas-element"
+                    key={element.id}
+                    style={{ left: element.x, top: element.y, width: element.width, height: element.height }}
+                  >
+                    <CanvasElementContent element={element} />
+                  </section>
+                ))}
+              </div>
             </div>
           )}
 
