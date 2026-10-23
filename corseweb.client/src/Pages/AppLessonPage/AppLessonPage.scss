@@ -240,6 +240,15 @@
     }
   }
 
+  &__component {
+    min-width: 0;
+    grid-column: span var(--student-component-span, 1);
+
+    @media (max-width: 42rem) {
+      grid-column: 1 / -1;
+    }
+  }
+
   &__text {
     margin: 0;
     color: var(--color-text-secondary);
