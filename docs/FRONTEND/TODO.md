@@ -25,7 +25,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 
 | FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | INTEGRADA em `master` (validação manual pendente) | [PR #23](https://github.com/User82bit/CorseWeb/pull/23); a estrutura Curso → Módulos → Aulas já está no editor. A composição em grid é acompanhada em FE-010 |
 | FE-010 | Editor antigo em blocos/componentes e larguras de coluna | SUBSTITUÍDO por BREAKING CHANGE | [PR #33](https://github.com/User82bit/CorseWeb/pull/33); o formato-alvo foi sucedido por `nodes[]` + `connections[]` na evolução do editor visual; compatibilidade antiga não será mantida |
-| FE-011 | Canvas visual de nós e grafo de fluxo pedagógico | EM DESENVOLVIMENTO | Base em `Homologa`; PR #36 integrado em `Homologa`. Branch `feat/course-flow-graph-editor`: templates persistentes na paleta, instâncias em `nodes[]`, portas e ligações SVG persistidas em `connections[]`. O mecanismo de execução condicional pelo aluno ainda é etapa posterior. Critérios em `etapas/fe-011-lesson-editor-workspace.md` |
+| FE-011 | Canvas visual de nós e grafo de fluxo pedagógico | EM DESENVOLVIMENTO | Base em `Homologa`; PR #36 integrado em `Homologa`. Branch `feat/course-flow-graph-editor`: templates persistentes na paleta, instâncias em `nodes[]`, grid de 20 px, seleção múltipla/retângulo de seleção, portas e ligações SVG persistidas em `connections[]`. O mecanismo de execução condicional pelo aluno ainda é etapa posterior. Critérios em `etapas/fe-011-lesson-editor-workspace.md` |
 
 ## Regras para imagens manuais
 
