@@ -1,5 +1,10 @@
 # Configuração da autenticação Google
 
+- **Estado:** em revisão.
+- **Branch:** `fix/auth-google-configuration`.
+- **Pull Request:** [#31 — Configurar autenticação Google por ambiente](https://github.com/User82bit/CorseWeb/pull/31).
+
+
 ## Como o login atual funciona
 
 O frontend usa Google Identity Services para receber um **ID token**. O backend lê `Authentication:Google:ClientId`, valida o token com esse Client ID e cria a sessão por cookie.
