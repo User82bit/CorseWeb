@@ -27,6 +27,18 @@ Os tipos disponíveis incluem Início, título, texto, lista, imagem, vídeo, c�
 
 Os campos legados `elements[]` e `blocks[]` não serão convertidos nem mantidos. O contrato novo é intencionalmente incompatível.
 
+## Correção da câmera e das curvas — PR #38
+
+Os cards e o mecanismo de criação de conexões existentes foram preservados.
+
+- A câmera permite pan com Espaço + arrasto do mouse, botão do meio ou arrasto do fundo por toque.
+- Ctrl/Cmd + roda do mouse controla o zoom; a interface também oferece diminuir, aumentar, ajustar o conteúdo à tela e centralizar a câmera em 100%.
+- Drop da paleta, seleção retangular, movimentação de nós e prévia de conexão convertem coordenadas entre a tela e o canvas, levando em conta a translação e o nível de zoom.
+- As curvas SVG adaptam os pontos de controle à distância e à direção relativa entre a saída e a entrada. Ao ligar um nó que está acima da origem, a curva procura contornar a lateral correspondente em vez de repetir uma curva fixa.
+- Tentativas de conexão inválidas encerram a conexão temporária.
+- O estado da câmera é local à sessão do editor: persistir viewport/zoom entre reaberturas e dispositivos continua pendente.
+- Build, lint, teste de idioma e build .NET passaram no commit de código `07e3f42ccfced53620881433afe44c6d97ff23b6`. A CI precisa ser confirmada novamente no HEAD após esta atualização documental. A inspeção visual em navegador real, incluindo celular/tablet, continua pendente.
+
 ## Limite importante: execução do fluxo
 
 Esta etapa implementa a autoria visual e a persistência do grafo. A visualização do aluno consegue renderizar os nós existentes, mas ainda **não executa** as conexões para controlar a progressão pedagógica. Desvios condicionais por resultado de quiz, liberação de atividades, bloqueio de caminhos e emissão real de certificado ficam para uma etapa posterior do motor de execução.
@@ -50,6 +62,10 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 - [ ] Ctrl/Cmd + clique alterna nós em uma seleção múltipla.
 - [ ] Arrastar uma área vazia cria um retângulo de seleção e seleciona os nós que o intersectam.
 - [ ] Portas de entrada/saída são visíveis e conexões curvas SVG são criadas e persistidas.
+- [ ] A câmera pode ser movida livremente com Espaço + arrasto, botão do meio e toque no fundo.
+- [ ] O zoom pode aumentar, diminuir, enquadrar o conteúdo e voltar a 100%; Ctrl/Cmd + roda faz zoom centrado no cursor.
+- [ ] Cards, seleção e criação de conexões mantêm coordenadas corretas com diferentes níveis de zoom.
+- [ ] As curvas se adaptam à posição relativa da saída e da entrada quando os nós estão abaixo, ao lado ou acima.
 - [ ] O quiz oferece saídas `success` e `failed`; excluir um nó remove as conexões associadas.
 - [ ] O inspetor edita conteúdo e dimensões do nó selecionado.
 - [ ] Criar módulos/aulas, trocar a aula ativa, salvar rascunho e publicar funcionam.
@@ -59,4 +75,4 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 
 ## Fora do escopo desta etapa
 
-O motor que interpreta as conexões e conduz o aluno por caminhos condicionais, zoom/pan, guias/réguas e edição colaborativa. A inspeção visual manual em navegador real continua pendente até ser feita pelo proprietário.
+O motor que interpreta as conexões e conduz o aluno por caminhos condicionais, persistência da câmera entre sessões/dispositivos, guias/réguas e edição colaborativa. A inspeção visual manual em navegador real continua pendente até ser feita pelo proprietário.
