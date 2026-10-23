@@ -237,6 +237,10 @@ function snapToGrid(value: number): number {
   return Math.round(value / GRID) * GRID;
 }
 
+function maxNodeX(width: number): number {
+  return Math.max(GRID, Math.floor((CANVAS_WIDTH - width - GRID) / GRID) * GRID);
+}
+
 function getText(node: CanvasNode, key: string, fallback = ""): string {
   const value = node.props?.[key];
   return typeof value === "string" ? value : fallback;
@@ -306,7 +310,7 @@ function overlaps(a: Pick<CanvasNode, "x" | "y" | "width" | "height">, b: Pick<C
 }
 
 function findFreePosition(nodes: CanvasNode[], width: number, height: number): { x: number; y: number } {
-  const possibleX = [...new Set([GRID, GRID * 14, GRID * 27, Math.max(GRID, snapToGrid(CANVAS_WIDTH - width - GRID))])];
+  const possibleX = [...new Set([GRID, GRID * 14, GRID * 27, maxNodeX(width)])];
   for (let y = GRID; y < 12000; y += GRID) {
     for (const x of possibleX) {
       const candidate = { x, y, width, height };
@@ -572,7 +576,7 @@ function LessonEditorPage() {
     const free = requestedX == null || requestedY == null
       ? findFreePosition(nodes, size.width, size.height)
       : { x: requestedX, y: requestedY };
-    const x = Math.max(GRID, Math.min(CANVAS_WIDTH - size.width - GRID, snapToGrid(free.x)));
+    const x = Math.max(GRID, Math.min(maxNodeX(size.width), snapToGrid(free.x)));
     const y = Math.max(GRID, snapToGrid(free.y));
     const node = createCanvasNode(type, x, y);
     updateNodes((current) => [...current, node]);
@@ -582,7 +586,21 @@ function LessonEditorPage() {
 
   const handlePaletteDragStart = (event: ReactDragEvent<HTMLButtonElement>, type: CanvasNodeType) => {
     event.dataTransfer.setData(PALETTE_DRAG_TYPE, type);
+    event.dataTransfer.setData("text/plain", type);
     event.dataTransfer.effectAllowed = "copy";
+
+    // Provide a consistent card-shaped drag ghost instead of the browser's button snapshot.
+    const preview = document.createElement("div");
+    preview.className = "lesson-editor-workspace__drag-preview";
+    const mark = document.createElement("span");
+    mark.className = "lesson-editor-workspace__drag-preview-mark";
+    mark.textContent = "⠿";
+    const label = document.createElement("strong");
+    label.textContent = copy.cardNames[type];
+    preview.append(mark, label);
+    document.body.appendChild(preview);
+    event.dataTransfer.setDragImage(preview, 28, 28);
+    window.setTimeout(() => preview.remove(), 0);
   };
 
   const handleDrop = (event: ReactDragEvent<HTMLDivElement>) => {
@@ -590,8 +608,9 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const bounds = event.currentTarget.getBoundingClientRect();
-    const x = snapToGrid(event.clientX - bounds.left - GRID);
-    const y = snapToGrid(event.clientY - bounds.top - GRID);
+    // The canvas has a 1 px border; map the cursor to its content origin, then snap.
+    const x = snapToGrid(event.clientX - bounds.left - 1);
+    const y = snapToGrid(event.clientY - bounds.top - 1);
     addNode(type, x, y);
   };
 
@@ -649,12 +668,20 @@ function LessonEditorPage() {
 
     const drag = dragRef.current;
     if (!drag || !activeLesson) return;
-    const deltaX = event.clientX - drag.clientX;
-    const deltaY = event.clientY - drag.clientY;
+    const deltaX = snapToGrid(event.clientX - drag.clientX);
+    const deltaY = snapToGrid(event.clientY - drag.clientY);
+
+    // Clamp the group translation as a whole so selected nodes keep their relative layout
+    // when any edge of the group reaches the canvas boundary.
+    const minDeltaX = Math.max(...drag.origins.map((origin) => GRID - origin.x));
+    const maxDeltaX = Math.min(...drag.origins.map((origin) => maxNodeX(origin.width) - origin.x));
+    const minDeltaY = Math.max(...drag.origins.map((origin) => GRID - origin.y));
+    const appliedDeltaX = Math.min(maxDeltaX, Math.max(minDeltaX, deltaX));
+    const appliedDeltaY = Math.max(minDeltaY, deltaY);
     const positions = drag.origins.map((origin) => ({
       id: origin.id,
-      x: Math.max(GRID, Math.min(CANVAS_WIDTH - origin.width - GRID, snapToGrid(origin.x + deltaX))),
-      y: Math.max(GRID, snapToGrid(origin.y + deltaY)),
+      x: origin.x + appliedDeltaX,
+      y: origin.y + appliedDeltaY,
     }));
     if (positions.every((position) => {
       const current = nodes.find((node) => node.id === position.id);
