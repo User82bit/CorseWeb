@@ -33,15 +33,14 @@ export default function App() {
         <Route path="/app/courses/:courseSlug/lessons/:lessonSlug" element={<AppLessonPage />} />
       </Route>
 
-      {/* Editor de aula fora do shell administrativo, em workspace dedicado. */}
-      <Route path="/admin/courses/:courseSlug/editor/lessons/:lessonId" element={<RequireAdmin><LessonEditorPage /></RequireAdmin>} />
+      {/* Editor visual do curso: workspace integral, sem o shell administrativo. */}
+      <Route path="/admin/courses/:courseSlug/editor" element={<RequireAdmin><LessonEditorPage /></RequireAdmin>} />
 
       {/* Admin — exige login + role admin (definido no servidor via AdminEmails) */}
       <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/courses" element={<AdminCoursesPage />} />
         <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
-        <Route path="/admin/courses/:courseSlug/editor" element={<AdminCourseEditor />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
