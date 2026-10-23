@@ -85,7 +85,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Google token inválido");
-            return Unauthorized(new { error = "Token Google inválido", detail = ex.Message });
+            return Unauthorized(new { error = "Token Google inválido" });
         }
 
         if (payload == null || string.IsNullOrWhiteSpace(payload.Email) || payload.EmailVerified != true)

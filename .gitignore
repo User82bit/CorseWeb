@@ -366,6 +366,11 @@ CorseWeb.Server/corseweb.db
 CorseWeb.Server/corseweb.db-*
 *.db-shm
 *.db-wal
-# local overrides
+# Local appsettings can contain credentials. Do not commit them.
 appsettings.local.json
 appsettings.Development.local.json
+
+# Local environment files; keep real values out of Git.
+.env
+.env.*
+!.env.example

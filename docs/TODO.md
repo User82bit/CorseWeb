@@ -1,6 +1,6 @@
 # CorseWeb — Kanban técnico
 
-Última atualização: 2026-10-22.
+Última atualização: 2026-10-23.
 
 Este arquivo acompanha entregas significativas do frontend, backend e infraestrutura. O código existente é uma referência para auditoria, não uma garantia de funcionamento.
 
@@ -35,6 +35,7 @@ O estado de implementação deve ser distinguido de PR aberto/aprovado, integra�
 | FE-003 | Consolidar os fundamentos visuais responsivos e acessíveis | Frontend | P1 | INTEGRADA em `master` (validação visual pendente) | `feat/design-system-foundations` / [PR #12](https://github.com/User82bit/CorseWeb/pull/12) | CI aprovada; inspeção visual manual em navegador real pendente |
 | FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | Frontend | P1 | EM DESENVOLVIMENTO | Dashboard/login/catálogo público e rotas de aprendizagem integrados em master ([PR #14](https://github.com/User82bit/CorseWeb/pull/14), [PR #17](https://github.com/User82bit/CorseWeb/pull/17), [PR #19](https://github.com/User82bit/CorseWeb/pull/19)); painel administrativo e gestão de cursos em revisão ([PR #21](https://github.com/User82bit/CorseWeb/pull/21)) | CI do PR #21 passou no commit 936d3f4928b7d5c20baf5bf1ef4661d675e992d5 ([run #39629101208](https://github.com/User82bit/CorseWeb/actions/runs/39629101208)); validação visual manual ainda pendente; criação/edição de cursos fica para outra branch; redesign de /courses/:courseSlug em revisão no [PR #29](https://github.com/User82bit/CorseWeb/pull/29), branch fix/public-course-detail-redesign |
 | FE-009 | Editor visual da estrutura do curso: módulos, aulas e totais derivados | Frontend/Backend | P1 | EM DESENVOLVIMENTO | `feat/course-visual-authoring-studio` / [PR #23](https://github.com/User82bit/CorseWeb/pull/23) — rascunho | CI verde no commit de implementação `a9d09fb`; atualizações documentais exigem nova execução. Canvas/scripts ficam para etapas posteriores |
+| BE-000 | Preparar configuração segura das credenciais do Google em desenvolvimento e produção | Backend/Auth | P0 | EM REVISÃO | `fix/auth-google-configuration` / [PR #31](https://github.com/User82bit/CorseWeb/pull/31) | CI do código passou; validação manual e integração pendentes |
 | BE-001 | Auditar e planejar a reconstrução dos fluxos de API, autenticação e persistência | Backend | P1 | NÃO INICIADA | A definir após definição do escopo | CI-001 integrada em `master` |
 | DOC-001 | Consolidar decisões arquiteturais e documentação técnica de conteúdo, aulas e progresso | Documentação | P1 | NÃO INICIADA | A definir | Localizar/validar materiais arquiteturais existentes |
 

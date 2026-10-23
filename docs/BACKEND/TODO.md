@@ -8,6 +8,7 @@ O proprietário informou que, no estado atual do projeto, somente a tradução (
 
 | ID | Entrega | Estado | Critério principal |
 |---|---|---|---|
+| BE-000 | Configurar credenciais Google locais e por ambiente | EM REVISÃO ([PR #31](https://github.com/User82bit/CorseWeb/pull/31)) | CI do código passou; validar endpoint/login manualmente; segredo nunca retornado ao cliente |
 | BE-001 | Inventariar endpoints, modelos, autorização e persistência | NÃO INICIADA | Contratos documentados; riscos e comportamentos atuais verificados sem alterar dados |
 | BE-002 | Definir testes de integração para autenticação e permissões | NÃO INICIADA | Casos positivos e negativos para usuário comum, administrador e visitante |
 | BE-003 | Revalidar criação, edição, rascunho, publicação e arquivamento de cursos | NÃO INICIADA | Fluxos validados por testes; consistência de versão e estado demonstrada |
