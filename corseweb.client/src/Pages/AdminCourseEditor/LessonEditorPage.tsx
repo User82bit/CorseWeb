@@ -5,7 +5,7 @@ import type { CanvasConnection, CanvasNode, CanvasNodeType, Course, Lesson, Modu
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
 
-const GRID = 24;
+const GRID = 20;
 const CANVAS_WIDTH = 1200;
 const CANVAS_MIN_HEIGHT = 900;
 const PALETTE_DRAG_TYPE = "application/x-corseweb-canvas-node";
@@ -825,7 +825,7 @@ function LessonEditorPage() {
         </label>
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddModule}>{copy.addModule}</button>
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddLesson} disabled={!activeModule}>{copy.addLesson}</button>
-        <span className="lesson-editor-workspace__grid-scale">Grid · 24 px</span>
+        <span className="lesson-editor-workspace__grid-scale">Grid · 20 px</span>
       </div>
 
       <div className="lesson-editor-workspace__body">
