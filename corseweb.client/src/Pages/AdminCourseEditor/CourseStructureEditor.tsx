@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
-import type { Lesson, Module } from "../../types/course";
-import LessonCanvasEditor from "./LessonCanvasEditor";
+import type { CourseCreateInput, Lesson, Module } from "../../types/course";
 import "./CourseStructureEditor.scss";
 
 interface CourseStructureEditorProps {
   courseId: string;
   actorId: string;
+  courseSlug: string;
+  courseForm: CourseCreateInput;
   modules: Module[];
   onChange: (modules: Module[]) => void;
 }
@@ -56,7 +58,8 @@ function normalizeModules(modules: Module[], courseId: string): Module[] {
   });
 }
 
-function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseStructureEditorProps) {
+function CourseStructureEditor({ courseId, actorId, courseSlug, courseForm, modules, onChange }: CourseStructureEditorProps) {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const copy = t.editorStructure;
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(modules[0]?.id ?? null);
@@ -324,7 +327,16 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                   <p className="course-structure__eyebrow">{copy.lessonSettings}</p>
                   <h3>{copy.editLesson}</h3>
                 </div>
-                <button type="button" className="course-structure__button course-structure__button--danger" onClick={handleDeleteLesson}>{copy.deleteLesson}</button>
+                <div className="course-structure__panel-actions">
+                  <button
+                    type="button"
+                    className="course-structure__button course-structure__button--primary"
+                    onClick={() => navigate(`/admin/courses/${courseSlug}/editor/lessons/${selectedLesson.id}`, { state: { modules: orderedModules, courseForm } })}
+                  >
+                    {copy.openLessonEditor}
+                  </button>
+                  <button type="button" className="course-structure__button course-structure__button--danger" onClick={handleDeleteLesson}>{copy.deleteLesson}</button>
+                </div>
               </div>
               <label className="course-structure__field">
                 <span>{copy.lessonTitle}</span>
@@ -349,7 +361,6 @@ function CourseStructureEditor({ courseId, actorId, modules, onChange }: CourseS
                 <button type="button" className="course-structure__button" onClick={() => handleMoveLesson(1)} disabled={selectedLesson.order >= selectedModule.lessons.length}>{copy.moveLessonDown}</button>
               </div>
             </section>
-            <LessonCanvasEditor lesson={selectedLesson} onChange={(blocks) => updateLesson({ blocks })} />
             </>
           ) : (
             <div className="course-structure__hint">

@@ -361,6 +361,7 @@ export interface Translations {
         deleteLesson: string;
         lessonSettings: string;
         editLesson: string;
+        openLessonEditor: string;
         lessonTitle: string;
         lessonDescription: string;
         duration: string;

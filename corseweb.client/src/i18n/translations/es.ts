@@ -364,6 +364,7 @@ export const es: Translations = {
         deleteLesson: "Eliminar lección",
         lessonSettings: "LECCIÓN",
         editLesson: "Configurar lección",
+        openLessonEditor: "Abrir editor visual",
         lessonTitle: "Título de la lección",
         lessonDescription: "Descripción de la lección",
         duration: "Duración estimada (minutos)",

@@ -364,6 +364,7 @@ export const ptBR: Translations = {
         deleteLesson: "Excluir aula",
         lessonSettings: "AULA",
         editLesson: "Configurar aula",
+        openLessonEditor: "Abrir editor visual",
         lessonTitle: "Título da aula",
         lessonDescription: "Descrição da aula",
         duration: "Duração estimada (minutos)",
