@@ -577,6 +577,7 @@ function LessonEditorPage() {
     const node = createCanvasNode(type, x, y);
     updateNodes((current) => [...current, node]);
     setSelectedNodeId(node.id);
+    setSelectedNodeIds([node.id]);
   };
 
   const handlePaletteDragStart = (event: ReactDragEvent<HTMLButtonElement>, type: CanvasNodeType) => {
@@ -655,6 +656,10 @@ function LessonEditorPage() {
       x: Math.max(GRID, Math.min(CANVAS_WIDTH - origin.width - GRID, snapToGrid(origin.x + deltaX))),
       y: Math.max(GRID, snapToGrid(origin.y + deltaY)),
     }));
+    if (positions.every((position) => {
+      const current = nodes.find((node) => node.id === position.id);
+      return current && current.x === position.x && current.y === position.y;
+    })) return;
     updateNodes((current) => current.map((item) => {
       const position = positions.find((candidate) => candidate.id === item.id);
       return position ? { ...item, x: position.x, y: position.y } : item;
@@ -666,6 +671,7 @@ function LessonEditorPage() {
     event.stopPropagation();
     const anchor = getPortAnchor(node, "output", portId);
     setSelectedNodeId(node.id);
+    setSelectedNodeIds([node.id]);
     setPendingConnection({ sourceNode: node.id, sourcePort: portId, x1: anchor.x, y1: anchor.y, x2: anchor.x, y2: anchor.y });
   };
 
@@ -714,6 +720,7 @@ function LessonEditorPage() {
     commitModules([...modules, module]);
     setSelectedLessonId(module.lessons[0]?.id ?? "");
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
   };
 
   const handleAddLesson = () => {
@@ -725,17 +732,20 @@ function LessonEditorPage() {
       : module));
     setSelectedLessonId(lesson.id);
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
   };
 
   const handleRemoveNode = () => {
     if (!selectedNode) return;
+    const idsToRemove = new Set(selectedNodeIds.includes(selectedNode.id) ? selectedNodeIds : [selectedNode.id]);
     updateLesson({
-      nodes: nodes.filter((node) => node.id !== selectedNode.id),
+      nodes: nodes.filter((node) => !idsToRemove.has(node.id)),
       connections: connections.filter((connection) =>
-        connection.sourceNode !== selectedNode.id && connection.targetNode !== selectedNode.id
+        !idsToRemove.has(connection.sourceNode) && !idsToRemove.has(connection.targetNode)
       ),
     });
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
   };
 
   const handleDuplicateNode = () => {
@@ -744,6 +754,7 @@ function LessonEditorPage() {
     const copy = { ...selectedNode, id: createId("card"), x: position.x, y: position.y, props: { ...selectedNode.props } };
     updateNodes((current) => [...current, copy]);
     setSelectedNodeId(copy.id);
+    setSelectedNodeIds([copy.id]);
   };
 
   const patchSelectedProps = (patch: Record<string, unknown>) => {
@@ -834,6 +845,8 @@ function LessonEditorPage() {
   const handleLessonChange = (lessonId: string) => {
     setSelectedLessonId(lessonId);
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
+    setSelectionRect(null);
   };
 
   if (loading) {
@@ -922,6 +935,7 @@ function LessonEditorPage() {
                 style={{ height: canvasHeight }}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={handleDrop}
+                onPointerDown={handleCanvasPointerDown}
                 onPointerMove={handleCanvasPointerMove}
                 onPointerUp={handleCanvasPointerUp}
                 onPointerCancel={handleCanvasPointerUp}
@@ -958,13 +972,18 @@ function LessonEditorPage() {
                 {nodes.map((node) => (
                   <article
                     key={node.id}
-                    className={`lesson-editor-workspace__element${node.id === selectedNodeId ? " lesson-editor-workspace__element--selected" : ""}`}
+                    className={`lesson-editor-workspace__element${selectedNodeIds.includes(node.id) ? " lesson-editor-workspace__element--selected" : ""}`}
                     style={{ left: node.x, top: node.y, width: node.width, height: node.height } as CSSProperties}
                     role="group"
                     tabIndex={0}
                     aria-label={copy.cardNames[node.type]}
-                    onClick={() => setSelectedNodeId(node.id)}
-                    onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedNodeId(node.id); } }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedNodeId(node.id);
+                        setSelectedNodeIds([node.id]);
+                      }
+                    }}
                     onPointerDown={(event) => handleCardPointerDown(event, node)}
                     title={copy.cardNames[node.type]}
                   >
@@ -1009,6 +1028,17 @@ function LessonEditorPage() {
                     </div>
                   </article>
                 ))}
+                {selectionRect && (
+                  <div
+                    className="lesson-editor-workspace__selection-rectangle"
+                    style={{
+                      left: Math.min(selectionRect.startX, selectionRect.currentX),
+                      top: Math.min(selectionRect.startY, selectionRect.currentY),
+                      width: Math.abs(selectionRect.currentX - selectionRect.startX),
+                      height: Math.abs(selectionRect.currentY - selectionRect.startY),
+                    }}
+                  />
+                )}
               </div>
             ) : <p className="lesson-editor-workspace__empty-canvas">{copy.notFound}</p>}
           </div>
