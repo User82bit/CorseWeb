@@ -409,8 +409,15 @@ function AppLessonPage() {
                   style={{ "--student-block-columns": block.layout?.columns ?? 1 } as CSSProperties & { "--student-block-columns": number }}
                   key={block.id}
                 >
-                  {block.components.slice().sort((a, b) => a.order - b.order).map(component =>
-                    <ContentComponent key={component.id} component={component} />)}
+                  {block.components.slice().sort((a, b) => a.order - b.order).map(component => (
+                    <div
+                      className="student-lesson__component"
+                      key={component.id}
+                      style={{ "--student-component-span": Math.min(component.layout?.columnSpan ?? 1, block.layout?.columns ?? 1) } as CSSProperties & { "--student-component-span": number }}
+                    >
+                      <ContentComponent component={component} />
+                    </div>
+                  ))}
                 </section>
               ))}
             </div>
