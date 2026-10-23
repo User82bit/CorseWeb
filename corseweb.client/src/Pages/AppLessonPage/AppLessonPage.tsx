@@ -353,7 +353,7 @@ function AppLessonPage() {
       )}
 
       <main className="student-lesson__main" id="lesson-content">
-        <article className="student-lesson__article">
+        <article className="student-lesson__article" ref={contentCanvasViewportRef}>
           <nav className="student-lesson__breadcrumbs" aria-label={t.learning.lessonNavigation}>
             <Link to="/app/courses">{t.learning.myCoursesTitle}</Link>
             <span aria-hidden="true">/</span>
@@ -381,7 +381,6 @@ function AppLessonPage() {
           ) : (
             <div
               className="student-lesson__content-viewport"
-              ref={contentCanvasViewportRef}
               style={{ height: canvasHeight * contentCanvasScale }}
             >
               <div
