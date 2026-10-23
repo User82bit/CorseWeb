@@ -288,6 +288,28 @@
     box-shadow: 0 16px 44px rgba(0, 0, 0, .18);
   }
 
+  &__connections-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  &__connection-path {
+    fill: none;
+    stroke: #8daaf0;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35));
+
+    &--pending {
+      stroke: #c2d2ff;
+      stroke-dasharray: 7 6;
+    }
+  }
+
   &__empty-canvas {
     position: absolute;
     inset: 0;
@@ -316,13 +338,13 @@
 
   &__element {
     position: absolute;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     min-width: 96px;
     min-height: 96px;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid #d5dbe6;
     border-radius: 10px;
     background: #f8f9fc;
@@ -340,6 +362,61 @@
       border: 2px solid #75a0ff;
       box-shadow: 0 0 0 3px rgba(92, 145, 255, .24), 0 8px 20px rgba(0, 0, 0, .2);
     }
+  }
+
+  &__port-wrap {
+    position: absolute;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    &--input { top: 0; }
+    &--output { top: 100%; }
+    &--input .lesson-editor-workspace__port-label { top: -16px; }
+    &--output .lesson-editor-workspace__port-label { top: 12px; }
+  }
+
+  &__port {
+    display: block;
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: 2px solid #202633;
+    border-radius: 50%;
+    background: #b6c9fa;
+    box-shadow: 0 0 0 2px rgba(141, 170, 240, .25);
+    cursor: crosshair;
+    pointer-events: auto;
+
+    &:hover, &:focus-visible {
+      background: #fff;
+      outline: 2px solid #8daaf0;
+      outline-offset: 2px;
+    }
+  }
+
+  &__port-label {
+    position: absolute;
+    left: 11px;
+    top: -4px;
+    color: #e0e8ff;
+    font-size: 9px;
+    line-height: 1;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px #171b24;
+    pointer-events: none;
+  }
+
+  &__preview-flow {
+    display: grid;
+    gap: 5px;
+    color: #30405d;
+
+    strong { font-size: .92rem; }
+    p { margin: 0; font-size: .75rem; line-height: 1.35; }
   }
 
   &__element-toolbar {
