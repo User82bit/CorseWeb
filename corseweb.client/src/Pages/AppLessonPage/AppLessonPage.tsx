@@ -11,7 +11,7 @@ import {
   type EnrollmentModuleProgress,
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
-import type { CanvasElement, Course, Lesson, Module } from "../../types/course";
+import type { CanvasNode, Course, Lesson, Module } from "../../types/course";
 import "./AppLessonPage.scss";
 
 function interpolate(template: string, values: Record<string, string | number>) {
@@ -19,8 +19,8 @@ function interpolate(template: string, values: Record<string, string | number>) 
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
 }
 
-function CanvasElementContent({ element }: { element: CanvasElement }) {
-  const props = element.props ?? {};
+function CanvasNodeContent({ node }: { node: CanvasNode }) {
+  const props = node.props ?? {};
   const text = (value: unknown) => String(value ?? "");
   const safeUrl = (value: unknown) => {
     const source = text(value).trim();
@@ -33,7 +33,11 @@ function CanvasElementContent({ element }: { element: CanvasElement }) {
     }
   };
 
-  switch (element.type) {
+  switch (node.type) {
+    case "start":
+      return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Início do fluxo</span><h3>{text(props.title || "Início")}</h3><p>{text(props.content)}</p></section>;
+    case "certificate":
+      return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Certificado</span><h3>{text(props.title || "Certificado")}</h3><p>{text(props.content)}</p></section>;
     case "heading": {
       const level = Number(props.level ?? 2);
       const Tag = level === 1 ? "h2" : level === 3 ? "h4" : "h3";
@@ -324,8 +328,8 @@ function AppLessonPage() {
   }
 
   const completionPercent = Math.round(enrollment.overallPercent);
-  const sortedElements = [...(lesson.elements ?? [])].sort((a, b) => a.y - b.y || a.x - b.x);
-  const canvasHeight = Math.max(900, ...sortedElements.map((element) => element.y + element.height + 24));
+  const sortedNodes = [...(lesson.nodes ?? [])].sort((a, b) => a.y - b.y || a.x - b.x);
+  const canvasHeight = Math.max(900, ...sortedNodes.map((node) => node.y + node.height + 24));
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -372,7 +376,7 @@ function AppLessonPage() {
             </div>
           </header>
 
-          {sortedElements.length === 0 ? (
+          {sortedNodes.length === 0 ? (
             <div className="student-lesson__empty-content">
               <span className="student-lesson__state-icon"><SvgIcon name="book-open" size="1.35rem" /></span>
               <h2>{t.learning.noLessonContentTitle}</h2>
@@ -387,13 +391,13 @@ function AppLessonPage() {
                 className="student-lesson__content-canvas"
                 style={{ width: 1200, height: canvasHeight, transform: `scale(${contentCanvasScale})` }}
               >
-                {sortedElements.map((element) => (
+                {sortedNodes.map((node) => (
                   <section
-                    className="student-lesson__canvas-element"
-                    key={element.id}
-                    style={{ left: element.x, top: element.y, width: element.width, height: element.height }}
+                    className="student-lesson__canvas-node"
+                    key={node.id}
+                    style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
                   >
-                    <CanvasElementContent element={element} />
+                    <CanvasNodeContent node={node} />
                   </section>
                 ))}
               </div>

@@ -38,8 +38,9 @@ export interface Media {
   thumbnailUrl?: string;
 }
 
-/** Tipos de cards do novo canvas livre da aula. */
-export type CanvasElementType =
+/** Tipos de nós disponíveis no canvas pedagógico. */
+export type CanvasNodeType =
+  | "start"
   | "heading"
   | "paragraph"
   | "list"
@@ -50,20 +51,35 @@ export type CanvasElementType =
   | "exercise"
   | "callout"
   | "divider"
-  | "embed";
+  | "embed"
+  | "certificate";
 
-/** Card posicionado livremente no canvas. x/y/largura/altura são pixels encaixados à grade de 24 px. */
-export interface CanvasElement {
+export interface CanvasPort {
   id: string;
-  type: CanvasElementType;
+  label: string;
+}
+
+export interface CanvasNode {
+  id: string;
+  type: CanvasNodeType;
   x: number;
   y: number;
   width: number;
   height: number;
   props: Record<string, unknown>;
+  inputs: CanvasPort[];
+  outputs: CanvasPort[];
 }
 
-/** Aula individual — o conteúdo novo é uma coleção de cards em canvas, não blocos/colunas. */
+export interface CanvasConnection {
+  id: string;
+  sourceNode: string;
+  sourcePort: string;
+  targetNode: string;
+  targetPort: string;
+}
+
+/** Aula individual: nós posicionados e conexões dirigidas que descrevem o fluxo pedagógico. */
 export interface Lesson extends BaseEntity {
   courseId: string;
   moduleId: string;
@@ -72,7 +88,8 @@ export interface Lesson extends BaseEntity {
   description?: string;
   order: number;
   estimatedMinutes: number;
-  elements: CanvasElement[];
+  nodes: CanvasNode[];
+  connections: CanvasConnection[];
   // Progresso
   isPublished: boolean;
   isFree: boolean; // aula gratuita para preview

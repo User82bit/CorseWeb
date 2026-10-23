@@ -1,4 +1,4 @@
-# FE-011 — Canvas visual com cards posicionados
+# FE-011 — Canvas visual de nós e grafo de fluxo pedagógico
 
 ## Direção
 
@@ -8,25 +8,28 @@ O editor anterior de blocos e componentes selecionados em colunas foi descontinu
 
 1. O formulário inicial recolhe apenas nome, subtítulo, descrição e capa do curso.
 2. **Criar rascunho e abrir editor** cria o rascunho e redireciona imediatamente para `/admin/courses/:courseSlug/editor`.
-3. O workspace é uma tela própria protegida por `RequireAdmin`, sem o shell padrão do painel.
-4. A paleta à esquerda contém cards arrastáveis e também permite adicionar por clique/toque.
-5. O canvas central apresenta pontos a cada 24 px. Ao largar um card ou mover um já criado, a posição se encaixa na grade.
-6. O inspetor à direita edita as propriedades, dimensões e conteúdo do card selecionado.
-7. O seletor de aula e os comandos de módulo/aula ficam na barra de ferramentas. Salvar persiste o modelo novo no JSON dos módulos; publicar permanece disponível para rascunhos.
+3. O workspace é uma tela própria protegida por `RequireAdmin`, sem o shell padrão do painel administrativo.
+4. A paleta esquerda contém templates reutilizáveis. Um drop cria uma nova instância identificada; não remove nem move o template original.
+   - Durante o arrasto, um preview visual acompanha o cursor; o drop é tratado como cópia.
+5. O canvas central exibe uma grade visual de 20 px. A posição do cursor é convertida para coordenadas locais do canvas sem deslocamento artificial e só então encaixada à grade; nós movidos também respeitam o snap.
+6. A camada SVG desenha as curvas das conexões entre as portas de saída e de entrada.
+7. O inspetor direito edita propriedades, dimensões e conteúdo do nó selecionado.
+8. Módulos/aulas são mantidos na barra de ferramentas. Salvar persiste os nós e as conexões no JSON do curso.
 
-## Contrato novo de conteúdo
+## Modelo de conteúdo
 
-Cada aula usa `elements[]`. Cada elemento contém:
+Cada aula agora possui dois campos principais:
 
-- `id`, `type` e `props`;
-- posição `x`/`y` em pixels encaixados a uma grade de 24 px;
-- `width`/`height` em pixels, também encaixados à grade.
+- `nodes[]`: instâncias posicionadas. Cada nó contém `id`, `type`, `x`, `y`, `width`, `height`, `props`, `inputs[]` e `outputs[]`.
+- `connections[]`: arestas dirigidas com `id`, `sourceNode`, `sourcePort`, `targetNode` e `targetPort`.
 
-A visualização do aluno renderiza as posições salvas no canvas novo. O campo antigo `blocks[]` não é convertido nem usado.
+Os tipos disponíveis incluem Início, título, texto, lista, imagem, vídeo, código, quiz, exercício, destaque, divisor, incorporação e certificado. O nó Quiz oferece as saídas `success` e `failed`. Cada porta de entrada aceita no máximo uma conexão; criar outra ligação para a mesma entrada substitui a anterior. Ao excluir um nó, as suas ligações também são removidas.
 
-## Cards disponíveis
+Os campos legados `elements[]` e `blocks[]` não serão convertidos nem mantidos. O contrato novo é intencionalmente incompatível.
 
-Título, texto, lista, imagem, vídeo, código, quiz, exercício, destaque, divisor e incorporação.
+## Limite importante: execução do fluxo
+
+Esta etapa implementa a autoria visual e a persistência do grafo. A visualização do aluno consegue renderizar os nós existentes, mas ainda **não executa** as conexões para controlar a progressão pedagógica. Desvios condicionais por resultado de quiz, liberação de atividades, bloqueio de caminhos e emissão real de certificado ficam para uma etapa posterior do motor de execução.
 
 ## Arquivos principais
 
@@ -34,21 +37,26 @@ Título, texto, lista, imagem, vídeo, código, quiz, exercício, destaque, divi
 - `corseweb.client/src/Pages/AdminCourseEditor/LessonEditorPage.tsx`
 - `corseweb.client/src/Pages/AdminCourseEditor/LessonEditorPage.scss`
 - `corseweb.client/src/types/course.ts`
-- `corseweb.client/src/Pages/AppLessonPage/AppLessonPage.tsx` e `.scss`
-- `corseweb.client/src/App.tsx`
+- `corseweb.client/src/Pages/AppLessonPage/AppLessonPage.tsx`
+- `docs/FRONTEND/TODO.md`
 
 ## Critérios de aceitação
 
 - [ ] Criar um rascunho abre diretamente o workspace visual.
 - [ ] Os seletores de categoria/nível/idioma abaixo da capa não aparecem no formulário inicial.
-- [ ] Cards podem ser arrastados da paleta para o canvas e movidos depois de inseridos.
-- [ ] As posições e dimensões se encaixam na grade de 24 px.
-- [ ] O inspetor edita o conteúdo e o tamanho do card selecionado.
+- [ ] Cada template permanece na paleta após um drop e cria instância com ID próprio.
+- [ ] O preview de arrasto acompanha o cursor e soltar em x=137 (relativo ao canvas) posiciona o nó em x=140.
+- [ ] Nós podem ser reposicionados individualmente e em grupo, com coordenadas encaixadas na grade de 20 px; mover um grupo perto das bordas preserva o espaçamento relativo.
+- [ ] Ctrl/Cmd + clique alterna nós em uma seleção múltipla.
+- [ ] Arrastar uma área vazia cria um retângulo de seleção e seleciona os nós que o intersectam.
+- [ ] Portas de entrada/saída são visíveis e conexões curvas SVG são criadas e persistidas.
+- [ ] O quiz oferece saídas `success` e `failed`; excluir um nó remove as conexões associadas.
+- [ ] O inspetor edita conteúdo e dimensões do nó selecionado.
 - [ ] Criar módulos/aulas, trocar a aula ativa, salvar rascunho e publicar funcionam.
-- [ ] A visualização do aluno renderiza `elements[]` com as posições salvas.
+- [ ] A visualização do aluno renderiza os novos tipos de nós.
 - [ ] Layout testado em celular, tablet e desktop; navegação por teclado e toque consideradas.
 - [ ] CI aprovada: lint, testes de tradução, build do frontend e restore/build .NET.
 
-## Limites atuais
+## Fora do escopo desta etapa
 
-Zoom/pan com mouse, seleção múltipla, guias/réguas e edição colaborativa não estão incluídos nesta fase. A inspeção visual manual no navegador continua pendente até ser feita pelo proprietário.
+O motor que interpreta as conexões e conduz o aluno por caminhos condicionais, zoom/pan, guias/réguas e edição colaborativa. A inspeção visual manual em navegador real continua pendente até ser feita pelo proprietário.
