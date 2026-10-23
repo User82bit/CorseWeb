@@ -16,10 +16,10 @@ if (builder.Environment.IsDevelopment())
     var localSettings = new Microsoft.Extensions.Configuration.Json.JsonConfigurationSource
     {
         Path = "appsettings.Development.local.json",
+        FileProvider = builder.Environment.ContentRootFileProvider,
         Optional = true,
         ReloadOnChange = true
     };
-    localSettings.ResolveFileProvider(builder.Environment.ContentRootFileProvider);
 
     var environmentVariablesIndex = -1;
     for (var index = 0; index < builder.Configuration.Sources.Count; index++)
