@@ -310,6 +310,15 @@
     }
   }
 
+  &__selection-rectangle {
+    position: absolute;
+    z-index: 4;
+    box-sizing: border-box;
+    border: 1px solid #8daaf0;
+    background: rgba(141, 170, 240, .15);
+    pointer-events: none;
+  }
+
   &__empty-canvas {
     position: absolute;
     inset: 0;
