@@ -10,7 +10,7 @@ O editor anterior de blocos e componentes selecionados em colunas foi descontinu
 2. **Criar rascunho e abrir editor** cria o rascunho e redireciona imediatamente para `/admin/courses/:courseSlug/editor`.
 3. O workspace é uma tela própria protegida por `RequireAdmin`, sem o shell padrão do painel administrativo.
 4. A paleta esquerda contém templates reutilizáveis. Um drop cria uma nova instância identificada; não remove nem move o template original.
-5. O canvas central exibe uma grade visual de 24 px e aplica snap ao posicionamento e ao redimensionamento dos nós.
+5. O canvas central exibe uma grade visual de 20 px e aplica snap ao posicionamento e ao redimensionamento dos nós.
 6. A camada SVG desenha as curvas das conexões entre as portas de saída e de entrada.
 7. O inspetor direito edita propriedades, dimensões e conteúdo do nó selecionado.
 8. Módulos/aulas são mantidos na barra de ferramentas. Salvar persiste os nós e as conexões no JSON do curso.
