@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import LessonCanvasEditor from "./LessonCanvasEditor";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -103,14 +103,7 @@ function LessonEditorPage() {
   const [loading, setLoading] = useState(!navigationState?.modules);
 
   useEffect(() => {
-    if (navigationState?.modules) {
-      setLoading(false);
-      return;
-    }
-    if (!courseSlug) {
-      setLoading(false);
-      return;
-    }
+    if (navigationState?.modules || !courseSlug) return;
 
     let cancelled = false;
     refreshCourses()
@@ -129,20 +122,14 @@ function LessonEditorPage() {
     return () => { cancelled = true; };
   }, [courseSlug, location.key, navigationState]);
 
-  useEffect(() => {
-    const state = location.state as EditorLocationState | null;
-    if (!state?.modules) return;
-    setModules(state.modules);
-    if (courseSlug) setCourse(getCourseBySlugStore(courseSlug));
-  }, [location.key, location.state, courseSlug]);
-
-  const active = useMemo(() => {
-    for (const module of modules) {
-      const lesson = module.lessons.find((item) => item.id === lessonId);
-      if (lesson) return { module, lesson };
+  let active: { module: Module; lesson: Lesson } | null = null;
+  for (const module of modules) {
+    const lesson = module.lessons.find((item) => item.id === lessonId);
+    if (lesson) {
+      active = { module, lesson };
+      break;
     }
-    return null;
-  }, [modules, lessonId]);
+  }
 
   const updateLesson = (patch: Partial<Lesson>) => {
     if (!active) return;
