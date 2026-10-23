@@ -9,12 +9,43 @@ using CorseWeb.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Local-only settings are loaded in Development, while environment variables
+// and command-line arguments retain their normal higher priority.
+if (builder.Environment.IsDevelopment())
+{
+    var localSettings = new Microsoft.Extensions.Configuration.Json.JsonConfigurationSource
+    {
+        Path = "appsettings.Development.local.json",
+        Optional = true,
+        ReloadOnChange = true
+    };
+    localSettings.ResolveFileProvider(builder.Environment.ContentRootFileProvider);
+
+    var environmentVariablesIndex = -1;
+    for (var index = 0; index < builder.Configuration.Sources.Count; index++)
+    {
+        if (string.Equals(
+                builder.Configuration.Sources[index].GetType().Name,
+                "EnvironmentVariablesConfigurationSource",
+                StringComparison.Ordinal))
+        {
+            environmentVariablesIndex = index;
+            break;
+        }
+    }
+
+    if (environmentVariablesIndex < 0)
+        builder.Configuration.Sources.Add(localSettings);
+    else
+        builder.Configuration.Sources.Insert(environmentVariablesIndex, localSettings);
+}
+
 // DbContext — SQLite em dev (migra para Postgres com troca de provider/connection string)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=corseweb.db";
 builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlite(connectionString));
 
-// Auth — Cookie com validação via Google id_token no AuthController (Google.Apis.Auth)
-// Opcional: AddGoogle para fluxo server-side quando ClientId/Secret configurados
+// Auth — cookie de sessão com validação do Google ID token no AuthController.
+// ClientSecret não é usado pelo fluxo atual de Google Identity Services.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(opts =>
     {
