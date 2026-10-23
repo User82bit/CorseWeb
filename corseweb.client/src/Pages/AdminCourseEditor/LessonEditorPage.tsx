@@ -49,7 +49,7 @@ const COPY: Record<Locale, {
     selectLesson: "Ir para outra aula",
   },
   en: {
-    back: "Voltar sem aplicar",
+    back: "Discard and go back",
     applyAndReturn: "Apply and return",
     structure: "Structure",
     properties: "Lesson properties",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { CourseCreateInput, Media, Module } from "../../types/course";
 import { apiFetch } from "../../lib/api";
@@ -13,7 +13,6 @@ function AdminCourseEditor() {
   const location = useLocation();
   const navigationState = location.state as { lessonEditorReturn?: boolean; modules?: Module[]; courseForm?: CourseCreateInput } | null;
   const restoreLessonEditorResult = navigationState?.lessonEditorReturn === true;
-  const skipCourseSyncOnce = useRef(restoreLessonEditorResult);
   const { courseSlug } = useParams<{ courseSlug?: string }>();
   const isEditing = Boolean(courseSlug);
   const existing = courseSlug ? getCourseBySlugStore(courseSlug) : undefined;
@@ -53,12 +52,8 @@ function AdminCourseEditor() {
   }, []);
 
   useEffect(() => {
-    if (!courseSlug) return;
+    if (!courseSlug || restoreLessonEditorResult) return;
     return subscribeCourses(() => {
-      if (skipCourseSyncOnce.current) {
-        skipCourseSyncOnce.current = false;
-        return;
-      }
       const c = getCourseBySlugStore(courseSlug);
       if (c) {
         setForm({
@@ -77,7 +72,7 @@ function AdminCourseEditor() {
         setModules(c.modules ?? []);
       }
     });
-  }, [courseSlug]);
+  }, [courseSlug, restoreLessonEditorResult]);
 
   const canSave = form.title.trim().length >= 3 && form.description.trim().length >= 20;
 
