@@ -214,6 +214,39 @@
     &:focus-visible { outline-offset: 1px; }
   }
 
+  // The element stays off-canvas in the DOM only while native DnD snapshots it.
+  &__drag-preview {
+    position: fixed;
+    top: -10000px;
+    left: -10000px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 190px;
+    min-height: 56px;
+    padding: 9px 11px;
+    border: 1px solid #83a9f6;
+    border-radius: 10px;
+    background: #323743;
+    color: #f0f4ff;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .3);
+    font-size: .8rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  &__drag-preview-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: #454d5d;
+    color: #cbd8f5;
+    font-size: 1rem;
+  }
+
   &__palette-symbol {
     display: grid;
     place-items: center;
