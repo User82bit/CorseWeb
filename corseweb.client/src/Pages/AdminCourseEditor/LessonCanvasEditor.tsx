@@ -59,7 +59,7 @@ const COMPONENT_NAMES: Record<Locale, Record<ComponentType, string>> = {
 const COPY: Record<Locale, {
   title: string; description: string; addBlock: string; blockType: string; emptyBlocks: string;
   addComponent: string; componentType: string; emptyComponents: string; remove: string; up: string; down: string;
-  columns: string; background: string; content: string; headingLevel: string; listItems: string; orderedList: string;
+  columns: string; background: string; componentWidth: string; componentWidths: Record<1 | 2 | 3, string>; content: string; headingLevel: string; listItems: string; orderedList: string;
   imageUrl: string; altText: string; caption: string; videoUrl: string; codeLanguage: string; code: string;
   question: string; options: string; correctIndex: string; correctAnswer: string; trueLabel: string; falseLabel: string; explanation: string;
   instruction: string; starterCode: string; solution: string; style: string; url: string; embedTitle: string;
