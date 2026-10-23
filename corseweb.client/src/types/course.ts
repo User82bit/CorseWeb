@@ -8,38 +8,6 @@ export type CourseLevel = 'Iniciante' | 'Intermediário' | 'Avançado';
 /** Status de publicação do curso */
 export type CourseStatus = 'rascunho' | 'publicado' | 'arquivado';
 
-/** Tipos de bloco disponíveis no editor */
-export type BlockType = 
-  | 'texto' 
-  | 'imagem' 
-  | 'video' 
-  | 'codigo' 
-  | 'quiz' 
-  | 'exercicio' 
-  | 'divisor' 
-  | 'callout' 
-  | 'embed';
-
-/** Tipos de componente dentro de um bloco */
-export type ComponentType = 
-  | 'paragrafo'
-  | 'titulo'
-  | 'lista'
-  | 'imagem'
-  | 'video'
-  | 'bloco-codigo'
-  | 'quiz-multipla-escolha'
-  | 'quiz-verdadeiro-falso'
-  | 'exercicio-pratico'
-  | 'divisor'
-  | 'callout-info'
-  | 'callout-aviso'
-  | 'callout-sucesso'
-  | 'callout-erro'
-  | 'embed-youtube'
-  | 'embed-github'
-  | 'embed-figma';
-
 /** Metadados base para qualquer entidade */
 export interface BaseEntity {
   id: string;
@@ -68,46 +36,6 @@ export interface Media {
   height?: number;
   duration?: number; // para vídeo/áudio em segundos
   thumbnailUrl?: string;
-}
-
-/** Componente individual dentro de um bloco */
-export interface Component {
-  id: string;
-  type: ComponentType;
-  order: number;
-  props: Record<string, unknown>;
-  /** Largura opcional no grid do bloco; ausente significa uma coluna. */
-  layout?: {
-    columnSpan?: 1 | 2 | 3;
-  };
-  // Props específicas por tipo:
-  // paragrafo: { content: string }
-  // titulo: { content: string; level: 1 | 2 | 3 }
-  // lista: { items: string[]; ordered: boolean }
-  // imagem: { mediaId: string; alt: string; caption?: string }
-  // video: { mediaId: string; autoplay?: boolean; controls?: boolean }
-  // bloco-codigo: { code: string; language: string; filename?: string }
-  // quiz-multipla-escolha: { question: string; options: string[]; correctIndex: number; explanation?: string }
-  // quiz-verdadeiro-falso: { question: string; correct: boolean; explanation?: string }
-  // exercicio-pratico: { instruction: string; starterCode?: string; solution?: string; tests?: string[] }
-  // divisor: { style: 'solid' | 'dashed' | 'spaced' }
-  // callout-*: { title?: string; content: string }
-  // embed-*: { url: string; title?: string }
-}
-
-/** Bloco vertical (container de componentes) */
-export interface Block {
-  id: string;
-  type: BlockType;
-  order: number;
-  components: Component[];
-  // Configuração visual do bloco
-  layout?: {
-    columns?: 1 | 2 | 3; // grid columns para componentes
-    gap?: 'sm' | 'md' | 'lg';
-    padding?: 'none' | 'sm' | 'md' | 'lg';
-    background?: 'transparent' | 'subtle' | 'accent';
-  };
 }
 
 /** Tipos de cards do novo canvas livre da aula. */
@@ -261,38 +189,4 @@ export interface LessonCreateInput {
   order?: number;
   estimatedMinutes: number;
   isFree: boolean;
-}
-
-/** Configuração do grid de componentes no editor */
-export interface GridConfig {
-  columns: 1 | 2 | 3 | 4 | 6 | 12;
-  rows: number;
-  gap: number; // px
-  breakpoints: {
-    mobile: { columns: number; gap: number };
-    tablet: { columns: number; gap: number };
-    desktop: { columns: number; gap: number };
-  };
-}
-
-/** Preset de bloco para o painel de autoria */
-export interface BlockPreset {
-  id: string;
-  name: string;
-  description: string;
-  icon: string; // nome do ícone ou SVG
-  category: 'conteudo' | 'media' | 'interativo' | 'layout' | 'avancado';
-  blockType: BlockType;
-  defaultComponents: Component[];
-  defaultLayout?: Block['layout'];
-}
-
-/** Configuração do editor visual */
-export interface EditorConfig {
-  grid: GridConfig;
-  availableBlocks: BlockPreset[];
-  snapToGrid: boolean;
-  showGuides: boolean;
-  autoSave: boolean;
-  autoSaveInterval: number; // ms
 }
