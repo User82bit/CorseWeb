@@ -870,23 +870,83 @@ function LessonEditorPage() {
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={handleDrop}
                 onPointerMove={handleCanvasPointerMove}
-                onPointerUp={handleCardPointerUp}
-                onPointerCancel={handleCardPointerUp}
+                onPointerUp={handleCanvasPointerUp}
+                onPointerCancel={handleCanvasPointerUp}
               >
                 {nodes.length === 0 && <div className="lesson-editor-workspace__empty-canvas"><span>＋</span><strong>{copy.emptyCanvas}</strong><p>{copy.dropHere}</p></div>}
+                <svg
+                  className="lesson-editor-workspace__connections-layer"
+                  width={CANVAS_WIDTH}
+                  height={canvasHeight}
+                  viewBox={"0 0 " + CANVAS_WIDTH + " " + canvasHeight}
+                  preserveAspectRatio="none"
+                  aria-label="Conexões do fluxo pedagógico"
+                >
+                  <defs>
+                    <marker id="corseweb-flow-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                      <path d="M0,0 L0,6 L6,3 z" fill="#8daaf0" />
+                    </marker>
+                  </defs>
+                  {connections.map((connection) => {
+                    const source = nodes.find((node) => node.id === connection.sourceNode);
+                    const target = nodes.find((node) => node.id === connection.targetNode);
+                    if (!source || !target) return null;
+                    const from = getPortAnchor(source, "output", connection.sourcePort);
+                    const to = getPortAnchor(target, "input", connection.targetPort);
+                    return <path key={connection.id} className="lesson-editor-workspace__connection-path" d={connectionPath(from, to)} markerEnd="url(#corseweb-flow-arrow)" />;
+                  })}
+                  {pendingConnection && (
+                    <path
+                      className="lesson-editor-workspace__connection-path lesson-editor-workspace__connection-path--pending"
+                      d={connectionPath({ x: pendingConnection.x1, y: pendingConnection.y1 }, { x: pendingConnection.x2, y: pendingConnection.y2 })}
+                    />
+                  )}
+                </svg>
                 {nodes.map((node) => (
                   <article
                     key={node.id}
                     className={`lesson-editor-workspace__element${node.id === selectedNodeId ? " lesson-editor-workspace__element--selected" : ""}`}
                     style={{ left: node.x, top: node.y, width: node.width, height: node.height } as CSSProperties}
-                    role="button"
+                    role="group"
                     tabIndex={0}
-                    aria-pressed={node.id === selectedNodeId}
+                    aria-label={copy.cardNames[node.type]}
                     onClick={() => setSelectedNodeId(node.id)}
                     onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedNodeId(node.id); } }}
                     onPointerDown={(event) => handleCardPointerDown(event, node)}
                     title={copy.cardNames[node.type]}
                   >
+                    {node.inputs.map((port, index) => (
+                      <div
+                        key={port.id}
+                        className="lesson-editor-workspace__port-wrap lesson-editor-workspace__port-wrap--input"
+                        style={{ left: ((index + 1) / (node.inputs.length + 1)) * 100 + "%" }}
+                      >
+                        <button
+                          type="button"
+                          className="lesson-editor-workspace__port"
+                          aria-label={"Entrada " + port.label + " — " + copy.cardNames[node.type]}
+                          title={"Entrada: " + port.label}
+                          onPointerUp={(event) => handleInputPortPointerUp(event, node, port.id)}
+                        />
+                        <span className="lesson-editor-workspace__port-label">{port.label}</span>
+                      </div>
+                    ))}
+                    {node.outputs.map((port, index) => (
+                      <div
+                        key={port.id}
+                        className="lesson-editor-workspace__port-wrap lesson-editor-workspace__port-wrap--output"
+                        style={{ left: ((index + 1) / (node.outputs.length + 1)) * 100 + "%" }}
+                      >
+                        <button
+                          type="button"
+                          className="lesson-editor-workspace__port"
+                          aria-label={"Saída " + port.label + " — " + copy.cardNames[node.type]}
+                          title={"Saída: " + port.label}
+                          onPointerDown={(event) => handleOutputPortPointerDown(event, node, port.id)}
+                        />
+                        <span className="lesson-editor-workspace__port-label">{port.label}</span>
+                      </div>
+                    ))}
                     <div className="lesson-editor-workspace__element-toolbar">
                       <span>{copy.cardNames[node.type]}</span>
                       <span aria-hidden="true">⠿</span>
