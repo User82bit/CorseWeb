@@ -57,6 +57,10 @@ No Google Cloud Console, confira as origens JavaScript autorizadas do OAuth Clie
 - Erros de validação do ID token são registrados no log do servidor, mas a mensagem técnica detalhada não é devolvida ao cliente.
 - CI/CD precisa disponibilizar as variáveis ao processo do backend em execução. Criar um GitHub Secret, isoladamente, não injeta automaticamente esse valor no ambiente de produção.
   
+## Validação automatizada registrada
+
+A execução de CI #434 passou após a correção de carregamento do JSON local. Resultado: lint do frontend aprovado, testes de idioma **16/16**, build do frontend aprovado, restore do .NET aprovado e build Release do .NET aprovado. O restore emitiu avisos de vulnerabilidades conhecidas em dependências existentes (`SQLitePCLRaw.lib.e_sqlite3` e `System.Security.Cryptography.Pkcs`); a tarefa não altera essas dependências.
+
 ## Validação manual
 
 1. Sem Client ID local nem variável de ambiente, `GET /api/auth/config` deve indicar `configured: false`.
