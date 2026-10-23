@@ -41,7 +41,17 @@ Os cards e o mecanismo de criação de conexões existentes foram preservados.
 
 ## Limite importante: execução do fluxo
 
-Esta etapa implementa a autoria visual e a persistência do grafo. A visualização do aluno consegue renderizar os nós existentes, mas ainda **não executa** as conexões para controlar a progressão pedagógica. Desvios condicionais por resultado de quiz, liberação de atividades, bloqueio de caminhos e emissão real de certificado ficam para uma etapa posterior do motor de execução.
+Esta etapa implementa a autoria visual e a persistência do grafo. A área do aluno renderiza os valores permitidos de cada nó como conteúdo de leitura em fluxo responsivo, sem reproduzir o canvas, as posições/dimensões de autoria, as portas ou as conexões. O nó de Início é um controle interno e não aparece como conteúdo. Tipos desconhecidos e metadados/scripts internos também não são apresentados. Cartões pedagógicos de Código continuam exibindo o trecho explicitamente escrito pelo autor; scripts internos da aplicação não são lidos nem executados. A área do aluno ainda **não executa** as conexões para controlar a progressão pedagógica. Desvios condicionais por resultado de quiz, liberação de atividades, bloqueio de caminhos e emissão real de certificado ficam para uma etapa posterior do motor de execução.
+
+## Correção da apresentação na área do aluno — FE-012 / PR #39
+
+O renderizador antigo desenhava os nós sobre um canvas de 1200 px e reproduzia a disposição espacial do editor. A nova apresentação usa um fluxo de leitura comum: cada tipo de card lê apenas seus campos públicos de `props` e é renderizado no layout da página. As coordenadas `x/y`, dimensões, portas e conexões não são usadas para desenhar a área do aluno.
+
+- O nó `start` é um marcador de controle, não uma peça de conteúdo para o aluno, e é omitido.
+- Tipos de nós desconhecidos ou internos são ignorados em vez de criar cartões vazios ou mostrar dados genéricos.
+- Quiz apresenta pergunta e opções sem revelar o índice correto; Exercício apresenta instrução e código inicial sem revelar a solução.
+- Um nó pedagógico `code` continua exibindo o trecho escrito pelo autor. Isso é conteúdo do curso, não o script interno separado da aula; scripts internos não são executados nem enumerados por este renderizador.
+- A CI deve passar no HEAD mais recente e o resultado visual precisa ser conferido manualmente em celular, tablet e desktop.
 
 ## Arquivos principais
 
@@ -69,8 +79,12 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 - [ ] O quiz oferece saídas `success` e `failed`; excluir um nó remove as conexões associadas.
 - [ ] O inspetor edita conteúdo e dimensões do nó selecionado.
 - [ ] Criar módulos/aulas, trocar a aula ativa, salvar rascunho e publicar funcionam.
-- [ ] A visualização do aluno renderiza os novos tipos de nós.
-- [ ] Layout testado em celular, tablet e desktop; navegação por teclado e toque consideradas.
+- [ ] A área do aluno apresenta valores dos nós em fluxo normal de leitura, sem reproduzir o canvas nem expor a geometria de autoria.
+- [ ] Nós de controle (Início), tipos desconhecidos e scripts internos não aparecem como conteúdo do aluno.
+- [ ] Perguntas e opções do Quiz são apresentadas sem revelar `correctIndex`; a solução do Exercício não é exposta.
+- [ ] A área do aluno renderiza apenas conteúdo autorizado de cada tipo de nó, sem executar scripts.
+- [ ] Layout do editor testado em celular, tablet e desktop; navegação por teclado e toque consideradas.
+- [ ] Conteúdo da aula na área do aluno testado em celular, tablet e desktop, com scroll natural e sem canvas fixo.
 - [ ] CI aprovada: lint, testes de tradução, build do frontend e restore/build .NET.
 
 ## Fora do escopo desta etapa
