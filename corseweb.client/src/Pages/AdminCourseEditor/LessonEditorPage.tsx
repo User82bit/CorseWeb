@@ -714,6 +714,12 @@ function LessonEditorPage() {
     setPendingConnection(null);
   };
 
+  const handleCanvasPointerCancel = () => {
+    dragRef.current = null;
+    setSelectionRect(null);
+    setPendingConnection(null);
+  };
+
   const handleAddModule = () => {
     if (!course) return;
     const module = createModule(course, modules.length + 1);
@@ -938,7 +944,7 @@ function LessonEditorPage() {
                 onPointerDown={handleCanvasPointerDown}
                 onPointerMove={handleCanvasPointerMove}
                 onPointerUp={handleCanvasPointerUp}
-                onPointerCancel={handleCanvasPointerUp}
+                onPointerCancel={handleCanvasPointerCancel}
               >
                 {nodes.length === 0 && <div className="lesson-editor-workspace__empty-canvas"><span>＋</span><strong>{copy.emptyCanvas}</strong><p>{copy.dropHere}</p></div>}
                 <svg
