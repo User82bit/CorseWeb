@@ -300,18 +300,25 @@
   }
 
   &__canvas-scroll {
+    position: relative;
     min-width: 0;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     padding: 14px;
     background: #22252e;
-    scrollbar-color: #5b6272 #292d36;
+    touch-action: none;
+    overscroll-behavior: contain;
+    cursor: grab;
   }
+
+  &__canvas-scroll--panning { cursor: grabbing; }
 
   &__canvas {
     position: relative;
     width: 1200px;
     min-height: 900px;
+    transform-origin: top left;
+    will-change: transform;
     border: 1px solid #4b5261;
     border-radius: 8px;
     background-color: #252933;
@@ -319,6 +326,47 @@
     background-position: 0 0;
     background-size: 20px 20px;
     box-shadow: 0 16px 44px rgba(0, 0, 0, .18);
+  }
+
+  &__camera-controls {
+    position: absolute;
+    z-index: 10;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 32px);
+    padding: 7px;
+    border: 1px solid #444b5a;
+    border-radius: 11px;
+    background: rgba(36, 40, 50, .96);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+    color: #eef2f8;
+    backdrop-filter: blur(8px);
+
+    button {
+      min-height: 32px;
+      min-width: 34px;
+      padding: 5px 9px;
+      border: 1px solid #505869;
+      border-radius: 7px;
+      background: #343a48;
+      color: inherit;
+      font-size: .72rem;
+
+      &:hover:not(:disabled) { background: #41495a; border-color: #7d91b8; }
+      &:disabled { opacity: .45; cursor: not-allowed; }
+    }
+
+    span {
+      min-width: 48px;
+      text-align: center;
+      color: #d7dfef;
+      font-variant-numeric: tabular-nums;
+      font-size: .74rem;
+    }
   }
 
   &__connections-layer {
@@ -606,6 +654,16 @@
   }
 
   @media (max-width: 480px) {
+    &__camera-controls {
+      right: 8px;
+      bottom: 8px;
+      gap: 4px;
+      padding: 5px;
+      backdrop-filter: none;
+
+      button { min-height: 36px; padding: 6px 8px; }
+    }
+
     &__toolbar { align-items: flex-start; }
     &__toolbar-actions { width: 100%; }
     &__save, &__publish { flex: 1 1 0; }

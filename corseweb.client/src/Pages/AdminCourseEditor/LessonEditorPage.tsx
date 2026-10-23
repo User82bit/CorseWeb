@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeType, Course, Lesson, Module } from "../../types/course";
@@ -8,6 +8,9 @@ import "./LessonEditorPage.scss";
 const GRID = 20;
 const CANVAS_WIDTH = 1200;
 const CANVAS_MIN_HEIGHT = 900;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 2.5;
+const ZOOM_STEP = 0.1;
 const PALETTE_DRAG_TYPE = "application/x-corseweb-canvas-node";
 
 const NODE_TYPES: CanvasNodeType[] = [
@@ -21,6 +24,20 @@ interface PendingConnection {
   y1: number;
   x2: number;
   y2: number;
+}
+
+interface CanvasCamera {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+interface CameraDrag {
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+  originX: number;
+  originY: number;
 }
 
 const COPY: Record<"pt-BR" | "en" | "es", {
@@ -69,6 +86,11 @@ const COPY: Record<"pt-BR" | "en" | "es", {
   moduleName: string;
   lessonName: string;
   duration: string;
+  cameraControls: string;
+  zoomOut: string;
+  zoomIn: string;
+  fitView: string;
+  resetView: string;
   cardNames: Record<CanvasNodeType, string>;
 }> = {
   "pt-BR": {
@@ -117,6 +139,11 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     moduleName: "Módulo",
     lessonName: "Aula",
     duration: "Duração estimada (min)",
+    cameraControls: "Controles da câmera do canvas",
+    zoomOut: "Diminuir zoom",
+    zoomIn: "Aumentar zoom",
+    fitView: "Ajustar conteúdo à tela",
+    resetView: "Centralizar canvas em 100%",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagem", video: "Vídeo",
       code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação", start: "Início", certificate: "Certificado",
@@ -168,6 +195,11 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     moduleName: "Module",
     lessonName: "Lesson",
     duration: "Estimated duration (min)",
+    cameraControls: "Canvas camera controls",
+    zoomOut: "Zoom out",
+    zoomIn: "Zoom in",
+    fitView: "Fit content to view",
+    resetView: "Center canvas at 100%",
     cardNames: {
       heading: "Heading", paragraph: "Text", list: "List", image: "Image", video: "Video",
       code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed", start: "Start", certificate: "Certificate",
@@ -219,6 +251,11 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     moduleName: "Módulo",
     lessonName: "Lección",
     duration: "Duración estimada (min)",
+    cameraControls: "Controles de cámara del lienzo",
+    zoomOut: "Alejar",
+    zoomIn: "Acercar",
+    fitView: "Ajustar contenido a la pantalla",
+    resetView: "Centrar lienzo al 100%",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagen", video: "Vídeo",
       code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación", start: "Inicio", certificate: "Certificado",
@@ -301,8 +338,28 @@ function getPortAnchor(node: CanvasNode, direction: "input" | "output", portId: 
 }
 
 function connectionPath(from: { x: number; y: number }, to: { x: number; y: number }): string {
-  const bend = Math.max(GRID * 2, Math.abs(to.x - from.x) * 0.45);
-  return "M " + from.x + " " + from.y + " C " + (from.x + bend) + " " + from.y + ", " + (to.x - bend) + " " + to.y + ", " + to.x + " " + to.y;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const horizontalDistance = Math.abs(dx);
+  const verticalDistance = Math.abs(dy);
+  const handle = Math.min(180, Math.max(36, verticalDistance * 0.42 + horizontalDistance * 0.08));
+  const horizontalHandle = Math.sign(dx) * Math.min(72, horizontalDistance * 0.12);
+
+  // Output ports leave the bottom of a node and input ports approach its top.
+  // The control points follow those tangents and scale with the actual gap.
+  let control1 = { x: from.x + horizontalHandle * 0.5, y: from.y + handle };
+  let control2 = { x: to.x - horizontalHandle * 0.5, y: to.y - handle };
+
+  // When the destination is above the source, route the curve around the
+  // side facing the destination instead of forcing a fixed left-to-right bend.
+  if (dy < 0) {
+    const side = dx >= 0 ? 1 : -1;
+    const lateralHandle = Math.min(180, Math.max(48, horizontalDistance * 0.22 + verticalDistance * 0.12));
+    control1 = { x: from.x + side * lateralHandle, y: from.y + handle };
+    control2 = { x: to.x + side * lateralHandle, y: to.y - handle };
+  }
+
+  return `M ${from.x} ${from.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${to.x} ${to.y}`;
 }
 
 function overlaps(a: Pick<CanvasNode, "x" | "y" | "width" | "height">, b: Pick<CanvasNode, "x" | "y" | "width" | "height">): boolean {
@@ -498,6 +555,12 @@ function LessonEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const dragRef = useRef<{ clientX: number; clientY: number; origins: Array<{ id: string; x: number; y: number; width: number }> } | null>(null);
   const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
+  const [camera, setCamera] = useState<CanvasCamera>({ x: 0, y: 0, zoom: 0.75 });
+  const cameraRef = useRef<CanvasCamera>(camera);
+  const cameraDragRef = useRef<CameraDrag | null>(null);
+  const spacePressedRef = useRef(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const canvasViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!courseSlug) return;
@@ -543,6 +606,143 @@ function LessonEditorPage() {
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
   const canvasHeight = Math.max(CANVAS_MIN_HEIGHT, ...nodes.map((node) => node.y + node.height + GRID * 2));
   const isDraft = Boolean(course && getDraftCourses().some((draft) => draft.slug === course.slug));
+
+  const setCameraPosition = (next: CanvasCamera) => {
+    cameraRef.current = next;
+    setCamera(next);
+  };
+
+  const getViewportMetrics = () => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport) return null;
+    const rect = viewport.getBoundingClientRect();
+    const styles = window.getComputedStyle(viewport);
+    const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+    const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0;
+    return {
+      viewport,
+      rect,
+      paddingLeft,
+      paddingTop,
+      contentWidth: Math.max(1, viewport.clientWidth - paddingLeft - paddingRight),
+      contentHeight: Math.max(1, viewport.clientHeight - paddingTop - paddingBottom),
+    };
+  };
+
+  const canvasPoint = (clientX: number, clientY: number) => {
+    const metrics = getViewportMetrics();
+    const current = cameraRef.current;
+    if (!metrics) return { x: 0, y: 0 };
+    return {
+      x: (clientX - metrics.rect.left - metrics.viewport.clientLeft - metrics.paddingLeft - current.x) / current.zoom,
+      y: (clientY - metrics.rect.top - metrics.viewport.clientTop - metrics.paddingTop - current.y) / current.zoom,
+    };
+  };
+
+  const zoomAt = (requestedZoom: number, clientX?: number, clientY?: number) => {
+    const metrics = getViewportMetrics();
+    if (!metrics) return;
+    const current = cameraRef.current;
+    const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, requestedZoom));
+    const pointX = clientX == null
+      ? metrics.contentWidth / 2
+      : clientX - metrics.rect.left - metrics.viewport.clientLeft - metrics.paddingLeft;
+    const pointY = clientY == null
+      ? metrics.contentHeight / 2
+      : clientY - metrics.rect.top - metrics.viewport.clientTop - metrics.paddingTop;
+    const worldX = (pointX - current.x) / current.zoom;
+    const worldY = (pointY - current.y) / current.zoom;
+    setCameraPosition({
+      x: pointX - worldX * zoom,
+      y: pointY - worldY * zoom,
+      zoom,
+    });
+  };
+
+  const zoomBy = (direction: -1 | 1) => {
+    const current = cameraRef.current;
+    zoomAt(current.zoom + direction * ZOOM_STEP);
+  };
+
+  const fitCamera = () => {
+    const metrics = getViewportMetrics();
+    if (!metrics) return;
+    const gap = 40;
+    const minX = nodes.length ? Math.min(...nodes.map((node) => node.x)) : 0;
+    const minY = nodes.length ? Math.min(...nodes.map((node) => node.y)) : 0;
+    const maxX = nodes.length ? Math.max(...nodes.map((node) => node.x + node.width)) : CANVAS_WIDTH;
+    const maxY = nodes.length ? Math.max(...nodes.map((node) => node.y + node.height)) : CANVAS_MIN_HEIGHT;
+    const contentWidth = Math.max(1, maxX - minX);
+    const contentHeight = Math.max(1, maxY - minY);
+    const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, (metrics.contentWidth - gap * 2) / contentWidth, (metrics.contentHeight - gap * 2) / contentHeight));
+    setCameraPosition({
+      x: (metrics.contentWidth - contentWidth * zoom) / 2 - minX * zoom,
+      y: (metrics.contentHeight - contentHeight * zoom) / 2 - minY * zoom,
+      zoom,
+    });
+  };
+
+  const resetCamera = () => {
+    const metrics = getViewportMetrics();
+    if (!metrics) return;
+    const zoom = 1;
+    setCameraPosition({
+      x: (metrics.contentWidth - CANVAS_WIDTH) / 2,
+      y: (metrics.contentHeight - canvasHeight) / 2,
+      zoom,
+    });
+  };
+
+  const handleCanvasWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (event.ctrlKey || event.metaKey) {
+      const current = cameraRef.current;
+      zoomAt(current.zoom * Math.exp(-event.deltaY * 0.002), event.clientX, event.clientY);
+      return;
+    }
+    const current = cameraRef.current;
+    setCameraPosition({
+      ...current,
+      x: current.x - (event.shiftKey ? event.deltaY : event.deltaX),
+      y: current.y - (event.shiftKey ? 0 : event.deltaY),
+    });
+  };
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement && Boolean(target.closest("input, textarea, select, button, a, [contenteditable='true']"));
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || isEditableTarget(event.target)) return;
+      spacePressedRef.current = true;
+      event.preventDefault();
+    };
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code === "Space") spacePressedRef.current = false;
+    };
+    const handleBlur = () => {
+      spacePressedRef.current = false;
+      cameraDragRef.current = null;
+      setIsPanning(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Frame the active lesson on open/switch, while allowing the user to pan freely afterwards.
+    const frame = window.requestAnimationFrame(() => fitCamera());
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeLesson?.id]);
 
   const commitModules = (next: Module[]) => {
     dirty.current = true;
@@ -607,15 +807,32 @@ function LessonEditorPage() {
     event.preventDefault();
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    // The canvas has a 1 px border; map the cursor to its content origin, then snap.
-    const x = snapToGrid(event.clientX - bounds.left - 1);
-    const y = snapToGrid(event.clientY - bounds.top - 1);
-    addNode(type, x, y);
+    const point = canvasPoint(event.clientX, event.clientY);
+    addNode(type, snapToGrid(point.x), snapToGrid(point.y));
   };
 
   const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
+    if (event.button !== 0 && event.button !== 1) return;
     if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
+
+    // Space + drag or the middle mouse button pans the camera even when
+    // the gesture starts over a node, as expected from a canvas editor.
+    if (event.button === 1 || spacePressedRef.current) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const current = cameraRef.current;
+      cameraDragRef.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        originX: current.x,
+        originY: current.y,
+      };
+      setIsPanning(true);
+      return;
+    }
+
+    if (event.button !== 0) return;
     event.preventDefault();
 
     // Ctrl/Cmd + click toggles membership in the multi-selection without starting a drag.
@@ -640,36 +857,63 @@ function LessonEditorPage() {
   };
 
   const handleCanvasPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    if (event.target instanceof HTMLElement && event.target.closest(".lesson-editor-workspace__element")) return;
-    if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - bounds.left;
-    const y = event.clientY - bounds.top;
+    if (event.button !== 0 && event.button !== 1) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(".lesson-editor-workspace__element")) return;
+    if (target?.closest("button, input, textarea, select, a")) return;
+
+    const overCanvas = Boolean(target?.closest(".lesson-editor-workspace__canvas"));
+    const shouldPan = event.button === 1 || spacePressedRef.current || event.pointerType === "touch" || !overCanvas;
+    if (shouldPan) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const current = cameraRef.current;
+      cameraDragRef.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        originX: current.x,
+        originY: current.y,
+      };
+      setIsPanning(true);
+      return;
+    }
+
+    if (event.button !== 0 || !overCanvas) return;
+    const point = canvasPoint(event.clientX, event.clientY);
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setSelectionRect({ startX: x, startY: y, currentX: x, currentY: y });
+    setSelectionRect({ startX: point.x, startY: point.y, currentX: point.x, currentY: point.y });
     setSelectedNodeId(null);
     setSelectedNodeIds([]);
   };
 
   const handleCanvasPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const localX = event.clientX - bounds.left;
-    const localY = event.clientY - bounds.top;
+    const cameraDrag = cameraDragRef.current;
+    if (cameraDrag && cameraDrag.pointerId === event.pointerId) {
+      setCameraPosition({
+        ...cameraRef.current,
+        x: cameraDrag.originX + event.clientX - cameraDrag.clientX,
+        y: cameraDrag.originY + event.clientY - cameraDrag.clientY,
+      });
+      return;
+    }
+
+    const point = canvasPoint(event.clientX, event.clientY);
     if (pendingConnection) {
-      setPendingConnection({ ...pendingConnection, x2: localX, y2: localY });
+      setPendingConnection({ ...pendingConnection, x2: point.x, y2: point.y });
     }
 
     if (selectionRect) {
-      setSelectionRect({ ...selectionRect, currentX: localX, currentY: localY });
+      setSelectionRect({ ...selectionRect, currentX: point.x, currentY: point.y });
       return;
     }
 
     const drag = dragRef.current;
     if (!drag || !activeLesson) return;
-    const deltaX = snapToGrid(event.clientX - drag.clientX);
-    const deltaY = snapToGrid(event.clientY - drag.clientY);
+    const zoom = cameraRef.current.zoom;
+    const deltaX = snapToGrid((event.clientX - drag.clientX) / zoom);
+    const deltaY = snapToGrid((event.clientY - drag.clientY) / zoom);
 
     // Clamp the group translation as a whole so selected nodes keep their relative layout
     // when any edge of the group reaches the canvas boundary.
@@ -705,10 +949,17 @@ function LessonEditorPage() {
   const handleInputPortPointerUp = (event: ReactPointerEvent<HTMLButtonElement>, targetNode: CanvasNode, targetPort: string) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!pendingConnection || pendingConnection.sourceNode === targetNode.id) return;
+    if (!pendingConnection) return;
+    if (pendingConnection.sourceNode === targetNode.id) {
+      setPendingConnection(null);
+      return;
+    }
     const sourceNode = nodes.find((node) => node.id === pendingConnection.sourceNode);
-    if (!sourceNode?.outputs.some((port) => port.id === pendingConnection.sourcePort)) return;
-    if (!targetNode.inputs.some((port) => port.id === targetPort)) return;
+    if (!sourceNode?.outputs.some((port) => port.id === pendingConnection.sourcePort)
+      || !targetNode.inputs.some((port) => port.id === targetPort)) {
+      setPendingConnection(null);
+      return;
+    }
     const nextConnection: CanvasConnection = {
       id: createId("connection"),
       sourceNode: pendingConnection.sourceNode,
@@ -724,6 +975,11 @@ function LessonEditorPage() {
   };
 
   const handleCanvasPointerUp = () => {
+    if (cameraDragRef.current) {
+      cameraDragRef.current = null;
+      setIsPanning(false);
+      return;
+    }
     if (selectionRect) {
       const left = Math.min(selectionRect.startX, selectionRect.currentX);
       const top = Math.min(selectionRect.startY, selectionRect.currentY);
@@ -743,6 +999,8 @@ function LessonEditorPage() {
 
   const handleCanvasPointerCancel = () => {
     dragRef.current = null;
+    cameraDragRef.current = null;
+    setIsPanning(false);
     setSelectionRect(null);
     setPendingConnection(null);
   };
@@ -961,20 +1219,24 @@ function LessonEditorPage() {
             </div>
             <span>{nodes.length} cards</span>
           </div>
-          <div className="lesson-editor-workspace__canvas-scroll">
+          <div
+            ref={canvasViewportRef}
+            className={`lesson-editor-workspace__canvas-scroll${isPanning ? " lesson-editor-workspace__canvas-scroll--panning" : ""}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={handleDrop}
+            onPointerDown={handleCanvasPointerDown}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerUp={handleCanvasPointerUp}
+            onPointerCancel={handleCanvasPointerCancel}
+            onWheel={handleCanvasWheel}
+          >
             {activeLesson ? (
               <div
                 className="lesson-editor-workspace__canvas"
-                style={{ height: canvasHeight }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "copy";
-                }}
-                onDrop={handleDrop}
-                onPointerDown={handleCanvasPointerDown}
-                onPointerMove={handleCanvasPointerMove}
-                onPointerUp={handleCanvasPointerUp}
-                onPointerCancel={handleCanvasPointerCancel}
+                style={{ height: canvasHeight, transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})` }}
               >
                 {nodes.length === 0 && <div className="lesson-editor-workspace__empty-canvas"><span>＋</span><strong>{copy.emptyCanvas}</strong><p>{copy.dropHere}</p></div>}
                 <svg
@@ -1077,6 +1339,13 @@ function LessonEditorPage() {
                 )}
               </div>
             ) : <p className="lesson-editor-workspace__empty-canvas">{copy.notFound}</p>}
+            <div className="lesson-editor-workspace__camera-controls" role="group" aria-label={copy.cameraControls}>
+              <button type="button" aria-label={copy.zoomOut} title={copy.zoomOut} onClick={() => zoomBy(-1)} disabled={camera.zoom <= MIN_ZOOM}>−</button>
+              <span aria-live="off">{Math.round(camera.zoom * 100)}%</span>
+              <button type="button" aria-label={copy.zoomIn} title={copy.zoomIn} onClick={() => zoomBy(1)} disabled={camera.zoom >= MAX_ZOOM}>+</button>
+              <button type="button" onClick={fitCamera} title={copy.fitView}>{copy.fitView}</button>
+              <button type="button" onClick={resetCamera} title={copy.resetView}>{copy.resetView}</button>
+            </div>
           </div>
         </section>
 
