@@ -26,7 +26,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | INTEGRADA em `master` (validação manual pendente) | [PR #23](https://github.com/User82bit/CorseWeb/pull/23); a estrutura Curso → Módulos → Aulas já está no editor. A composição em grid é acompanhada em FE-010 |
 | FE-010 | Editor antigo em blocos/componentes e larguras de coluna | SUBSTITUÍDO por BREAKING CHANGE | [PR #33](https://github.com/User82bit/CorseWeb/pull/33); o formato-alvo foi sucedido por `nodes[]` + `connections[]` na evolução do editor visual; compatibilidade antiga não será mantida |
 | FE-011 | Editor visual de aulas com câmera e conexões dinâmicas | INTEGRADO em `Homologa` (validação visual pendente) | PR #37 e PR #38 integrados em `Homologa`; pan/zoom, curvas SVG adaptativas, nós e conexões implementados. O motor de execução condicional permanece etapa posterior. Critérios em `etapas/fe-011-lesson-editor-workspace.md` |
-| FE-012 | Apresentar o conteúdo da aula na área do aluno sem replicar o editor | EM REVISÃO | Branch `fix/student-lesson-content-renderer` / [PR #39](https://github.com/User82bit/CorseWeb/pull/39): renderização em fluxo normal a partir dos valores dos cards, sem posições/tamanhos do canvas; nó Início e tipos desconhecidos/internos não são apresentados; opções de quiz são exibidas sem revelar a resposta certa; solução de exercício não é exposta. CI e revisão visual manual pendentes. Scripts internos não são lidos ou executados na área do aluno. |
+| FE-012 | Apresentar o conteúdo da aula na área do aluno sem replicar o editor | EM REVISÃO | Branch `fix/student-hide-cl-scripts-and-corselight-v1` (correção complementar à [PR #39](https://github.com/User82bit/CorseWeb/pull/39)): fluxo normal a partir dos valores dos cards; sem geometria do canvas; scripts internos e cards `code` marcados como CL/CorseLight são filtrados; exemplos de código de outras linguagens seguem visíveis. CI e revisão visual manual pendentes. |
 
 ## Regras para imagens manuais
 
@@ -38,3 +38,9 @@ Se a inclusão autônoma de um recurso não for possível, a entrega deve inclui
 - Não codificar o curso de inglês como um caso especial.
 - Não substituir React/TypeScript/TSX/SCSS por outras tecnologias sem justificativa e autorização.
 - Não criar branches futuras antes do momento previsto no fluxo.
+
+
+## CorseLight (CL)
+
+- Especificação inicial da linguagem registrada em `docs/ARCHITECTURE/corselight-language-v0.1.md`.
+- A página do aluno não deve renderizar scripts CL. O contrato de persistência de scripts e o interpretador backend permanecem fora desta correção de frontend até a revisão da especificação.
