@@ -37,7 +37,7 @@ Os cards e o mecanismo de criação de conexões existentes foram preservados.
 - As curvas SVG adaptam os pontos de controle à distância e à direção relativa entre a saída e a entrada. Ao ligar um nó que está acima da origem, a curva procura contornar a lateral correspondente em vez de repetir uma curva fixa.
 - Tentativas de conexão inválidas encerram a conexão temporária.
 - O estado da câmera é local à sessão do editor: persistir viewport/zoom entre reaberturas e dispositivos continua pendente.
-- Build, lint, teste de idioma e build .NET passaram no commit de código `07e3f42ccfced53620881433afe44c6d97ff23b6`. A CI precisa ser confirmada novamente no HEAD após esta atualização documental. A inspeção visual em navegador real, incluindo celular/tablet, continua pendente.
+- A CI do PR deve confirmar lint, teste de idioma, build do frontend e restore/build .NET no HEAD mais recente. A inspeção visual em navegador real, incluindo celular/tablet, continua pendente.
 
 ## Limite importante: execução do fluxo
 

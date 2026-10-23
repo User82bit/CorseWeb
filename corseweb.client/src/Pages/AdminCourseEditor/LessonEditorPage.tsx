@@ -690,7 +690,7 @@ function LessonEditorPage() {
     const zoom = 1;
     setCameraPosition({
       x: (metrics.contentWidth - CANVAS_WIDTH) / 2,
-      y: 24,
+      y: (metrics.contentHeight - canvasHeight) / 2,
       zoom,
     });
   };
