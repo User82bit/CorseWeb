@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import type { CourseCreateInput, Media } from "../../types/course";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import type { CourseCreateInput, Media, Module } from "../../types/course";
 import { apiFetch } from "../../lib/api";
 import { createCourse, getCourseBySlugStore, subscribeCourses, updateCourse, publishDraft, getDraftCourses, refreshCourses } from "../../store/courseStore";
 import CourseStructureEditor from "./CourseStructureEditor";
@@ -10,25 +10,36 @@ import "./AdminCourseEditor.scss";
 const CATEGORIES = ["Idiomas", "Desenvolvimento", "Data Science", "Design", "Negócios", "Marketing"];
 function AdminCourseEditor() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationState = location.state as { lessonEditorReturn?: boolean; modules?: Module[]; courseForm?: CourseCreateInput } | null;
+  const restoreLessonEditorResult = navigationState?.lessonEditorReturn === true;
+  const skipCourseSyncOnce = useRef(restoreLessonEditorResult);
   const { courseSlug } = useParams<{ courseSlug?: string }>();
   const isEditing = Boolean(courseSlug);
   const existing = courseSlug ? getCourseBySlugStore(courseSlug) : undefined;
   const isDraft = Boolean(existing && (existing as unknown as { isDraft?: boolean }).isDraft);
 
-  const [form, setForm] = useState<CourseCreateInput>(() => ({
-    title: existing?.title ?? "",
-    subtitle: existing?.subtitle ?? "",
-    description: existing?.description ?? "",
-    thumbnail: existing?.thumbnail,
-    category: existing?.category ?? CATEGORIES[0],
-    tags: (existing?.tags as CourseCreateInput["tags"]) ?? [],
-    level: (existing?.level as CourseCreateInput["level"]) ?? "Iniciante",
-    language: existing?.language ?? "pt-BR",
-    allowComments: existing?.allowComments ?? true,
-    allowFork: existing?.allowFork ?? true,
-  }));
+  const [form, setForm] = useState<CourseCreateInput>(() =>
+    restoreLessonEditorResult && navigationState?.courseForm
+      ? navigationState.courseForm
+      : ({
+          title: existing?.title ?? "",
+          subtitle: existing?.subtitle ?? "",
+          description: existing?.description ?? "",
+          thumbnail: existing?.thumbnail,
+          category: existing?.category ?? CATEGORIES[0],
+          tags: (existing?.tags as CourseCreateInput["tags"]) ?? [],
+          level: (existing?.level as CourseCreateInput["level"]) ?? "Iniciante",
+          language: existing?.language ?? "pt-BR",
+          allowComments: existing?.allowComments ?? true,
+          allowFork: existing?.allowFork ?? true,
+        }));
 
-  const [modules, setModules] = useState(() => existing?.modules ?? []);
+  const [modules, setModules] = useState<Module[]>(() =>
+    restoreLessonEditorResult && navigationState?.modules
+      ? navigationState.modules
+      : existing?.modules ?? []
+  );
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -44,6 +55,10 @@ function AdminCourseEditor() {
   useEffect(() => {
     if (!courseSlug) return;
     return subscribeCourses(() => {
+      if (skipCourseSyncOnce.current) {
+        skipCourseSyncOnce.current = false;
+        return;
+      }
       const c = getCourseBySlugStore(courseSlug);
       if (c) {
         setForm({
@@ -354,6 +369,8 @@ function AdminCourseEditor() {
                 <CourseStructureEditor
                   courseId={existing.id}
                   actorId={existing.authorId || "local-user"}
+                  courseSlug={courseSlug ?? existing.slug}
+                  courseForm={form}
                   modules={modules}
                   onChange={(nextModules) => { setModules(nextModules); setSaveMessage(null); }}
                 />

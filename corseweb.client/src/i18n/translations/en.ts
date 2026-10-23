@@ -364,6 +364,7 @@ export const en: Translations = {
         deleteLesson: "Delete lesson",
         lessonSettings: "LESSON",
         editLesson: "Configure lesson",
+        openLessonEditor: "Open visual editor",
         lessonTitle: "Lesson title",
         lessonDescription: "Lesson description",
         duration: "Estimated duration (minutes)",

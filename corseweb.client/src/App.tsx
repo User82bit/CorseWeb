@@ -11,6 +11,7 @@ import AdminLayout from "./Pages/AdminLayout/AdminLayout";
 import AdminDashboard from "./Pages/AdminDashboard/AdminDashboard";
 import AdminCoursesPage from "./Pages/AdminCoursesPage/AdminCoursesPage";
 import AdminCourseEditor from "./Pages/AdminCourseEditor/AdminCourseEditor";
+import LessonEditorPage from "./Pages/AdminCourseEditor/LessonEditorPage";
 import NotFound from "./Pages/NotFound/NotFound";
 import LoginPage from "./Pages/Login/LoginPage";
 import { RequireAuth, RequireAdmin } from "./components/AuthGuard";
@@ -31,6 +32,9 @@ export default function App() {
         <Route path="/app/courses/:courseSlug" element={<AppCourseDetailPage />} />
         <Route path="/app/courses/:courseSlug/lessons/:lessonSlug" element={<AppLessonPage />} />
       </Route>
+
+      {/* Editor de aula fora do shell administrativo, em workspace dedicado. */}
+      <Route path="/admin/courses/:courseSlug/editor/lessons/:lessonId" element={<RequireAdmin><LessonEditorPage /></RequireAdmin>} />
 
       {/* Admin — exige login + role admin (definido no servidor via AdminEmails) */}
       <Route element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
