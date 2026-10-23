@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { Locale } from "../../i18n/types";
 import type { Block, BlockType, Component, ComponentType, Lesson } from "../../types/course";
@@ -59,7 +59,7 @@ const COMPONENT_NAMES: Record<Locale, Record<ComponentType, string>> = {
 const COPY: Record<Locale, {
   title: string; description: string; addBlock: string; blockType: string; emptyBlocks: string;
   addComponent: string; componentType: string; emptyComponents: string; remove: string; up: string; down: string;
-  columns: string; background: string; content: string; headingLevel: string; listItems: string; orderedList: string;
+  columns: string; background: string; componentWidth: string; componentWidths: Record<1 | 2 | 3, string>; content: string; headingLevel: string; listItems: string; orderedList: string;
   imageUrl: string; altText: string; caption: string; videoUrl: string; codeLanguage: string; code: string;
   question: string; options: string; correctIndex: string; correctAnswer: string; trueLabel: string; falseLabel: string; explanation: string;
   instruction: string; starterCode: string; solution: string; style: string; url: string; embedTitle: string;
@@ -70,6 +70,7 @@ const COPY: Record<Locale, {
     addBlock: "Adicionar bloco", blockType: "Tipo de bloco", emptyBlocks: "Esta aula ainda não tem blocos. Adicione um para começar.",
     addComponent: "Adicionar componente", componentType: "Componente", emptyComponents: "Este bloco está vazio.",
     remove: "Excluir", up: "Mover para cima", down: "Mover para baixo", columns: "Colunas", background: "Fundo",
+    componentWidth: "Largura", componentWidths: { 1: "1 coluna", 2: "2 colunas", 3: "3 colunas" },
     content: "Conteúdo", headingLevel: "Nível do título", listItems: "Itens (um por linha)", orderedList: "Lista numerada",
     imageUrl: "URL da imagem", altText: "Texto alternativo", caption: "Legenda", videoUrl: "URL do vídeo", codeLanguage: "Linguagem",
     code: "Código", question: "Pergunta", options: "Opções (uma por linha)", correctIndex: "Índice da resposta correta (começa em 0)",
@@ -82,6 +83,7 @@ const COPY: Record<Locale, {
     addBlock: "Add block", blockType: "Block type", emptyBlocks: "This lesson has no blocks yet. Add one to get started.",
     addComponent: "Add component", componentType: "Component", emptyComponents: "This block is empty.",
     remove: "Delete", up: "Move up", down: "Move down", columns: "Columns", background: "Background",
+    componentWidth: "Width", componentWidths: { 1: "1 column", 2: "2 columns", 3: "3 columns" },
     content: "Content", headingLevel: "Heading level", listItems: "Items (one per line)", orderedList: "Numbered list",
     imageUrl: "Image URL", altText: "Alternative text", caption: "Caption", videoUrl: "Video URL", codeLanguage: "Language",
     code: "Code", question: "Question", options: "Options (one per line)", correctIndex: "Correct answer index (starts at 0)",
@@ -94,6 +96,7 @@ const COPY: Record<Locale, {
     addBlock: "Añadir bloque", blockType: "Tipo de bloque", emptyBlocks: "Esta lección todavía no tiene bloques. Añade uno para comenzar.",
     addComponent: "Añadir componente", componentType: "Componente", emptyComponents: "Este bloque está vacío.",
     remove: "Eliminar", up: "Mover arriba", down: "Mover abajo", columns: "Columnas", background: "Fondo",
+    componentWidth: "Ancho", componentWidths: { 1: "1 columna", 2: "2 columnas", 3: "3 columnas" },
     content: "Contenido", headingLevel: "Nivel del título", listItems: "Elementos (uno por línea)", orderedList: "Lista numerada",
     imageUrl: "URL de la imagen", altText: "Texto alternativo", caption: "Leyenda", videoUrl: "URL del vídeo", codeLanguage: "Lenguaje",
     code: "Código", question: "Pregunta", options: "Opciones (una por línea)", correctIndex: "Índice de la respuesta correcta (empieza en 0)",
@@ -192,6 +195,15 @@ function LessonCanvasEditor({ lesson, onChange }: Props) {
     updateBlock(blockId, { components });
   };
 
+  const updateComponentLayout = (blockId: string, componentId: string, columnSpan: 1 | 2 | 3) => {
+    const block = blocks.find((item) => item.id === blockId);
+    if (!block) return;
+    const components = (block.components ?? []).map((component) => component.id === componentId
+      ? { ...component, layout: { ...component.layout, columnSpan } }
+      : component);
+    updateBlock(blockId, { components });
+  };
+
   const deleteComponent = (block: Block, componentId: string) => {
     const components = [...block.components]
       .filter((component) => component.id !== componentId)
@@ -264,17 +276,36 @@ function LessonCanvasEditor({ lesson, onChange }: Props) {
               </label>
             </div>
 
-            <div className="lesson-canvas__components">
-              {[...block.components].sort((a, b) => a.order - b.order).map((component, componentIndex, orderedComponents) => {
+            <div
+              className="lesson-canvas__components"
+              style={{ "--lesson-component-columns": block.layout?.columns ?? 1 } as CSSProperties & { "--lesson-component-columns": number }}
+            >
+              {[...(block.components ?? [])].sort((a, b) => a.order - b.order).map((component, componentIndex, orderedComponents) => {
                 const props = component.props ?? {};
                 const propText = (key: string) => textValue(props, key);
                 const propList = (key: string) => Array.isArray(props[key]) ? (props[key] as unknown[]).filter((value): value is string => typeof value === "string") : [];
                 const patch = (values: Record<string, unknown>) => updateComponent(block.id, component.id, values);
                 const contentTypes: ComponentType[] = ["paragrafo", "titulo", "callout-info", "callout-aviso", "callout-sucesso", "callout-erro"];
                 return (
-                  <section className="lesson-canvas__component" key={component.id}>
+                  <section
+                    className="lesson-canvas__component"
+                    key={component.id}
+                    style={{ "--lesson-component-span": Math.min(component.layout?.columnSpan ?? 1, block.layout?.columns ?? 1) } as CSSProperties & { "--lesson-component-span": number }}
+                  >
                     <header className="lesson-canvas__component-header">
                       <strong>{COMPONENT_NAMES[locale][component.type]}</strong>
+                      <label className="lesson-canvas__component-width">
+                        <span>{copy.componentWidth}</span>
+                        <select
+                          value={Math.min(component.layout?.columnSpan ?? 1, block.layout?.columns ?? 1)}
+                          onChange={(event) => updateComponentLayout(block.id, component.id, Number(event.target.value) as 1 | 2 | 3)}
+                          aria-label={copy.componentWidth}
+                        >
+                          {[1, 2, 3].filter((span) => span <= (block.layout?.columns ?? 1)).map((span) => (
+                            <option key={span} value={span}>{copy.componentWidths[span as 1 | 2 | 3]}</option>
+                          ))}
+                        </select>
+                      </label>
                       <div className="lesson-canvas__actions">
                         <button type="button" onClick={() => moveComponent(block, component.id, -1)} disabled={componentIndex === 0} aria-label={copy.up} title={copy.up}>↑</button>
                         <button type="button" onClick={() => moveComponent(block, component.id, 1)} disabled={componentIndex === orderedComponents.length - 1} aria-label={copy.down} title={copy.down}>↓</button>

@@ -76,6 +76,10 @@ export interface Component {
   type: ComponentType;
   order: number;
   props: Record<string, unknown>;
+  /** Largura opcional no grid do bloco; ausente significa uma coluna. */
+  layout?: {
+    columnSpan?: 1 | 2 | 3;
+  };
   // Props específicas por tipo:
   // paragrafo: { content: string }
   // titulo: { content: string; level: 1 | 2 | 3 }
