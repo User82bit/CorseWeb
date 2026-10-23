@@ -1,18 +1,27 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
-import type { CanvasElement, CanvasElementType, Course, Lesson, Module } from "../../types/course";
+import type { CanvasConnection, CanvasNode, CanvasNodeType, Course, Lesson, Module } from "../../types/course";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
 
 const GRID = 24;
 const CANVAS_WIDTH = 1200;
 const CANVAS_MIN_HEIGHT = 900;
-const PALETTE_DRAG_TYPE = "application/x-corseweb-canvas-element";
+const PALETTE_DRAG_TYPE = "application/x-corseweb-canvas-node";
 
-const ELEMENT_TYPES: CanvasElementType[] = [
-  "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise", "callout", "divider", "embed",
+const NODE_TYPES: CanvasNodeType[] = [
+  "start", "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise", "callout", "divider", "embed", "certificate",
 ];
+
+interface PendingConnection {
+  sourceNode: string;
+  sourcePort: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
 
 const COPY: Record<"pt-BR" | "en" | "es", {
   back: string;
@@ -60,7 +69,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
   moduleName: string;
   lessonName: string;
   duration: string;
-  cardNames: Record<CanvasElementType, string>;
+  cardNames: Record<CanvasNodeType, string>;
 }> = {
   "pt-BR": {
     back: "Voltar aos cursos",
@@ -75,7 +84,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Cards",
     paletteHint: "Arraste um card para o canvas ou toque para adicionar.",
     canvas: "Canvas",
-    canvasHint: "Solte cards aqui. Arraste-os para reposicionar; eles encaixam nos pontos da grade.",
+    canvasHint: "Arraste cards e conecte a saída inferior de um nó à entrada superior de outro. Tudo encaixa na grade.",
     inspector: "Propriedades",
     inspectorHint: "Selecione um card no canvas para editar suas propriedades.",
     course: "Curso",
@@ -110,7 +119,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     duration: "Duração estimada (min)",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagem", video: "Vídeo",
-      code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação",
+      code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação", start: "Início", certificate: "Certificado",
     },
   },
   en: {
@@ -126,7 +135,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Cards",
     paletteHint: "Drag a card onto the canvas or click to add it.",
     canvas: "Canvas",
-    canvasHint: "Drop cards here. Drag to reposition; cards snap to the grid points.",
+    canvasHint: "Drag cards and connect a node's bottom output to another node's top input. Everything snaps to the grid.",
     inspector: "Properties",
     inspectorHint: "Select a card on the canvas to edit its properties.",
     course: "Course",
@@ -161,7 +170,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     duration: "Estimated duration (min)",
     cardNames: {
       heading: "Heading", paragraph: "Text", list: "List", image: "Image", video: "Video",
-      code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed",
+      code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed", start: "Start", certificate: "Certificate",
     },
   },
   es: {
@@ -177,7 +186,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Tarjetas",
     paletteHint: "Arrastra una tarjeta al lienzo o pulsa para añadirla.",
     canvas: "Lienzo",
-    canvasHint: "Suelta tarjetas aquí. Arrástralas para moverlas; se ajustan a la cuadrícula.",
+    canvasHint: "Arrastra tarjetas y conecta la salida inferior de un nodo a la entrada superior de otro. Todo se ajusta a la cuadrícula.",
     inspector: "Propiedades",
     inspectorHint: "Selecciona una tarjeta del lienzo para editar sus propiedades.",
     course: "Curso",
@@ -212,7 +221,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     duration: "Duración estimada (min)",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagen", video: "Vídeo",
-      code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación",
+      code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación", start: "Inicio", certificate: "Certificado",
     },
   },
 };
@@ -228,12 +237,12 @@ function snapToGrid(value: number): number {
   return Math.round(value / GRID) * GRID;
 }
 
-function getText(element: CanvasElement, key: string, fallback = ""): string {
-  const value = element.props?.[key];
+function getText(node: CanvasNode, key: string, fallback = ""): string {
+  const value = node.props?.[key];
   return typeof value === "string" ? value : fallback;
 }
 
-function elementDimensions(type: CanvasElementType): { width: number; height: number } {
+function nodeDimensions(type: CanvasNodeType): { width: number; height: number } {
   switch (type) {
     case "divider": return { width: 600, height: 72 };
     case "quiz":
@@ -243,14 +252,18 @@ function elementDimensions(type: CanvasElementType): { width: number; height: nu
     case "list": return { width: 288, height: 168 };
     case "code":
     case "embed": return { width: 336, height: 192 };
+    case "start":
+    case "certificate": return { width: 288, height: 120 };
     case "heading": return { width: 288, height: 96 };
     case "callout": return { width: 288, height: 144 };
     default: return { width: 288, height: 144 };
   }
 }
 
-function defaultProps(type: CanvasElementType): Record<string, unknown> {
+function defaultProps(type: CanvasNodeType): Record<string, unknown> {
   switch (type) {
+    case "start": return { title: "Início", content: "Ponto inicial do fluxo." };
+    case "certificate": return { title: "Certificado", content: "Certificado de conclusão." };
     case "heading": return { content: "Novo título", level: 2 };
     case "paragraph": return { content: "Escreva seu texto aqui." };
     case "list": return { items: ["Primeiro item", "Segundo item"], ordered: false };
@@ -265,25 +278,48 @@ function defaultProps(type: CanvasElementType): Record<string, unknown> {
   }
 }
 
-function overlaps(a: Pick<CanvasElement, "x" | "y" | "width" | "height">, b: Pick<CanvasElement, "x" | "y" | "width" | "height">): boolean {
+function defaultPorts(type: CanvasNodeType): Pick<CanvasNode, "inputs" | "outputs"> {
+  const inputs = type === "start" ? [] : [{ id: "enter", label: "Entrada" }];
+  const outputs = type === "certificate" ? [] : type === "quiz"
+    ? [{ id: "success", label: "Aprovado" }, { id: "failed", label: "Reprovado" }]
+    : [{ id: "complete", label: type === "start" ? "Iniciar" : "Concluído" }];
+  return { inputs, outputs };
+}
+
+function getPortAnchor(node: CanvasNode, direction: "input" | "output", portId: string): { x: number; y: number } {
+  const ports = direction === "input" ? node.inputs : node.outputs;
+  const foundIndex = ports.findIndex((port) => port.id === portId);
+  const index = Math.max(0, foundIndex);
+  return {
+    x: node.x + ((index + 1) / (ports.length + 1)) * node.width,
+    y: direction === "input" ? node.y : node.y + node.height,
+  };
+}
+
+function connectionPath(from: { x: number; y: number }, to: { x: number; y: number }): string {
+  const bend = Math.max(GRID * 2, Math.abs(to.x - from.x) * 0.45);
+  return "M " + from.x + " " + from.y + " C " + (from.x + bend) + " " + from.y + ", " + (to.x - bend) + " " + to.y + ", " + to.x + " " + to.y;
+}
+
+function overlaps(a: Pick<CanvasNode, "x" | "y" | "width" | "height">, b: Pick<CanvasNode, "x" | "y" | "width" | "height">): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-function findFreePosition(elements: CanvasElement[], width: number, height: number): { x: number; y: number } {
+function findFreePosition(nodes: CanvasNode[], width: number, height: number): { x: number; y: number } {
   const possibleX = [...new Set([GRID, GRID * 14, GRID * 27, Math.max(GRID, snapToGrid(CANVAS_WIDTH - width - GRID))])];
   for (let y = GRID; y < 12000; y += GRID) {
     for (const x of possibleX) {
       const candidate = { x, y, width, height };
-      if (x + width <= CANVAS_WIDTH - GRID && !elements.some((element) => overlaps(candidate, element))) {
+      if (x + width <= CANVAS_WIDTH - GRID && !nodes.some((node) => overlaps(candidate, node))) {
         return { x, y };
       }
     }
   }
-  return { x: GRID, y: Math.max(GRID, ...elements.map((element) => snapToGrid(element.y + element.height + GRID))) };
+  return { x: GRID, y: Math.max(GRID, ...nodes.map((node) => snapToGrid(node.y + node.height + GRID))) };
 }
 
-function createCanvasElement(type: CanvasElementType, x: number, y: number): CanvasElement {
-  const size = elementDimensions(type);
+function createCanvasNode(type: CanvasNodeType, x: number, y: number): CanvasNode {
+  const size = nodeDimensions(type);
   return {
     id: createId("card"),
     type,
@@ -292,6 +328,7 @@ function createCanvasElement(type: CanvasElementType, x: number, y: number): Can
     width: size.width,
     height: size.height,
     props: defaultProps(type),
+    ...defaultPorts(type),
   };
 }
 
@@ -308,7 +345,8 @@ function createLesson(course: Course, moduleId: string, order: number, title: st
     description: "",
     order,
     estimatedMinutes: 5,
-    elements: [],
+    nodes: [],
+    connections: [],
     isPublished: false,
     isFree: false,
     createdAt: now,
@@ -345,10 +383,26 @@ function prepareModules(course: Course): Module[] {
     ...module,
     order: moduleIndex + 1,
     lessons: (module.lessons ?? []).map((lesson, lessonIndex) => {
-      // This is the new contract: legacy "blocks" are not translated into canvas elements.
-      const { blocks: discardedLegacyBlocks, ...lessonWithoutLegacyBlocks } = lesson as Lesson & { blocks?: unknown };
+      // This is the new contract: legacy "blocks" are not translated into canvas nodes.
+      const {
+        blocks: discardedLegacyBlocks,
+        elements: discardedLegacyElements,
+        ...lessonWithoutLegacyContent
+      } = lesson as Lesson & { blocks?: unknown; elements?: unknown };
       void discardedLegacyBlocks;
-      return { ...lessonWithoutLegacyBlocks, elements: Array.isArray(lesson.elements) ? lesson.elements : [], order: lessonIndex + 1, moduleId: module.id };
+      void discardedLegacyElements;
+      const nodes = Array.isArray(lesson.nodes) ? lesson.nodes.map((node) => ({
+        ...node,
+        inputs: Array.isArray(node.inputs) ? node.inputs : defaultPorts(node.type).inputs,
+        outputs: Array.isArray(node.outputs) ? node.outputs : defaultPorts(node.type).outputs,
+      })) : [];
+      return {
+        ...lessonWithoutLegacyContent,
+        nodes,
+        connections: Array.isArray(lesson.connections) ? lesson.connections : [],
+        order: lessonIndex + 1,
+        moduleId: module.id,
+      };
     }),
   }));
   if (received.length === 0) return [createModule(course, 1)];
@@ -360,9 +414,9 @@ function prepareModules(course: Course): Module[] {
   return received;
 }
 
-function ElementPreview({ element }: { element: CanvasElement }) {
-  const props = element.props ?? {};
-  const text = (key: string, fallback = "") => getText(element, key, fallback);
+function NodePreview({ node }: { node: CanvasNode }) {
+  const props = node.props ?? {};
+  const text = (key: string, fallback = "") => getText(node, key, fallback);
   const safeUrl = (value: string) => {
     if (!value.trim()) return "";
     try {
@@ -373,7 +427,11 @@ function ElementPreview({ element }: { element: CanvasElement }) {
     }
   };
 
-  switch (element.type) {
+  switch (node.type) {
+    case "start":
+      return <div className="lesson-editor-workspace__preview-flow"><strong>{text("title", "Início")}</strong><p>{text("content", "Ponto inicial do fluxo.")}</p></div>;
+    case "certificate":
+      return <div className="lesson-editor-workspace__preview-flow"><strong>{text("title", "Certificado")}</strong><p>{text("content", "Certificado de conclusão.")}</p></div>;
     case "heading": {
       const level = Number(props.level ?? 2);
       const Tag = level === 1 ? "h2" : level === 3 ? "h4" : "h3";
@@ -426,7 +484,7 @@ function LessonEditorPage() {
   const [course, setCourse] = useState<Course | undefined>(() => cachedCourse);
   const [modules, setModules] = useState<Module[]>(() => cachedCourse ? prepareModules(cachedCourse) : []);
   const [selectedLessonId, setSelectedLessonId] = useState("");
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(!cachedCourse);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -473,9 +531,9 @@ function LessonEditorPage() {
   const activeEntry = lessonEntries.find((entry) => entry.lesson.id === selectedLessonId) ?? lessonEntries[0] ?? null;
   const activeLesson = activeEntry?.lesson ?? null;
   const activeModule = activeEntry?.module ?? modules[0] ?? null;
-  const elements = activeLesson?.elements ?? [];
-  const selectedElement = elements.find((element) => element.id === selectedElementId) ?? null;
-  const canvasHeight = Math.max(CANVAS_MIN_HEIGHT, ...elements.map((element) => element.y + element.height + GRID * 2));
+  const nodes = activeLesson?.nodes ?? [];
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const canvasHeight = Math.max(CANVAS_MIN_HEIGHT, ...nodes.map((node) => node.y + node.height + GRID * 2));
   const isDraft = Boolean(course && getDraftCourses().some((draft) => draft.slug === course.slug));
 
   const commitModules = (next: Module[]) => {
@@ -499,62 +557,62 @@ function LessonEditorPage() {
     }));
   };
 
-  const updateElements = (transform: (current: CanvasElement[]) => CanvasElement[]) => {
+  const updateNodes = (transform: (current: CanvasNode[]) => CanvasNode[]) => {
     if (!activeLesson) return;
-    updateLesson({ elements: transform(activeLesson.elements ?? []) });
+    updateLesson({ nodes: transform(activeLesson.nodes ?? []) });
   };
 
-  const addElement = (type: CanvasElementType, requestedX?: number, requestedY?: number) => {
+  const addNode = (type: CanvasNodeType, requestedX?: number, requestedY?: number) => {
     if (!activeLesson) return;
-    const size = elementDimensions(type);
+    const size = nodeDimensions(type);
     const free = requestedX == null || requestedY == null
-      ? findFreePosition(elements, size.width, size.height)
+      ? findFreePosition(nodes, size.width, size.height)
       : { x: requestedX, y: requestedY };
     const x = Math.max(GRID, Math.min(CANVAS_WIDTH - size.width - GRID, snapToGrid(free.x)));
     const y = Math.max(GRID, snapToGrid(free.y));
-    const element = createCanvasElement(type, x, y);
-    updateElements((current) => [...current, element]);
-    setSelectedElementId(element.id);
+    const node = createCanvasNode(type, x, y);
+    updateNodes((current) => [...current, node]);
+    setSelectedNodeId(node.id);
   };
 
-  const handlePaletteDragStart = (event: ReactDragEvent<HTMLButtonElement>, type: CanvasElementType) => {
+  const handlePaletteDragStart = (event: ReactDragEvent<HTMLButtonElement>, type: CanvasNodeType) => {
     event.dataTransfer.setData(PALETTE_DRAG_TYPE, type);
     event.dataTransfer.effectAllowed = "copy";
   };
 
   const handleDrop = (event: ReactDragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasElementType;
-    if (!ELEMENT_TYPES.includes(type)) return;
+    const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
+    if (!NODE_TYPES.includes(type)) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = snapToGrid(event.clientX - bounds.left - GRID);
     const y = snapToGrid(event.clientY - bounds.top - GRID);
-    addElement(type, x, y);
+    addNode(type, x, y);
   };
 
-  const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, element: CanvasElement) => {
+  const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
     if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = {
-      id: element.id,
+      id: node.id,
       clientX: event.clientX,
       clientY: event.clientY,
-      originX: element.x,
-      originY: element.y,
+      originX: node.x,
+      originY: node.y,
     };
-    setSelectedElementId(element.id);
+    setSelectedNodeId(node.id);
   };
 
   const handleCanvasPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || !activeLesson) return;
-    const element = elements.find((item) => item.id === drag.id);
-    if (!element) return;
-    const x = Math.max(GRID, Math.min(CANVAS_WIDTH - element.width - GRID, snapToGrid(drag.originX + event.clientX - drag.clientX)));
+    const node = nodes.find((item) => item.id === drag.id);
+    if (!node) return;
+    const x = Math.max(GRID, Math.min(CANVAS_WIDTH - node.width - GRID, snapToGrid(drag.originX + event.clientX - drag.clientX)));
     const y = Math.max(GRID, snapToGrid(drag.originY + event.clientY - drag.clientY));
-    if (x === element.x && y === element.y) return;
-    updateElements((current) => current.map((item) => item.id === drag.id ? { ...item, x, y } : item));
+    if (x === node.x && y === node.y) return;
+    updateNodes((current) => current.map((item) => item.id === drag.id ? { ...item, x, y } : item));
   };
 
   const handleCardPointerUp = () => { dragRef.current = null; };
@@ -564,7 +622,7 @@ function LessonEditorPage() {
     const module = createModule(course, modules.length + 1);
     commitModules([...modules, module]);
     setSelectedLessonId(module.lessons[0]?.id ?? "");
-    setSelectedElementId(null);
+    setSelectedNodeId(null);
   };
 
   const handleAddLesson = () => {
@@ -575,36 +633,36 @@ function LessonEditorPage() {
       ? { ...module, lessons: [...module.lessons, lesson] }
       : module));
     setSelectedLessonId(lesson.id);
-    setSelectedElementId(null);
+    setSelectedNodeId(null);
   };
 
-  const handleRemoveElement = () => {
-    if (!selectedElement) return;
-    updateElements((current) => current.filter((element) => element.id !== selectedElement.id));
-    setSelectedElementId(null);
+  const handleRemoveNode = () => {
+    if (!selectedNode) return;
+    updateNodes((current) => current.filter((node) => node.id !== selectedNode.id));
+    setSelectedNodeId(null);
   };
 
-  const handleDuplicateElement = () => {
-    if (!selectedElement) return;
-    const position = findFreePosition(elements, selectedElement.width, selectedElement.height);
-    const copy = { ...selectedElement, id: createId("card"), x: position.x, y: position.y, props: { ...selectedElement.props } };
-    updateElements((current) => [...current, copy]);
-    setSelectedElementId(copy.id);
+  const handleDuplicateNode = () => {
+    if (!selectedNode) return;
+    const position = findFreePosition(nodes, selectedNode.width, selectedNode.height);
+    const copy = { ...selectedNode, id: createId("card"), x: position.x, y: position.y, props: { ...selectedNode.props } };
+    updateNodes((current) => [...current, copy]);
+    setSelectedNodeId(copy.id);
   };
 
   const patchSelectedProps = (patch: Record<string, unknown>) => {
-    if (!selectedElement) return;
-    updateElements((current) => current.map((element) => element.id === selectedElement.id
-      ? { ...element, props: { ...element.props, ...patch } }
-      : element));
+    if (!selectedNode) return;
+    updateNodes((current) => current.map((node) => node.id === selectedNode.id
+      ? { ...node, props: { ...node.props, ...patch } }
+      : node));
   };
 
   const patchSelectedSize = (key: "width" | "height", value: number) => {
-    if (!selectedElement) return;
+    if (!selectedNode) return;
     const nextValue = Math.max(GRID * 4, Math.min(key === "width" ? CANVAS_WIDTH - GRID * 2 : 2400, snapToGrid(value)));
-    updateElements((current) => current.map((element) => element.id === selectedElement.id
-      ? { ...element, [key]: nextValue, x: key === "width" ? Math.min(element.x, CANVAS_WIDTH - nextValue - GRID) : element.x }
-      : element));
+    updateNodes((current) => current.map((node) => node.id === selectedNode.id
+      ? { ...node, [key]: nextValue, x: key === "width" ? Math.min(node.x, CANVAS_WIDTH - nextValue - GRID) : node.x }
+      : node));
   };
 
   const handleSave = async (): Promise<boolean> => {
@@ -621,7 +679,7 @@ function LessonEditorPage() {
           void discardedLegacyBlocks;
           return {
             ...lessonData,
-            elements: Array.isArray(lesson.elements) ? lesson.elements : [],
+            nodes: Array.isArray(lesson.nodes) ? lesson.nodes : [],
             order: lessonIndex + 1,
             moduleId: module.id,
           };
@@ -677,7 +735,7 @@ function LessonEditorPage() {
 
   const handleLessonChange = (lessonId: string) => {
     setSelectedLessonId(lessonId);
-    setSelectedElementId(null);
+    setSelectedNodeId(null);
   };
 
   if (loading) {
@@ -732,14 +790,14 @@ function LessonEditorPage() {
             <p>{copy.paletteHint}</p>
           </div>
           <div className="lesson-editor-workspace__palette-list">
-            {ELEMENT_TYPES.map((type) => (
+            {NODE_TYPES.map((type) => (
               <button
                 type="button"
                 key={type}
                 className="lesson-editor-workspace__palette-card"
                 draggable
                 onDragStart={(event) => handlePaletteDragStart(event, type)}
-                onClick={() => addElement(type)}
+                onClick={() => addNode(type)}
               >
                 <span className="lesson-editor-workspace__palette-symbol" aria-hidden="true">⠿</span>
                 <span className="lesson-editor-workspace__palette-copy">
@@ -757,7 +815,7 @@ function LessonEditorPage() {
               <h2>{activeLesson?.title ?? copy.lesson}</h2>
               <p>{copy.canvasHint}</p>
             </div>
-            <span>{elements.length} cards</span>
+            <span>{nodes.length} cards</span>
           </div>
           <div className="lesson-editor-workspace__canvas-scroll">
             {activeLesson ? (
@@ -770,26 +828,26 @@ function LessonEditorPage() {
                 onPointerUp={handleCardPointerUp}
                 onPointerCancel={handleCardPointerUp}
               >
-                {elements.length === 0 && <div className="lesson-editor-workspace__empty-canvas"><span>＋</span><strong>{copy.emptyCanvas}</strong><p>{copy.dropHere}</p></div>}
-                {elements.map((element) => (
+                {nodes.length === 0 && <div className="lesson-editor-workspace__empty-canvas"><span>＋</span><strong>{copy.emptyCanvas}</strong><p>{copy.dropHere}</p></div>}
+                {nodes.map((node) => (
                   <article
-                    key={element.id}
-                    className={`lesson-editor-workspace__element${element.id === selectedElementId ? " lesson-editor-workspace__element--selected" : ""}`}
-                    style={{ left: element.x, top: element.y, width: element.width, height: element.height } as CSSProperties}
+                    key={node.id}
+                    className={`lesson-editor-workspace__element${node.id === selectedNodeId ? " lesson-editor-workspace__element--selected" : ""}`}
+                    style={{ left: node.x, top: node.y, width: node.width, height: node.height } as CSSProperties}
                     role="button"
                     tabIndex={0}
-                    aria-pressed={element.id === selectedElementId}
-                    onClick={() => setSelectedElementId(element.id)}
-                    onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedElementId(element.id); } }}
-                    onPointerDown={(event) => handleCardPointerDown(event, element)}
-                    title={copy.cardNames[element.type]}
+                    aria-pressed={node.id === selectedNodeId}
+                    onClick={() => setSelectedNodeId(node.id)}
+                    onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedNodeId(node.id); } }}
+                    onPointerDown={(event) => handleCardPointerDown(event, node)}
+                    title={copy.cardNames[node.type]}
                   >
                     <div className="lesson-editor-workspace__element-toolbar">
-                      <span>{copy.cardNames[element.type]}</span>
+                      <span>{copy.cardNames[node.type]}</span>
                       <span aria-hidden="true">⠿</span>
                     </div>
                     <div className="lesson-editor-workspace__element-content">
-                      <ElementPreview element={element} />
+                      <NodePreview node={node} />
                     </div>
                   </article>
                 ))}
@@ -801,72 +859,72 @@ function LessonEditorPage() {
         <aside className="lesson-editor-workspace__inspector" aria-label={copy.inspector}>
           <div className="lesson-editor-workspace__panel-heading">
             <h2>{copy.inspector}</h2>
-            <p>{selectedElement ? copy.cardNames[selectedElement.type] : copy.inspectorHint}</p>
+            <p>{selectedNode ? copy.cardNames[selectedNode.type] : copy.inspectorHint}</p>
           </div>
 
-          {selectedElement ? (
+          {selectedNode ? (
             <div className="lesson-editor-workspace__inspector-form">
-              {["heading", "paragraph"].includes(selectedElement.type) && (
-                <label><span>{copy.content}</span><textarea rows={5} value={getText(selectedElement, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
+              {["heading", "paragraph"].includes(selectedNode.type) && (
+                <label><span>{copy.content}</span><textarea rows={5} value={getText(selectedNode, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
               )}
-              {selectedElement.type === "list" && (
+              {selectedNode.type === "list" && (
                 <>
-                  <label><span>{copy.content}</span><textarea rows={6} value={Array.isArray(selectedElement.props.items) ? selectedElement.props.items.map(String).join("\n") : ""} onChange={(event) => patchSelectedProps({ items: event.target.value.split("\n") })} /></label>
-                  <label className="lesson-editor-workspace__checkbox"><input type="checkbox" checked={Boolean(selectedElement.props.ordered)} onChange={(event) => patchSelectedProps({ ordered: event.target.checked })} /><span>{copy.ordered}</span></label>
+                  <label><span>{copy.content}</span><textarea rows={6} value={Array.isArray(selectedNode.props.items) ? selectedNode.props.items.map(String).join("\n") : ""} onChange={(event) => patchSelectedProps({ items: event.target.value.split("\n") })} /></label>
+                  <label className="lesson-editor-workspace__checkbox"><input type="checkbox" checked={Boolean(selectedNode.props.ordered)} onChange={(event) => patchSelectedProps({ ordered: event.target.checked })} /><span>{copy.ordered}</span></label>
                 </>
               )}
-              {selectedElement.type === "image" && (
+              {selectedNode.type === "image" && (
                 <>
-                  <label><span>{copy.url}</span><input value={getText(selectedElement, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
-                  <label><span>{copy.alt}</span><input value={getText(selectedElement, "alt")} onChange={(event) => patchSelectedProps({ alt: event.target.value })} /></label>
-                  <label><span>{copy.caption}</span><input value={getText(selectedElement, "caption")} onChange={(event) => patchSelectedProps({ caption: event.target.value })} /></label>
+                  <label><span>{copy.url}</span><input value={getText(selectedNode, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
+                  <label><span>{copy.alt}</span><input value={getText(selectedNode, "alt")} onChange={(event) => patchSelectedProps({ alt: event.target.value })} /></label>
+                  <label><span>{copy.caption}</span><input value={getText(selectedNode, "caption")} onChange={(event) => patchSelectedProps({ caption: event.target.value })} /></label>
                 </>
               )}
-              {selectedElement.type === "video" && (
+              {selectedNode.type === "video" && (
                 <>
-                  <label><span>{copy.url}</span><input value={getText(selectedElement, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
-                  <label><span>{copy.caption}</span><input value={getText(selectedElement, "caption")} onChange={(event) => patchSelectedProps({ caption: event.target.value })} /></label>
+                  <label><span>{copy.url}</span><input value={getText(selectedNode, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
+                  <label><span>{copy.caption}</span><input value={getText(selectedNode, "caption")} onChange={(event) => patchSelectedProps({ caption: event.target.value })} /></label>
                 </>
               )}
-              {selectedElement.type === "code" && (
+              {selectedNode.type === "code" && (
                 <>
-                  <label><span>{copy.language}</span><input value={getText(selectedElement, "language", "text")} onChange={(event) => patchSelectedProps({ language: event.target.value })} /></label>
-                  <label><span>{copy.code}</span><textarea rows={7} value={getText(selectedElement, "code")} onChange={(event) => patchSelectedProps({ code: event.target.value })} /></label>
+                  <label><span>{copy.language}</span><input value={getText(selectedNode, "language", "text")} onChange={(event) => patchSelectedProps({ language: event.target.value })} /></label>
+                  <label><span>{copy.code}</span><textarea rows={7} value={getText(selectedNode, "code")} onChange={(event) => patchSelectedProps({ code: event.target.value })} /></label>
                 </>
               )}
-              {selectedElement.type === "quiz" && (
+              {selectedNode.type === "quiz" && (
                 <>
-                  <label><span>{copy.question}</span><textarea rows={3} value={getText(selectedElement, "question")} onChange={(event) => patchSelectedProps({ question: event.target.value })} /></label>
-                  <label><span>{copy.options}</span><textarea rows={4} value={Array.isArray(selectedElement.props.options) ? selectedElement.props.options.map(String).join("\n") : ""} onChange={(event) => patchSelectedProps({ options: event.target.value.split("\n") })} /></label>
-                  <label><span>{copy.correctAnswer}</span><input type="number" min={0} value={Number(selectedElement.props.correctIndex ?? 0)} onChange={(event) => patchSelectedProps({ correctIndex: Math.max(0, Number(event.target.value) || 0) })} /></label>
+                  <label><span>{copy.question}</span><textarea rows={3} value={getText(selectedNode, "question")} onChange={(event) => patchSelectedProps({ question: event.target.value })} /></label>
+                  <label><span>{copy.options}</span><textarea rows={4} value={Array.isArray(selectedNode.props.options) ? selectedNode.props.options.map(String).join("\n") : ""} onChange={(event) => patchSelectedProps({ options: event.target.value.split("\n") })} /></label>
+                  <label><span>{copy.correctAnswer}</span><input type="number" min={0} value={Number(selectedNode.props.correctIndex ?? 0)} onChange={(event) => patchSelectedProps({ correctIndex: Math.max(0, Number(event.target.value) || 0) })} /></label>
                 </>
               )}
-              {selectedElement.type === "exercise" && (
+              {selectedNode.type === "exercise" && (
                 <>
-                  <label><span>{copy.instruction}</span><textarea rows={3} value={getText(selectedElement, "instruction")} onChange={(event) => patchSelectedProps({ instruction: event.target.value })} /></label>
-                  <label><span>{copy.starterCode}</span><textarea rows={5} value={getText(selectedElement, "starterCode")} onChange={(event) => patchSelectedProps({ starterCode: event.target.value })} /></label>
-                  <label><span>{copy.solution}</span><textarea rows={4} value={getText(selectedElement, "solution")} onChange={(event) => patchSelectedProps({ solution: event.target.value })} /></label>
+                  <label><span>{copy.instruction}</span><textarea rows={3} value={getText(selectedNode, "instruction")} onChange={(event) => patchSelectedProps({ instruction: event.target.value })} /></label>
+                  <label><span>{copy.starterCode}</span><textarea rows={5} value={getText(selectedNode, "starterCode")} onChange={(event) => patchSelectedProps({ starterCode: event.target.value })} /></label>
+                  <label><span>{copy.solution}</span><textarea rows={4} value={getText(selectedNode, "solution")} onChange={(event) => patchSelectedProps({ solution: event.target.value })} /></label>
                 </>
               )}
-              {selectedElement.type === "callout" && (
+              {selectedNode.type === "callout" && (
                 <>
-                  <label><span>{copy.title}</span><input value={getText(selectedElement, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
-                  <label><span>{copy.content}</span><textarea rows={4} value={getText(selectedElement, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
+                  <label><span>{copy.title}</span><input value={getText(selectedNode, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
+                  <label><span>{copy.content}</span><textarea rows={4} value={getText(selectedNode, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
                 </>
               )}
-              {selectedElement.type === "embed" && (
+              {selectedNode.type === "embed" && (
                 <>
-                  <label><span>{copy.title}</span><input value={getText(selectedElement, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
-                  <label><span>{copy.url}</span><input value={getText(selectedElement, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
+                  <label><span>{copy.title}</span><input value={getText(selectedNode, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
+                  <label><span>{copy.url}</span><input value={getText(selectedNode, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
                 </>
               )}
               <div className="lesson-editor-workspace__size-fields">
-                <label><span>{copy.width}</span><input type="number" step={GRID} min={GRID * 4} max={CANVAS_WIDTH - GRID * 2} value={selectedElement.width} onChange={(event) => patchSelectedSize("width", Number(event.target.value))} /></label>
-                <label><span>{copy.height}</span><input type="number" step={GRID} min={GRID * 4} max={2400} value={selectedElement.height} onChange={(event) => patchSelectedSize("height", Number(event.target.value))} /></label>
+                <label><span>{copy.width}</span><input type="number" step={GRID} min={GRID * 4} max={CANVAS_WIDTH - GRID * 2} value={selectedNode.width} onChange={(event) => patchSelectedSize("width", Number(event.target.value))} /></label>
+                <label><span>{copy.height}</span><input type="number" step={GRID} min={GRID * 4} max={2400} value={selectedNode.height} onChange={(event) => patchSelectedSize("height", Number(event.target.value))} /></label>
               </div>
               <div className="lesson-editor-workspace__element-actions">
-                <button type="button" className="lesson-editor-workspace__secondary" onClick={handleDuplicateElement}>{copy.duplicate}</button>
-                <button type="button" className="lesson-editor-workspace__danger" onClick={handleRemoveElement}>{copy.remove}</button>
+                <button type="button" className="lesson-editor-workspace__secondary" onClick={handleDuplicateNode}>{copy.duplicate}</button>
+                <button type="button" className="lesson-editor-workspace__danger" onClick={handleRemoveNode}>{copy.remove}</button>
               </div>
             </div>
           ) : activeLesson ? (
