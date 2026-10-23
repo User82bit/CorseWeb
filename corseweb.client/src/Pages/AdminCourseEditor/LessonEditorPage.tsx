@@ -966,7 +966,10 @@ function LessonEditorPage() {
               <div
                 className="lesson-editor-workspace__canvas"
                 style={{ height: canvasHeight }}
-                onDragOver={(event) => event.preventDefault()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "copy";
+                }}
                 onDrop={handleDrop}
                 onPointerDown={handleCanvasPointerDown}
                 onPointerMove={handleCanvasPointerMove}
