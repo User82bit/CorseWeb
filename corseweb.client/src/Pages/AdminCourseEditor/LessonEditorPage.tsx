@@ -491,6 +491,7 @@ function LessonEditorPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dragRef = useRef<{ id: string; clientX: number; clientY: number; originX: number; originY: number } | null>(null);
+  const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
 
   useEffect(() => {
     if (!courseSlug) return;
@@ -532,6 +533,7 @@ function LessonEditorPage() {
   const activeLesson = activeEntry?.lesson ?? null;
   const activeModule = activeEntry?.module ?? modules[0] ?? null;
   const nodes = activeLesson?.nodes ?? [];
+  const connections = activeLesson?.connections ?? [];
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
   const canvasHeight = Math.max(CANVAS_MIN_HEIGHT, ...nodes.map((node) => node.y + node.height + GRID * 2));
   const isDraft = Boolean(course && getDraftCourses().some((draft) => draft.slug === course.slug));
@@ -605,6 +607,10 @@ function LessonEditorPage() {
   };
 
   const handleCanvasPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (pendingConnection) {
+      setPendingConnection({ ...pendingConnection, x2: event.clientX - bounds.left, y2: event.clientY - bounds.top });
+    }
     const drag = dragRef.current;
     if (!drag || !activeLesson) return;
     const node = nodes.find((item) => item.id === drag.id);
@@ -615,7 +621,39 @@ function LessonEditorPage() {
     updateNodes((current) => current.map((item) => item.id === drag.id ? { ...item, x, y } : item));
   };
 
-  const handleCardPointerUp = () => { dragRef.current = null; };
+  const handleOutputPortPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, node: CanvasNode, portId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const anchor = getPortAnchor(node, "output", portId);
+    setSelectedNodeId(node.id);
+    setPendingConnection({ sourceNode: node.id, sourcePort: portId, x1: anchor.x, y1: anchor.y, x2: anchor.x, y2: anchor.y });
+  };
+
+  const handleInputPortPointerUp = (event: ReactPointerEvent<HTMLButtonElement>, targetNode: CanvasNode, targetPort: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!pendingConnection || pendingConnection.sourceNode === targetNode.id) return;
+    const sourceNode = nodes.find((node) => node.id === pendingConnection.sourceNode);
+    if (!sourceNode?.outputs.some((port) => port.id === pendingConnection.sourcePort)) return;
+    if (!targetNode.inputs.some((port) => port.id === targetPort)) return;
+    const nextConnection: CanvasConnection = {
+      id: createId("connection"),
+      sourceNode: pendingConnection.sourceNode,
+      sourcePort: pendingConnection.sourcePort,
+      targetNode: targetNode.id,
+      targetPort,
+    };
+    const nextConnections = connections.filter((connection) =>
+      !(connection.targetNode === targetNode.id && connection.targetPort === targetPort)
+    );
+    updateLesson({ connections: [...nextConnections, nextConnection] });
+    setPendingConnection(null);
+  };
+
+  const handleCanvasPointerUp = () => {
+    dragRef.current = null;
+    setPendingConnection(null);
+  };
 
   const handleAddModule = () => {
     if (!course) return;
@@ -638,7 +676,12 @@ function LessonEditorPage() {
 
   const handleRemoveNode = () => {
     if (!selectedNode) return;
-    updateNodes((current) => current.filter((node) => node.id !== selectedNode.id));
+    updateLesson({
+      nodes: nodes.filter((node) => node.id !== selectedNode.id),
+      connections: connections.filter((connection) =>
+        connection.sourceNode !== selectedNode.id && connection.targetNode !== selectedNode.id
+      ),
+    });
     setSelectedNodeId(null);
   };
 
@@ -675,11 +718,13 @@ function LessonEditorPage() {
         ...module,
         order: moduleIndex + 1,
         lessons: module.lessons.map((lesson, lessonIndex) => {
-          const { blocks: discardedLegacyBlocks, ...lessonData } = lesson as Lesson & { blocks?: unknown };
+          const { blocks: discardedLegacyBlocks, elements: discardedLegacyElements, ...lessonData } = lesson as Lesson & { blocks?: unknown; elements?: unknown };
           void discardedLegacyBlocks;
+          void discardedLegacyElements;
           return {
             ...lessonData,
             nodes: Array.isArray(lesson.nodes) ? lesson.nodes : [],
+            connections: Array.isArray(lesson.connections) ? lesson.connections : [],
             order: lessonIndex + 1,
             moduleId: module.id,
           };
