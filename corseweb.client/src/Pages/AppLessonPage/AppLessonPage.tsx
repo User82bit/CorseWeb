@@ -19,6 +19,11 @@ function interpolate(template: string, values: Record<string, string | number>) 
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
 }
 
+const STUDENT_CONTENT_TYPES = new Set<CanvasNode["type"]>([
+  "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise",
+  "callout", "divider", "embed", "certificate",
+]);
+
 function CanvasNodeContent({ node }: { node: CanvasNode }) {
   const props = node.props ?? {};
   const text = (value: unknown) => String(value ?? "");
@@ -34,8 +39,9 @@ function CanvasNodeContent({ node }: { node: CanvasNode }) {
   };
 
   switch (node.type) {
+    // Início é um nó de controle do editor, não conteúdo pedagógico para o aluno.
     case "start":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Início do fluxo</span><h3>{text(props.title || "Início")}</h3><p>{text(props.content)}</p></section>;
+      return null;
     case "certificate":
       return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Certificado</span><h3>{text(props.title || "Certificado")}</h3><p>{text(props.content)}</p></section>;
     case "heading": {
@@ -60,8 +66,21 @@ function CanvasNodeContent({ node }: { node: CanvasNode }) {
       const src = safeUrl(props.url);
       return src ? <div className="student-lesson__video"><video controls preload="metadata" src={src}><track kind="captions" /></video>{typeof props.caption === "string" && props.caption && <p>{text(props.caption)}</p>}</div> : <p className="student-lesson__unsupported">{text(props.caption)}</p>;
     }
-    case "quiz":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Atividade</span><h3>{text(props.question)}</h3><p className="student-lesson__activity-note">Esta atividade interativa ainda não está disponível.</p></section>;
+    case "quiz": {
+      const options = Array.isArray(props.options) ? props.options.map((option) => String(option ?? "")) : [];
+      return (
+        <section className="student-lesson__activity">
+          <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Atividade</span>
+          <h3>{text(props.question)}</h3>
+          {options.length > 0 && (
+            <ol className="student-lesson__quiz-options" type="A">
+              {options.map((option, index) => <li key={index}>{option}</li>)}
+            </ol>
+          )}
+          <p className="student-lesson__activity-note">A resposta e a validação automática serão habilitadas pelo motor de atividades.</p>
+        </section>
+      );
+    }
     case "exercise":
       return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Exercício</span><p>{text(props.instruction)}</p><pre className="student-lesson__code"><code>{text(props.starterCode)}</code></pre></section>;
     case "callout":
@@ -72,6 +91,9 @@ function CanvasNodeContent({ node }: { node: CanvasNode }) {
       const url = safeUrl(props.url);
       return url ? <div className="student-lesson__embed"><strong>{text(props.title || "Incorporação")}</strong><a href={url} target="_blank" rel="noreferrer">{url}<SvgIcon name="arrow-right" size="0.9rem" /></a></div> : null;
     }
+    default:
+      // Tipos desconhecidos (incluindo metadados/scripts internos) não são publicados como conteúdo.
+      return null;
   }
 }
 
@@ -79,8 +101,6 @@ function AppLessonPage() {
   const { t, locale } = useTranslation();
   const { courseSlug, lessonSlug } = useParams<{ courseSlug: string; lessonSlug: string }>();
   const [course, setCourse] = useState<Course | undefined>(() => courseSlug ? getCourseBySlugStore(courseSlug) : undefined);
-  const contentCanvasViewportRef = useRef<HTMLDivElement>(null);
-  const [contentCanvasScale, setContentCanvasScale] = useState(1);
   const [enrollment, setEnrollment] = useState<CourseEnrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -142,18 +162,6 @@ function AppLessonPage() {
   const isLessonComplete = lessonProgress?.status === "concluido";
   const number = (value: number) => new Intl.NumberFormat(locale).format(value);
   const accessKey = course && lesson ? `${course.id}:${lesson.id}` : null;
-
-  useEffect(() => {
-    const viewport = contentCanvasViewportRef.current;
-    if (!viewport) return;
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? viewport.clientWidth;
-      const scale = Math.min(1, width / 1200);
-      setContentCanvasScale((current) => Math.abs(current - scale) < 0.001 ? current : scale);
-    });
-    observer.observe(viewport);
-    return () => observer.disconnect();
-  }, [lesson?.id, Boolean(enrollment), loading]);
 
   useEffect(() => {
     if (!course || course.status !== "publicado" || !lesson || !enrollment || !accessKey) return;
@@ -328,8 +336,11 @@ function AppLessonPage() {
   }
 
   const completionPercent = Math.round(enrollment.overallPercent);
-  const sortedNodes = [...(lesson.nodes ?? [])].sort((a, b) => a.y - b.y || a.x - b.x);
-  const canvasHeight = Math.max(900, ...sortedNodes.map((node) => node.y + node.height + 24));
+  // Posições do editor determinam apenas a ordem de leitura nesta etapa.
+  // Geometria, conexões, portas e scripts internos não são renderizados na área do aluno.
+  const studentNodes = [...(lesson.nodes ?? [])]
+    .filter((node) => STUDENT_CONTENT_TYPES.has(node.type))
+    .sort((a, b) => a.y - b.y || a.x - b.x);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -357,7 +368,7 @@ function AppLessonPage() {
       )}
 
       <main className="student-lesson__main" id="lesson-content">
-        <article className="student-lesson__article" ref={contentCanvasViewportRef}>
+        <article className="student-lesson__article">
           <nav className="student-lesson__breadcrumbs" aria-label={t.learning.lessonNavigation}>
             <Link to="/app/courses">{t.learning.myCoursesTitle}</Link>
             <span aria-hidden="true">/</span>
@@ -376,31 +387,19 @@ function AppLessonPage() {
             </div>
           </header>
 
-          {sortedNodes.length === 0 ? (
+          {studentNodes.length === 0 ? (
             <div className="student-lesson__empty-content">
               <span className="student-lesson__state-icon"><SvgIcon name="book-open" size="1.35rem" /></span>
               <h2>{t.learning.noLessonContentTitle}</h2>
               <p>{t.learning.noLessonContentDescription}</p>
             </div>
           ) : (
-            <div
-              className="student-lesson__content-viewport"
-              style={{ height: canvasHeight * contentCanvasScale }}
-            >
-              <div
-                className="student-lesson__content-canvas"
-                style={{ width: 1200, height: canvasHeight, transform: `scale(${contentCanvasScale})` }}
-              >
-                {sortedNodes.map((node) => (
-                  <section
-                    className="student-lesson__canvas-node"
-                    key={node.id}
-                    style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
-                  >
-                    <CanvasNodeContent node={node} />
-                  </section>
-                ))}
-              </div>
+            <div className="student-lesson__content-flow">
+              {studentNodes.map((node) => (
+                <div className={`student-lesson__content-item student-lesson__content-item--${node.type}`} key={node.id}>
+                  <CanvasNodeContent node={node} />
+                </div>
+              ))}
             </div>
           )}
 
