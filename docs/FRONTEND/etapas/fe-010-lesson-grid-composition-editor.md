@@ -3,6 +3,7 @@
 ## Estado
 - **Kanban:** EM DESENVOLVIMENTO
 - **Branch:** `feat/lesson-visual-canvas-editor`
+- **Pull Request:** [#33 — Adicionar composição visual em grid ao editor de aulas](https://github.com/User82bit/CorseWeb/pull/33)
 - **Área:** Frontend
 - **Dependência:** FE-009 — estrutura Curso → Módulos → Aulas, integrada em `master`.
 
@@ -43,4 +44,6 @@ Evoluir o editor atual de blocos em uma composição visual responsiva: o autor 
 - [ ] Teste manual em navegador real e conferência móvel/tablet/desktop pelo proprietário.
 
 ## Evidências
-Serão preenchidas após a execução da CI para o commit final desta branch. A validação visual manual permanece pendente até ser feita pelo proprietário.
+- CI #453 passou no commit de implementação `8e4bb7d1c9664a6863c4959c77a3ae17a4b03267`: lint, testes de idioma, build frontend, restore e build Release .NET concluídos com sucesso.
+- A CI precisa ser reexecutada após esta atualização documental.
+- A validação visual manual permanece pendente até ser feita pelo proprietário.
