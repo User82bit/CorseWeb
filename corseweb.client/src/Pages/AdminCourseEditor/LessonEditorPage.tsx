@@ -969,6 +969,12 @@ function LessonEditorPage() {
 
           {selectedNode ? (
             <div className="lesson-editor-workspace__inspector-form">
+              {["start", "certificate"].includes(selectedNode.type) && (
+                <>
+                  <label><span>{copy.title}</span><input value={getText(selectedNode, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
+                  <label><span>{copy.content}</span><textarea rows={4} value={getText(selectedNode, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
+                </>
+              )}
               {["heading", "paragraph"].includes(selectedNode.type) && (
                 <label><span>{copy.content}</span><textarea rows={5} value={getText(selectedNode, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
               )}
