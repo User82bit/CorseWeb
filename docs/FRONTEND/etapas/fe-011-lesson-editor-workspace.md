@@ -44,7 +44,9 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 - [ ] Criar um rascunho abre diretamente o workspace visual.
 - [ ] Os seletores de categoria/nível/idioma abaixo da capa não aparecem no formulário inicial.
 - [ ] Cada template permanece na paleta após um drop e cria instância com ID próprio.
-- [ ] Nós podem ser reposicionados e as coordenadas encaixam na grade.
+- [ ] Nós podem ser reposicionados individualmente e em grupo, com coordenadas encaixadas na grade de 20 px.
+- [ ] Ctrl/Cmd + clique alterna nós em uma seleção múltipla.
+- [ ] Arrastar uma área vazia cria um retângulo de seleção e seleciona os nós que o intersectam.
 - [ ] Portas de entrada/saída são visíveis e conexões curvas SVG são criadas e persistidas.
 - [ ] O quiz oferece saídas `success` e `failed`; excluir um nó remove as conexões associadas.
 - [ ] O inspetor edita conteúdo e dimensões do nó selecionado.
@@ -55,4 +57,4 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 
 ## Fora do escopo desta etapa
 
-O motor que interpreta as conexões e conduz o aluno por caminhos condicionais, seleção múltipla, retângulo de seleção, zoom/pan, guias/réguas e edição colaborativa. A inspeção visual manual em navegador real continua pendente até ser feita pelo proprietário.
+O motor que interpreta as conexões e conduz o aluno por caminhos condicionais, zoom/pan, guias/réguas e edição colaborativa. A inspeção visual manual em navegador real continua pendente até ser feita pelo proprietário.
