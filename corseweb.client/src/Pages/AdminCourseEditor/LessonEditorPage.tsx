@@ -485,12 +485,14 @@ function LessonEditorPage() {
   const [modules, setModules] = useState<Module[]>(() => cachedCourse ? prepareModules(cachedCourse) : []);
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectionRect, setSelectionRect] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
   const [loading, setLoading] = useState(!cachedCourse);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dragRef = useRef<{ id: string; clientX: number; clientY: number; originX: number; originY: number } | null>(null);
+  const dragRef = useRef<{ clientX: number; clientY: number; origins: Array<{ id: string; x: number; y: number; width: number }> } | null>(null);
   const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
 
   useEffect(() => {
@@ -595,30 +597,68 @@ function LessonEditorPage() {
   const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
     if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = {
-      id: node.id,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      originX: node.x,
-      originY: node.y,
-    };
+
+    // Ctrl/Cmd + click toggles membership in the multi-selection without starting a drag.
+    if (event.ctrlKey || event.metaKey) {
+      const nextSelection = selectedNodeIds.includes(node.id)
+        ? selectedNodeIds.filter((id) => id !== node.id)
+        : [...selectedNodeIds, node.id];
+      setSelectedNodeIds(nextSelection);
+      setSelectedNodeId(nextSelection[nextSelection.length - 1] ?? null);
+      dragRef.current = null;
+      return;
+    }
+
+    const groupIds = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
+    const origins = nodes
+      .filter((candidate) => groupIds.includes(candidate.id))
+      .map((candidate) => ({ id: candidate.id, x: candidate.x, y: candidate.y, width: candidate.width }));
+    setSelectedNodeIds(groupIds);
     setSelectedNodeId(node.id);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { clientX: event.clientX, clientY: event.clientY, origins };
+  };
+
+  const handleCanvasPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    if (event.target instanceof HTMLElement && event.target.closest(".lesson-editor-workspace__element")) return;
+    if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setSelectionRect({ startX: x, startY: y, currentX: x, currentY: y });
+    setSelectedNodeId(null);
+    setSelectedNodeIds([]);
   };
 
   const handleCanvasPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
+    const localX = event.clientX - bounds.left;
+    const localY = event.clientY - bounds.top;
     if (pendingConnection) {
-      setPendingConnection({ ...pendingConnection, x2: event.clientX - bounds.left, y2: event.clientY - bounds.top });
+      setPendingConnection({ ...pendingConnection, x2: localX, y2: localY });
     }
+
+    if (selectionRect) {
+      setSelectionRect({ ...selectionRect, currentX: localX, currentY: localY });
+      return;
+    }
+
     const drag = dragRef.current;
     if (!drag || !activeLesson) return;
-    const node = nodes.find((item) => item.id === drag.id);
-    if (!node) return;
-    const x = Math.max(GRID, Math.min(CANVAS_WIDTH - node.width - GRID, snapToGrid(drag.originX + event.clientX - drag.clientX)));
-    const y = Math.max(GRID, snapToGrid(drag.originY + event.clientY - drag.clientY));
-    if (x === node.x && y === node.y) return;
-    updateNodes((current) => current.map((item) => item.id === drag.id ? { ...item, x, y } : item));
+    const deltaX = event.clientX - drag.clientX;
+    const deltaY = event.clientY - drag.clientY;
+    const positions = drag.origins.map((origin) => ({
+      id: origin.id,
+      x: Math.max(GRID, Math.min(CANVAS_WIDTH - origin.width - GRID, snapToGrid(origin.x + deltaX))),
+      y: Math.max(GRID, snapToGrid(origin.y + deltaY)),
+    }));
+    updateNodes((current) => current.map((item) => {
+      const position = positions.find((candidate) => candidate.id === item.id);
+      return position ? { ...item, x: position.x, y: position.y } : item;
+    }));
   };
 
   const handleOutputPortPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, node: CanvasNode, portId: string) => {
@@ -651,7 +691,20 @@ function LessonEditorPage() {
   };
 
   const handleCanvasPointerUp = () => {
+    if (selectionRect) {
+      const left = Math.min(selectionRect.startX, selectionRect.currentX);
+      const top = Math.min(selectionRect.startY, selectionRect.currentY);
+      const right = Math.max(selectionRect.startX, selectionRect.currentX);
+      const bottom = Math.max(selectionRect.startY, selectionRect.currentY);
+      const selected = nodes.filter((node) =>
+        node.x < right && node.x + node.width > left &&
+        node.y < bottom && node.y + node.height > top
+      );
+      setSelectedNodeIds(selected.map((node) => node.id));
+      setSelectedNodeId(selected[selected.length - 1]?.id ?? null);
+    }
     dragRef.current = null;
+    setSelectionRect(null);
     setPendingConnection(null);
   };
 
