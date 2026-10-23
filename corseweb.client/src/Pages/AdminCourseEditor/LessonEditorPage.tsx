@@ -67,8 +67,8 @@ const COPY: Record<Locale, {
     selectLesson: "Go to another lesson",
   },
   es: {
-    back: "Volver sin aplicar",
-    applyAndReturn: "Apply and return",
+    back: "Descartar y volver",
+    applyAndReturn: "Aplicar y volver",
     structure: "Estructura",
     properties: "Propiedades de la lección",
     lessonTitle: "Título de la lección",
