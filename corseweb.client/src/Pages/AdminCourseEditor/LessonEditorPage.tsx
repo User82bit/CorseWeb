@@ -812,7 +812,27 @@ function LessonEditorPage() {
   };
 
   const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
+    if (event.button !== 0 && event.button !== 1) return;
     if (event.target instanceof HTMLElement && event.target.closest("button, input, textarea, select, a")) return;
+
+    // Space + drag or the middle mouse button pans the camera even when
+    // the gesture starts over a node, as expected from a canvas editor.
+    if (event.button === 1 || spacePressedRef.current) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const current = cameraRef.current;
+      cameraDragRef.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        originX: current.x,
+        originY: current.y,
+      };
+      setIsPanning(true);
+      return;
+    }
+
+    if (event.button !== 0) return;
     event.preventDefault();
 
     // Ctrl/Cmd + click toggles membership in the multi-selection without starting a drag.
