@@ -10,7 +10,8 @@ O editor anterior de blocos e componentes selecionados em colunas foi descontinu
 2. **Criar rascunho e abrir editor** cria o rascunho e redireciona imediatamente para `/admin/courses/:courseSlug/editor`.
 3. O workspace é uma tela própria protegida por `RequireAdmin`, sem o shell padrão do painel administrativo.
 4. A paleta esquerda contém templates reutilizáveis. Um drop cria uma nova instância identificada; não remove nem move o template original.
-5. O canvas central exibe uma grade visual de 20 px e aplica snap ao posicionamento e ao redimensionamento dos nós.
+   - Durante o arrasto, um preview visual acompanha o cursor; o drop é tratado como cópia.
+5. O canvas central exibe uma grade visual de 20 px. A posição do cursor é convertida para coordenadas locais do canvas sem deslocamento artificial e só então encaixada à grade; nós movidos também respeitam o snap.
 6. A camada SVG desenha as curvas das conexões entre as portas de saída e de entrada.
 7. O inspetor direito edita propriedades, dimensões e conteúdo do nó selecionado.
 8. Módulos/aulas são mantidos na barra de ferramentas. Salvar persiste os nós e as conexões no JSON do curso.
@@ -44,7 +45,8 @@ Esta etapa implementa a autoria visual e a persistência do grafo. A visualizaç
 - [ ] Criar um rascunho abre diretamente o workspace visual.
 - [ ] Os seletores de categoria/nível/idioma abaixo da capa não aparecem no formulário inicial.
 - [ ] Cada template permanece na paleta após um drop e cria instância com ID próprio.
-- [ ] Nós podem ser reposicionados individualmente e em grupo, com coordenadas encaixadas na grade de 20 px.
+- [ ] O preview de arrasto acompanha o cursor e soltar em x=137 (relativo ao canvas) posiciona o nó em x=140.
+- [ ] Nós podem ser reposicionados individualmente e em grupo, com coordenadas encaixadas na grade de 20 px; mover um grupo perto das bordas preserva o espaçamento relativo.
 - [ ] Ctrl/Cmd + clique alterna nós em uma seleção múltipla.
 - [ ] Arrastar uma área vazia cria um retângulo de seleção e seleciona os nós que o intersectam.
 - [ ] Portas de entrada/saída são visíveis e conexões curvas SVG são criadas e persistidas.
