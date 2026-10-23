@@ -24,7 +24,7 @@ Segundo o proprietário, apenas o sistema de tradução — ainda incompleto —
 | FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
 
 | FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | INTEGRADA em `master` (validação manual pendente) | [PR #23](https://github.com/User82bit/CorseWeb/pull/23); a estrutura Curso → Módulos → Aulas já está no editor. A composição em grid é acompanhada em FE-010 |
-| FE-010 | Compor visualmente componentes dentro de blocos de aula com grid responsivo | EM DESENVOLVIMENTO | `feat/lesson-visual-canvas-editor`; escopo e critérios em `etapas/fe-010-lesson-grid-composition-editor.md` |
+| FE-010 | Compor visualmente componentes dentro de blocos de aula com grid responsivo | EM REVISÃO | [PR #33](https://github.com/User82bit/CorseWeb/pull/33); CI #453 passou no commit de implementação; nova CI após ajustes documentais; validação visual manual pendente. Critérios em `etapas/fe-010-lesson-grid-composition-editor.md` |
 
 ## Regras para imagens manuais
 
