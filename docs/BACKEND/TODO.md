@@ -1,24 +1,34 @@
-# CorseWeb — TODO do Backend
+# CorseWeb — índice de tarefas do backend
 
-## Premissa de estado atual
+Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados ficam somente em [`docs/TODO.md`](../TODO.md)**.
 
-O proprietário informou que, no estado atual do projeto, somente a tradução (frontend e ainda incompleta) deve ser considerada funcional. Portanto, nenhuma API, autenticação, regra de autorização, persistência ou fluxo de publicação aqui existente deve ser considerado validado sem teste. O código atual será auditado e os recursos necessários serão refeitos com escopo incremental.
+## Responsabilidades atuais
 
-## TODO
+- ASP.NET Core 10 e controllers em `CorseWeb.Server/Controllers/`.
+- Autenticação Google/local por cookie; role admin resolvida no servidor por `AdminEmails`.
+- EF Core + SQLite, com entidades em `Models/`, configuração em `Data/AppDbContext.cs` e migrações em `Migrations/`.
+- Cursos publicados, rascunhos, snapshots de versão, matrículas, progresso e upload de capas.
+- Conteúdo de módulos/aulas serializado em JSON; o grafo usa `nodes[]` e `connections[]` dentro de `modules[]`.
 
-| ID | Entrega | Estado | Critério principal |
-|---|---|---|---|
-| BE-000 | Configurar credenciais Google locais e por ambiente | EM REVISÃO ([PR #31](https://github.com/User82bit/CorseWeb/pull/31)) | CI do código passou; validar endpoint/login manualmente; segredo nunca retornado ao cliente |
-| BE-001 | Inventariar endpoints, modelos, autorização e persistência | NÃO INICIADA | Contratos documentados; riscos e comportamentos atuais verificados sem alterar dados |
-| BE-002 | Definir testes de integração para autenticação e permissões | NÃO INICIADA | Casos positivos e negativos para usuário comum, administrador e visitante |
-| BE-003 | Revalidar criação, edição, rascunho, publicação e arquivamento de cursos | NÃO INICIADA | Fluxos validados por testes; consistência de versão e estado demonstrada |
-| BE-004 | Rever persistência e migrações com estratégia de recuperação | NÃO INICIADA | Migrações testadas em banco descartável, sem operação destrutiva não autorizada |
-| BE-005 | Definir e validar importação/exportação versionada de cursos | NÃO INICIADA | Modelo portátil genérico, referências estáveis e validação de entrada não confiável |
+## Frentes do backend
 
-## Restrições
+| ID no Kanban | Escopo | Arquivos principais |
+|---|---|---|
+| PROG-001 | Corrigir confiança no progresso vindo do browser | `Controllers/EnrollmentsController.cs`, DTOs de progresso |
+| VERSION-001 | Registrar mudança de status no histórico de versões | `Controllers/CoursesController.cs`, `Models/CourseVersion.cs` |
+| AUTH-001 | Testar login, cookie, role, Google, sessão e postura CSRF/HTTPS | `Controllers/AuthController.cs`, `Program.cs`, `Helpers/AdminHelper.cs` |
+| DB-001 | Alinhar migrações, model snapshot e coluna `PasswordHash` | `Program.cs`, `Migrations/`, `Models/AppUser.cs` |
+| MEDIA-001 | Reforçar validação e ciclo de vida do upload de capas | `Controllers/CourseMediaController.cs` |
+| CL-001 / CL-002 | Aprovar spec e implementar parser/runtime controlado | `docs/ARCHITECTURE/corselight-language-v0.1.md` e backend futuro |
+| API-TEST-001 | Criar testes automatizados para endpoints e regras | projeto de testes .NET ainda inexistente |
 
-- Não presumir que esconder ações no frontend protege endpoints: autorização precisa ser verificada no backend.
-- Não executar scripts importados sem isolamento e política de permissões explícitos.
-- Não aplicar migrações destrutivas nem excluir dados sem autorização e plano de recuperação.
-- Não alterar contratos de API na mesma entrega de um redesenho visual, salvo dependência documentada e aprovada.
-- As tarefas devem aguardar a integração da branch em andamento, conforme o fluxo de PR do projeto.
+## Limites atuais importantes
+
+- Não há runtime da CorseLight no servidor. O backend não deve executar texto de autor como código.
+- O endpoint de progresso recebe dados do cliente e ainda precisa de validação autoritativa.
+- A mudança de status pelo endpoint de publicação não grava uma nova versão/snapshot.
+- Migração de `PasswordHash` possui tratamento específico de SQLite no startup; precisa virar uma migração versionada.
+- O upload de capa limita tamanho e verifica assinatura de formato, mas ainda precisa de validação de imagem completa/reprocessamento.
+- O workflow compila o backend, mas não existe suíte de testes de integração .NET.
+
+Consulte o [Kanban central](../TODO.md), a [referência de API](../API/api-reference.md) e os [achados da auditoria](../SECURITY/audit-findings.md).
