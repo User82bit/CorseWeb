@@ -1,46 +1,40 @@
-# CorseWeb — TODO do Frontend
+# CorseWeb — índice de tarefas do frontend
 
-## Diretriz obrigatória: mobile-first
+Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os estados ficam somente em [`docs/TODO.md`](../TODO.md)**; não mantenha estados duplicados neste arquivo.
 
-Toda branch de interface deve começar pela experiência de celular. A definição inicial inclui conteúdo prioritário, navegação, interação por toque, foco/teclado, estados de carregamento/erro/vazio e acessibilidade. Somente depois de verificar o layout móvel serão implementadas as adaptações para tablet e desktop.
+## Diretrizes
 
-Não aceitar uma interface que apenas encolhe um layout de desktop. Cada etapa deve indicar como validar o comportamento móvel e as larguras maiores.
+- Mobile-first: projetar e validar celular antes de tablet e desktop.
+- React, TypeScript/TSX e SCSS/Sass continuam sendo a stack do cliente.
+- Toda tela precisa tratar carregamento, vazio, erro e sucesso.
+- Testar teclado, foco visível, toque, leitores de tela quando aplicável e conteúdo em pt-BR/en/es.
+- O cliente não é autoridade para role, gabarito, progresso ou permissão; essas regras pertencem ao servidor.
 
-## Premissa de estado atual
+## Frentes do frontend
 
-Segundo o proprietário, apenas o sistema de tradução — ainda incompleto — deve ser considerado funcional. As outras telas, componentes, estilos e fluxos não são considerados entregas aprovadas: precisam ser avaliados e, quando reconstruídos, receber novo design. A existência do código atual serve para entender contratos e reaproveitar o que for validado, não para impor a preservação visual.
+| ID no Kanban | Escopo | Arquivos principais |
+|---|---|---|
+| I18N-001 | Completar dicionários pt-BR/en/es e validar tradução integral das rotas | `src/i18n/` e páginas/componentes |
+| UI-001 | Validar páginas pública, login, aluno e administração | `src/Pages/`, `src/components/`, `src/UIComplement/` |
+| EDITOR-001 | Validar workspace e autoria de grafo | `src/Pages/AdminCourseEditor/LessonEditorPage.tsx`, `.scss`, `src/types/course.ts` |
+| STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
+| STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
+| E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | suíte de testes ainda a criar |
 
-## TODO
+## Estado do editor visual
 
-| ID | Entrega | Estado | Critério principal |
-|---|---|---|---|
-| FE-001 | Reconstruir a Home pública com design responsivo mobile-first | INTEGRADA em `master` (validação visual pendente) | [PR #4](https://github.com/User82bit/CorseWeb/pull/4); inspeção visual manual em celular/tablet/desktop ainda pendente |
-| FE-006 | Corrigir carregamento do provedor de idioma em Windows | INTEGRADA em `master` | [PR #5](https://github.com/User82bit/CorseWeb/pull/5); CI passou e o proprietário confirmou que a inicialização local funciona |
-| FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | INTEGRADA em `master` (validação visual pendente) | [PR #6](https://github.com/User82bit/CorseWeb/pull/6); CI passou; inspeção visual responsiva ainda pendente |
-| FE-008 | Centralizar SVGs inline na pasta `src/assets` | INTEGRADA em `master` (validação visual pendente) | [PR #8](https://github.com/User82bit/CorseWeb/pull/8); CI aprovada; inspeção visual responsiva pendente |
-| FE-002 | Revalidar e completar o sistema de tradução | INTEGRADA em `master` (validação manual pendente) | [PR #10](https://github.com/User82bit/CorseWeb/pull/10); testes automatizados e CI passaram; conferência manual de `html lang` pendente |
-| FE-003 | Consolidar os fundamentos visuais responsivos e acessíveis | INTEGRADA em `master` (validação visual pendente) | [PR #12](https://github.com/User82bit/CorseWeb/pull/12); CI aprovada para o código; inspeção visual em navegador real pendente |
-| FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | EM DESENVOLVIMENTO | Rotas públicas e do aluno integradas em master ([PR #14](https://github.com/User82bit/CorseWeb/pull/14), [PR #17](https://github.com/User82bit/CorseWeb/pull/17), [PR #19](https://github.com/User82bit/CorseWeb/pull/19)); administração em revisão ([PR #21](https://github.com/User82bit/CorseWeb/pull/21)); CI aprovada no commit 936d3f4928b7d5c20baf5bf1ef4661d675e992d5 ([run #39629101208]); validação visual manual pendente. O sistema de criação/edição de cursos está explicitamente reservado para outra branch; o detalhe público /courses/:courseSlug está em revisão no [PR #29](https://github.com/User82bit/CorseWeb/pull/29), branch fix/public-course-detail-redesign. |
-| FE-005 | Auditar e corrigir imagens e recursos de mídia | NÃO INICIADA | Cada recurso encontrado com caminho real, dimensões/formato adequados, alternativa textual e destino verificável |
+- FE-009 (estrutura de módulos/aulas) e FE-010 (blocos/colunas) são etapas históricas; o contrato atual é o grafo FE-011.
+- FE-011 foi integrado em `Homologa` pelos PRs #35–#38. Inclui workspace, cards, nós/portas/conexões, câmera, pan/zoom e seleção múltipla.
+- FE-012/PRs #39–#40 separa o renderizador de leitura do canvas e oculta scripts internos CL da experiência do aluno.
+- O grafo ainda não controla progressão; quiz/exercício não possuem avaliação automática no fluxo atual e a CorseLight não é executada.
+- Os critérios detalhados e pendências ficam em [`etapas/fe-011-lesson-editor-workspace.md`](./etapas/fe-011-lesson-editor-workspace.md).
 
-| FE-009 | Criar editor visual da estrutura: módulos, aulas, reordenação e persistência | INTEGRADA em `master` (validação manual pendente) | [PR #23](https://github.com/User82bit/CorseWeb/pull/23); a estrutura Curso → Módulos → Aulas já está no editor. A composição em grid é acompanhada em FE-010 |
-| FE-010 | Editor antigo em blocos/componentes e larguras de coluna | SUBSTITUÍDO por BREAKING CHANGE | [PR #33](https://github.com/User82bit/CorseWeb/pull/33); o formato-alvo foi sucedido por `nodes[]` + `connections[]` na evolução do editor visual; compatibilidade antiga não será mantida |
-| FE-011 | Editor visual de aulas com câmera e conexões dinâmicas | INTEGRADO em `Homologa` (validação visual pendente) | PR #37 e PR #38 integrados em `Homologa`; pan/zoom, curvas SVG adaptativas, nós e conexões implementados. O motor de execução condicional permanece etapa posterior. Critérios em `etapas/fe-011-lesson-editor-workspace.md` |
-| FE-012 | Apresentar o conteúdo da aula na área do aluno sem replicar o editor | EM REVISÃO | Branch `fix/student-hide-cl-scripts-and-corselight-v1` (correção complementar à [PR #39](https://github.com/User82bit/CorseWeb/pull/39)): fluxo normal a partir dos valores dos cards; sem geometria do canvas; scripts internos e cards `code` marcados como CL/CorseLight são filtrados; exemplos de código de outras linguagens seguem visíveis. CI e revisão visual manual pendentes. |
+## Validação visual mínima
 
-## Regras para imagens manuais
+| Dispositivo/viewport | Verificações |
+|---|---|
+| Celular (320–430 px) | Navegação, toque, scroll, canvas/controles, sem conteúdo cortado ou rolagem horizontal acidental |
+| Tablet (768–1024 px) | Paleta, canvas e inspetor utilizáveis; controles não sobrepostos |
+| Desktop (1280 px ou mais) | Layout completo, seleção, zoom, conexões e leitura do curso |
 
-Se a inclusão autônoma de um recurso não for possível, a entrega deve incluir: descrição básica da imagem, termos de pesquisa prontos para copiar (português e/ou inglês), nome de arquivo/extensão sugeridos, pasta exata de destino e o componente/página que utilizará o arquivo. Verificar primeiro a estrutura real do repositório e separar recursos decorativos de conteúdo que precisa de alternativa acessível.
-
-## Dependências e limites
-
-- FE-001 parte da `master` atualizada após a integração da CI-001.
-- Não codificar o curso de inglês como um caso especial.
-- Não substituir React/TypeScript/TSX/SCSS por outras tecnologias sem justificativa e autorização.
-- Não criar branches futuras antes do momento previsto no fluxo.
-
-
-## CorseLight (CL)
-
-- Especificação inicial da linguagem registrada em `docs/ARCHITECTURE/corselight-language-v0.1.md`.
-- A página do aluno não deve renderizar scripts CL. O contrato de persistência de scripts e o interpretador backend permanecem fora desta correção de frontend até a revisão da especificação.
+Executar em navegador real e registrar resultado no card do [Kanban](../TODO.md).

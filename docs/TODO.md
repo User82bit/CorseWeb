@@ -1,54 +1,82 @@
-# CorseWeb — Kanban técnico
+# CorseWeb — Kanban do projeto
 
-Última atualização: 2026-10-23.
+Última atualização: 2026-11-07.
 
-Este arquivo acompanha entregas significativas do frontend, backend e infraestrutura. O código existente é uma referência para auditoria, não uma garantia de funcionamento.
+Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
-## Premissas de desenvolvimento
+## Referência de código
 
-- **Estado funcional informado pelo proprietário:** no momento, somente o sistema de tradução, ainda incompleto, deve ser considerado funcional. Os demais recursos precisam ser auditados e refeitos/redesenhados; não devem ser tratados como funcionalidades aprovadas só porque há código presente.
-- **Mobile-first obrigatório para trabalho de interface:** cada branch que alterar ou criar uma experiência visual deve começar pela versão móvel, incluindo layout, interação, estados e acessibilidade. Depois de validar o celular, expandir e adaptar para tablet e desktop. Não projetar primeiro para desktop e tentar comprimir depois.
-- **Stack preservada:** React, TypeScript, TSX, SCSS/Sass e Node.js no frontend; manter o backend atual até que uma necessidade técnica justifique uma alteração planejada.
-- **Multi-curso:** conteúdo e interfaces devem funcionar com dados genéricos, sem tratar o inglês como caso especial.
-- **Imagens e recursos visuais:** se o agente não conseguir incluir uma imagem autonomamente, entregar uma descrição objetiva e termos de busca prontos para copiar, além de indicar o caminho exato da pasta de destino, nome/extensão do arquivo e componente/página que fará referência à imagem. Confirmar os caminhos na árvore real do projeto; não inventar diretórios nem declarar integração sem evidência.
+- Branch de auditoria: `Homologa`.
+- Commit-base: `4541dc42c8627075ea44ec1b989ee28116e8d43e`.
+- Comparação no GitHub: `Homologa` estava 48 commits à frente de `master` (0 atrás). Os PRs #35, #36, #37, #38, #39 e #40 foram integrados em `Homologa`, não em `master`.
+- Não havia PRs abertos no repositório no momento da auditoria.
 
-## Estados do Kanban
+## Premissas do projeto
 
-- `NÃO INICIADA`
-- `EM DESENVOLVIMENTO`
-- `EM REVISÃO`
-- `CONCLUÍDA`
-- `PRECISA DE CORREÇÃO`
+- A diretriz previamente registrada pelo proprietário é que somente a base de tradução deve ser tratada como funcional, ainda incompleta. As outras áreas precisam de validação explícita antes de serem consideradas aprovadas.
+- O produto é multi-curso; nenhum fluxo deve depender de um curso específico ou tratar inglês como caso especial.
+- A interface segue mobile-first: estruturar e testar celular primeiro, depois tablet e desktop. A existência de media queries não substitui teste em dispositivo/navegador.
+- Stack do cliente preservada: React, TypeScript/TSX, SCSS/Sass e Node.js. Backend atual: ASP.NET Core com EF Core/SQLite.
+- O editor de blocos anterior foi substituído intencionalmente pelo modelo de grafo FE-011. `blocks[]` e `elements[]` não são migrados automaticamente.
+- CorseLight v0.1 é especificação em revisão; não há parser/runtime. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
 
-O estado de implementação deve ser distinguido de PR aberto/aprovado, integração em `master` e validação manual pelo proprietário. Só marcar uma entrega como concluída depois de verificar os critérios de aceitação e testes pertinentes.
+## Significado dos estados
 
-## Visão geral
+| Estado | Regra para colocar um item nessa coluna |
+|---|---|
+| **Não iniciada** | Não há implementação comprovada para o escopo da tarefa. |
+| **Iniciada** | Há trabalho parcial em andamento, mas ainda não está pronto para aceite. |
+| **Revisão** | Existe implementação ou especificação e faltam validação, testes, revisão de contrato ou aceite do proprietário. |
+| **Finalizada** | Critérios relevantes foram validados; integração e evidências estão registradas. Não significa apenas que um PR foi mesclado. |
+| **Precisa de correção** | Foi encontrado um comportamento concreto que não atende à integridade/contrato esperado e exige correção antes do aceite. |
 
-| ID | Entrega | Área | Prioridade | Estado | Branch / PR | Dependências |
-|---|---|---|---|---|---|---|
-| CI-001 | Pipeline inicial de validação para frontend e backend | CI | P0 | CONCLUÍDA | `ci/initial-validation-pipeline` / [PR #2](https://github.com/User82bit/CorseWeb/pull/2) — integrada em `master` | Nenhuma |
-| FE-001 | Reconstruir a Home pública com design responsivo mobile-first e auditoria dos contratos usados | Frontend | P0 | INTEGRADA em `master` (validação responsiva pendente) | `feat/homepage-mobile-first` / [PR #4](https://github.com/User82bit/CorseWeb/pull/4) | CI passou; inspeção visual em celular/tablet/desktop ainda pendente |
-| FE-006 | Corrigir conflito de resolução do LanguageProvider em Windows/Vite | Frontend/Dev | P0 | INTEGRADA em `master` | `fix/language-provider-windows-resolution` / [PR #5](https://github.com/User82bit/CorseWeb/pull/5) | CI aprovada e inicialização local confirmada pelo proprietário |
-| FE-007 | Unificar a marca da Home com o ícone oficial e harmonizar o seletor de idioma | Frontend | P1 | INTEGRADA em `master` (validação visual pendente) | `fix/home-brand-and-language-switcher` / [PR #6](https://github.com/User82bit/CorseWeb/pull/6) | CI aprovada; revisão visual do proprietário ainda pendente |
-| FE-008 | Centralizar SVGs inline em arquivos de assets organizados | Frontend | P1 | INTEGRADA em `master` (validação visual pendente) | `refactor/svg-assets-organization` / [PR #8](https://github.com/User82bit/CorseWeb/pull/8) | CI aprovada; inspeção visual manual pendente |
-| FE-002 | Revalidar e completar o sistema de tradução | Frontend | P1 | INTEGRADA em `master` (validação manual pendente) | `feat/i18n-resilient-locale-system` / [PR #10](https://github.com/User82bit/CorseWeb/pull/10) | CI aprovado; conferência manual de `html lang` ainda pendente |
-| FE-003 | Consolidar os fundamentos visuais responsivos e acessíveis | Frontend | P1 | INTEGRADA em `master` (validação visual pendente) | `feat/design-system-foundations` / [PR #12](https://github.com/User82bit/CorseWeb/pull/12) | CI aprovada; inspeção visual manual em navegador real pendente |
-| FE-004 | Reconstruir as áreas pública, do aluno e administrativa por etapas independentes | Frontend | P1 | EM DESENVOLVIMENTO | Dashboard/login/catálogo público e rotas de aprendizagem integrados em master ([PR #14](https://github.com/User82bit/CorseWeb/pull/14), [PR #17](https://github.com/User82bit/CorseWeb/pull/17), [PR #19](https://github.com/User82bit/CorseWeb/pull/19)); painel administrativo e gestão de cursos em revisão ([PR #21](https://github.com/User82bit/CorseWeb/pull/21)) | CI do PR #21 passou no commit 936d3f4928b7d5c20baf5bf1ef4661d675e992d5 ([run #39629101208](https://github.com/User82bit/CorseWeb/actions/runs/39629101208)); validação visual manual ainda pendente; criação/edição de cursos fica para outra branch; redesign de /courses/:courseSlug em revisão no [PR #29](https://github.com/User82bit/CorseWeb/pull/29), branch fix/public-course-detail-redesign |
-| FE-009 | Editor visual de estrutura com painel de seleção de módulos/aulas | SUBSTITUÍDO pelo novo canvas | [PR #23](https://github.com/User82bit/CorseWeb/pull/23); a navegação e composição passam a ocorrer no workspace visual novo |
-| FE-010 | Editor em blocos/componentes e seleção de colunas | SUBSTITUÍDO por BREAKING CHANGE | [PR #33](https://github.com/User82bit/CorseWeb/pull/33); o formato antigo não será migrado nem mantido compatível |
-| FE-011 | Editor visual de aulas com câmera livre e grafo de fluxo | Frontend | P1 | INTEGRADO em `Homologa` (validação visual pendente) | [PR #37](https://github.com/User82bit/CorseWeb/pull/37) e [PR #38](https://github.com/User82bit/CorseWeb/pull/38), ambos integrados somente em `Homologa` | Nós, portas, conexões SVG, pan/zoom e curvas adaptativas integrados; teste visual manual ainda pendente; motor pedagógico condicional permanece etapa posterior |
-| FE-012 | Renderizar conteúdo pedagógico na área do aluno sem reproduzir o canvas do editor | Frontend | P1 | EM REVISÃO | `fix/student-hide-cl-scripts-and-corselight-v1` (correção complementar a FE-012) | Conteúdo em fluxo de leitura; ignora geometria/portas/conexões, tipos internos e scripts CL mesmo quando serializados como cards `code`; exemplos de código de outras linguagens continuam visíveis. CI e validação visual manual pendentes |
-| BE-000 | Preparar configuração segura das credenciais do Google em desenvolvimento e produção | Backend/Auth | P0 | EM REVISÃO | `fix/auth-google-configuration` / [PR #31](https://github.com/User82bit/CorseWeb/pull/31) | CI do código passou; validação manual e integração pendentes |
-| BE-001 | Auditar e planejar a reconstrução dos fluxos de API, autenticação e persistência | Backend | P1 | NÃO INICIADA | A definir após definição do escopo | CI-001 integrada em `master` |
-| CL-001 | Definir sintaxe, funções e limites da CorseLight (CL) v0.1 | Documentação/Backend | P1 | EM REVISÃO | `docs/ARCHITECTURE/corselight-language-v0.1.md` | Especificação inicial criada; ainda falta revisão e testes de contrato |
-| BE-002 | Implementar persistência e interpretador seguro da CorseLight | Backend | P1 | NÃO INICIADA | A definir após revisão de CL-001 | Adicionar coleção `scripts` separada de `modules`, DTOs/persistência de rascunhos e cursos, parser/interpretador C#, validação de permissões e integração dos eventos; execução não está habilitada |
-| DOC-001 | Consolidar decisões arquiteturais e documentação técnica de conteúdo, aulas e progresso | Documentação | P1 | NÃO INICIADA | A definir | Localizar/validar materiais arquiteturais existentes |
+## Kanban
 
-## Regras de fluxo
+### Não iniciada
 
-1. Trabalhar em uma branch por entrega, criada a partir da `master` atualizada.
-2. Não alterar diretamente `master` ou `Homologa`.
-3. Não iniciar a próxima entrega enquanto a atual aguarda revisão ou integração.
-4. Abrir PR da branch da tarefa para `Homologa`; o proprietário mantém o controle de integração em `master`.
-5. Registrar arquivos afetados, evidências de testes, resultados de CI, critérios de aceitação e limitações no arquivo da etapa.
-6. Se os documentos arquiteturais não estiverem no repositório, localizar as versões fornecidas pelo proprietário antes de tomar decisões conflitantes. Não assumir que sua ausência na árvore do GitHub significa que as decisões não existem.
+- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Separar `scripts[]` de `modules[]`; parser/AST próprio; validação de sintaxe, tipos, eventos, funções permitidas, permissões, limites e testes unitários. Não usar JavaScript/C# scripting, `eval` ou reflexão. Dependência: revisão/aceite de CL-001.
+- **FLOW-001 · P1 · Executar o grafo de fluxo pedagógico.** Interpretar conexões no servidor; definir semântica de `success`/`failed`; controlar liberação de nós/aulas e tentativas; integrar Quiz, Exercício e certificados reais. O editor atual apenas desenha/persiste conexões.
+- **API-TEST-001 · P1 · Criar testes de integração do backend.** Cobrir autenticação, roles, propriedade de curso/rascunho, publicação, versões, matrículas, progresso, uploads e migrações em banco descartável.
+- **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
+- **DATA-001 · P2 · Definir importação/exportação de cursos.** Especificar schema versionado, validação de entrada, tratamento de mídia, nós/conexões e scripts CL sem aceitar código executável não confiável.
+- **OPS-001 · P2 · Definir operação de produção.** Escolher banco/provider, backup/restore, gestão de secrets, HTTPS/proxy, armazenamento de uploads, logs e processo de migração; validar antes de publicar dados reais.
+
+### Iniciada
+
+- **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
+
+### Revisão
+
+- **UI-001 · P1 · Revisar as áreas pública, do aluno e administrativa.** As rotas e páginas estão no código; falta aceite visual/funcional do proprietário. Verificar estados vazio/erro/carregamento, responsividade, acessibilidade, navegação e integração com API.
+- **AUTH-001 · P1 · Validar autenticação e autorização.** Google ID token, conta local, cookie e `AdminEmails` existem; faltam testes reais dos fluxos, expiração/reemissão, usuário comum/admin e revisão CSRF/HTTPS. Ver [achados](./SECURITY/audit-findings.md).
+- **DB-001 · P1 · Revisar migrações e bootstrap SQLite.** `PasswordHash` tem correção manual SQLite em startup; alinhar model, snapshot e migrações versionadas; testar upgrade e recuperação sem dados reais.
+- **MEDIA-001 · P1 · Revisar upload e ciclo de vida de capas.** O endpoint verifica tamanho e assinatura PNG/JPEG/WebP; validar decodificação/re-encode, metadados, dimensões, autorização e limpeza de arquivos órfãos.
+- **EDITOR-001 · P1 · Validar visualmente o editor de grafo FE-011.** Workspace, paleta, canvas, nós, portas, ligações SVG, seleção múltipla, grade 20 px, câmera e inspetor foram integrados em `Homologa` via PRs #35–#38. Falta teste manual de criação, movimento, zoom, toque, salvamento, publicação e viewport móvel/tablet/desktop. Critérios em [FE-011](./FRONTEND/etapas/fe-011-lesson-editor-workspace.md).
+- **STUDENT-001 · P1 · Validar apresentação linear da aula e ocultação de scripts.** FE-012/PRs #39–#40 renderizam conteúdo em fluxo, ignoram nós internos e ocultam scripts identificados como CL. Verificar conteúdo permitido, links/mídia, quiz, exercício, acessibilidade e ausência de dados internos em todos os breakpoints.
+- **CL-001 · P1 · Revisar e aprovar a especificação CorseLight v0.1.** Documento existe; revisar eventos, funções, semântica, limites e modelo de estado antes de iniciar o runtime. [Especificação](./ARCHITECTURE/corselight-language-v0.1.md).
+- **STORE-001 · P2 · Definir comportamento do cache/fallback localStorage.** Verificar o que é cache remoto, legado e dado local; impedir sucesso silencioso quando a API falha e validar sincronização entre abas.
+- **DOC-001 · P1 · Revisar este pacote documental.** Arquitetura, conteúdo, API, setup, achados e Kanban estão preparados; revisar nomenclaturas e aceitar antes de integrar em `Homologa`.
+
+### Finalizada
+
+- **CI-001 · P0 · Pipeline inicial de validação.** Workflow presente; executa lint/testes disponíveis/build frontend e restore/build Release .NET. A aprovação do workflow não cobre testes manuais ou E2E. Histórico: [PR #2](https://github.com/User82bit/CorseWeb/pull/2).
+- **FE-006 · P0 · Corrigir resolução do LanguageProvider em Windows/Vite.** PR integrado e inicialização local confirmada pelo proprietário. Histórico: [PR #5](https://github.com/User82bit/CorseWeb/pull/5).
+
+### Precisa de correção
+
+- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** `EnrollmentsController.UpdateProgress` aceita `overallPercent`, `currentLessonId` e JSON de módulos enviado pelo navegador; limita o percentual mas não comprova conclusão e marca a matrícula concluída quando o valor recebido chega a 100. Recalcular progresso no servidor a partir de eventos/atividades validados e criar testes negativos. Evidência e recomendação em [achados da auditoria](./SECURITY/audit-findings.md#prog-001--progresso-controlado-pelo-cliente).
+- **VERSION-001 · P1 · Versionar alterações de status de publicação.** `CoursesController.PublishToggle` altera status/data/autor sem incrementar `Course.Version` nem gravar `CourseVersion`, ao contrário das atualizações normais e publicação de rascunho. Definir a semântica de arquivar/retornar a publicar e registrar snapshot de forma atômica. Evidência em [achados](./SECURITY/audit-findings.md#version-001--status-fora-do-historico-de-versoes).
+
+## Fluxo de contribuição
+
+1. Criar uma branch de tarefa a partir da `Homologa` atualizada.
+2. Trabalhar em uma entrega por branch; não editar diretamente `master` ou `Homologa`.
+3. Atualizar o estado do card e o documento da etapa no mesmo PR.
+4. Executar lint, testes disponíveis, build frontend e build .NET; anexar a saída real do CI.
+5. Para interface, validar celular primeiro, depois tablet/desktop; incluir teclado e toque.
+6. Abrir PR para `Homologa`. O proprietário decide quando integrar `Homologa` em `master`.
+7. Mover para **Finalizada** somente depois do aceite e critérios de aceite cumpridos.
+
+## Definição de pronto
+
+Uma tarefa só fica finalizada quando código/documentação e critérios estão coerentes, testes pertinentes foram executados, regressões foram verificadas e as limitações restantes foram registradas. Merge, CI verde ou código compilando isoladamente não são prova de funcionamento.
