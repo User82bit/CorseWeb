@@ -1486,11 +1486,11 @@ function LessonEditorPage() {
     const directChildren = selectedNode.type === "container"
       ? nodes.filter((node) => node.parentId === selectedNode.id)
       : [];
-    const requiredWidth = directChildren.length
-      ? Math.max(...directChildren.map((node) => node.x + node.width - selectedNode.x + CONTAINER_CONTENT_INSET))
+    const requiredWidth = selectedNode.type === "container"
+      ? Math.max(160, ...directChildren.map((node) => node.x + node.width - selectedNode.x + CONTAINER_CONTENT_INSET))
       : GRID * 4;
-    const requiredHeight = directChildren.length
-      ? Math.max(...directChildren.map((node) => node.y + node.height - selectedNode.y + CONTAINER_CONTENT_INSET))
+    const requiredHeight = selectedNode.type === "container"
+      ? Math.max(128, ...directChildren.map((node) => node.y + node.height - selectedNode.y + CONTAINER_CONTENT_INSET))
       : GRID * 4;
     const parent = selectedNode.parentId ? nodes.find((node) => node.id === selectedNode.parentId) : null;
     const parentBounds = isContainerNode(parent) ? getContainerContentBounds(parent) : null;
