@@ -497,8 +497,15 @@ function findFreePosition(nodes: CanvasNode[], width: number, height: number): {
   return { x: GRID, y: Math.max(GRID, ...nodes.map((node) => snapToGrid(node.y + node.height + GRID))) };
 }
 
-function createCanvasNode(type: CanvasNodeType, x: number, y: number, order = 1, parentId: string | null = null): CanvasNode {
-  const size = nodeDimensions(type);
+function createCanvasNode(
+  type: CanvasNodeType,
+  x: number,
+  y: number,
+  order = 1,
+  parentId: string | null = null,
+  dimensions?: { width: number; height: number }
+): CanvasNode {
+  const size = dimensions ?? nodeDimensions(type);
   return {
     id: createId("card"),
     type,
@@ -1088,7 +1095,7 @@ function LessonEditorPage() {
     }
 
     const siblingOrder = nextSiblingOrder(nodes, parent?.id ?? null);
-    const node = createCanvasNode(type, x, y, siblingOrder, parent?.id ?? null);
+    const node = createCanvasNode(type, x, y, siblingOrder, parent?.id ?? null, size);
     updateNodes((current) => [...current, node]);
     setError(null);
     setMobilePanel("canvas");
@@ -1120,8 +1127,7 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const size = type === "container" ? { width: 160, height: 128 } : nodeDimensions(type);
-    const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), size.width, size.height);
+    const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), 80, 60);
     addNode(type, snapToGrid(point.x), snapToGrid(point.y), target?.id ?? null);
   };
 
