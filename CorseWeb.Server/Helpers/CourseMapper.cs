@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using CorseWeb.Server.Models;
 using CorseWeb.Server.Dtos;
 
@@ -135,6 +136,49 @@ public static class CourseMapper
             c.Version, c.Changelog,
             c.CreatedAt, c.UpdatedAt, c.CreatedBy, c.UpdatedBy
         );
+    }
+
+
+    // Public student responses must never disclose author-only quiz answers or exercise solutions.
+    public static CourseListDto ToStudentDto(Course c)
+    {
+        var dto = ToDto(c);
+        return dto with { Modules = ParseStudentModules(c.ModulesJson) };
+    }
+
+    private static JsonElement ParseStudentModules(string? modulesJson)
+    {
+        try
+        {
+            var root = JsonNode.Parse(string.IsNullOrWhiteSpace(modulesJson) ? "[]" : modulesJson);
+            if (root is JsonArray modules)
+            {
+                foreach (var module in modules)
+                {
+                    if (module?["lessons"] is not JsonArray lessons) continue;
+                    foreach (var lesson in lessons)
+                    {
+                        if (lesson?["nodes"] is not JsonArray nodes) continue;
+                        foreach (var node in nodes)
+                        {
+                            if (node?["props"] is not JsonObject props) continue;
+                            var privateKeys = props.Select(pair => pair.Key)
+                                .Where(key => new[] { "correctindex", "solution", "answer", "acceptedanswers", "expectedoutput" }
+                                    .Contains(key.ToLowerInvariant()))
+                                .ToArray();
+                            foreach (var key in privateKeys) props.Remove(key);
+                        }
+                    }
+                }
+            }
+
+            using var document = JsonDocument.Parse(root?.ToJsonString(JsonOpts) ?? "[]");
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return JsonDocument.Parse("[]").RootElement.Clone();
+        }
     }
 
     public static CourseDraftDto ToDto(CourseDraft d)
