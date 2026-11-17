@@ -1395,7 +1395,7 @@ function LessonEditorPage() {
     if (!selectedNode) return;
     const subtreeIds = new Set([selectedNode.id, ...getNodeDescendantIds(nodes, selectedNode.id)]);
     const originalSubtree = nodes.filter((node) => subtreeIds.has(node.id));
-    let rootPosition: { x: number; y: number } | null = null;
+    let rootPosition: { x: number; y: number } | null;
 
     if (selectedNode.parentId) {
       const parent = nodes.find((node) => node.id === selectedNode.parentId);
