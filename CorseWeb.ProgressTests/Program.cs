@@ -121,7 +121,7 @@ var foreignProjection = EnrollmentProgressProjector.ToDto(enrollment, course, [f
 Assert(foreignProjection.OverallPercent == 0, "Completion records from another enrollment must be ignored.");
 
 // Run the real EF Core migrations against an isolated in-memory SQLite database.
-await using var connection = new SqliteConnection("Data Source=:memory:");
+await using var connection = new SqliteConnection("Data Source=:memory:;Foreign Keys=True");
 await connection.OpenAsync();
 
 var options = new DbContextOptionsBuilder<AppDbContext>()
