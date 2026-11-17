@@ -21,7 +21,7 @@ Atualizado em 2026-11-17. Esta página registra comportamentos observados no có
 
 1. `PUT /api/enrollments/{courseId}/progress` aceita somente `currentLessonId`; o backend valida se a aula pertence ao curso publicado e se `isPublished` é verdadeiro.
 2. `POST /api/enrollments/{courseId}/lessons/{lessonId}/complete` valida curso, matrícula do usuário autenticado e aula publicada antes de registrar a conclusão.
-3. Cada conclusão é persistida em `CourseLessonCompletions`, com timestamp gerado pelo servidor, FK para matrícula e índice único `EnrollmentId + LessonId` para repetição/concor­rência.
+3. Cada conclusão é persistida em `CourseLessonCompletions`, com timestamp gerado pelo servidor, FK para matrícula e índice único `EnrollmentId + LessonId` para repetição/concorrência.
 4. `EnrollmentProgressProjector` calcula progresso de módulos, percentual e `CompletedAt` usando somente as aulas publicadas e os eventos persistidos.
 5. O DTO não usa os antigos `OverallPercent`, `CompletedAt` ou `ModulesProgressJson` como fonte de verdade. Registros antigos do formato client-side deixam de ser considerados.
 6. Testes de regressão do projetor cobrem valores legados adulterados, aulas não publicadas, IDs desconhecidos, progresso parcial/completo e eventos de outra matrícula.
@@ -87,4 +87,4 @@ Este item é uma revisão de postura/configuração; a leitura estática não co
 
 - A auditoria foi estática; não foi feito teste dinâmico, fuzzing, teste de carga, teste de penetração nem validação de deploy.
 - Os achados descrevem código e fluxo observáveis na branch de referência. Não implicam que já exista exploração conhecida em produção.
-- O workflow atual executa lint, testes disponíveis do cliente e builds; não há projeto de teste de integração .NET ou suíte E2E no inventário.
+- O workflow executa lint, testes disponíveis do cliente, builds e testes de contrato do projetor de progresso. Ainda não há testes de integração HTTP/EF Core, teste de carga, fuzzing ou suíte E2E.
