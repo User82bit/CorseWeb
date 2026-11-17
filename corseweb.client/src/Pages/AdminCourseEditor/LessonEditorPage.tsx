@@ -385,26 +385,37 @@ function getText(node: CanvasNode, key: string, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function nodeDimensions(type: CanvasNodeType, parentDepth = 0): { width: number; height: number } {
-  switch (type) {
-    case "container":
-      if (parentDepth >= 2) return { width: 220, height: 200 };
-      if (parentDepth === 1) return { width: 360, height: 280 };
-      return { width: 520, height: 420 };
-    case "divider": return { width: 600, height: 72 };
-    case "quiz":
-    case "exercise": return { width: 384, height: 216 };
-    case "image":
-    case "video": return { width: 288, height: 216 };
-    case "list": return { width: 288, height: 168 };
-    case "code":
-    case "embed": return { width: 336, height: 192 };
-    case "start":
-    case "certificate": return { width: 288, height: 120 };
-    case "heading": return { width: 288, height: 96 };
-    case "callout": return { width: 288, height: 144 };
-    default: return { width: 288, height: 144 };
+function nodeDimensions(type: CanvasNodeType, parent?: CanvasNode): { width: number; height: number } {
+  if (type === "container") {
+    if (!parent) return { width: 520, height: 420 };
+    return getNodeHierarchyDepth([parent], parent.id) === 1
+      ? { width: 360, height: 300 }
+      : { width: 220, height: 220 };
   }
+
+  let dimensions: { width: number; height: number };
+  switch (type) {
+    case "divider": dimensions = { width: 600, height: 72 }; break;
+    case "quiz":
+    case "exercise": dimensions = { width: 384, height: 216 }; break;
+    case "image":
+    case "video": dimensions = { width: 288, height: 216 }; break;
+    case "list": dimensions = { width: 288, height: 168 }; break;
+    case "code":
+    case "embed": dimensions = { width: 336, height: 192 }; break;
+    case "start":
+    case "certificate": dimensions = { width: 288, height: 120 }; break;
+    case "heading": dimensions = { width: 288, height: 96 }; break;
+    case "callout": dimensions = { width: 288, height: 144 }; break;
+    default: dimensions = { width: 288, height: 144 }; break;
+  }
+
+  if (!parent) return dimensions;
+  const bounds = getContainerContentBounds(parent);
+  return {
+    width: Math.max(80, Math.min(dimensions.width, bounds.right - bounds.left)),
+    height: Math.max(60, Math.min(dimensions.height, bounds.bottom - bounds.top)),
+  };
 }
 
 function defaultProps(type: CanvasNodeType): Record<string, unknown> {
@@ -1040,7 +1051,7 @@ function LessonEditorPage() {
       setError(copy.invalidHierarchy);
       return;
     }
-    const size = nodeDimensions(type, parentDepth);
+    const size = nodeDimensions(type, parent ?? undefined);
 
     let x: number;
     let y: number;
