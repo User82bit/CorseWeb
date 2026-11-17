@@ -88,7 +88,7 @@ export function LessonContentTree({ nodes }: { nodes: CanvasNode[] }) {
   const sourceById = new Map(nodes.map((node) => [node.id, node]));
 
   const renderChildren = (parentId: string | null, path: Set<string>, depth: number) => {
-    if (depth > 4) return null;
+    if (depth >= 4) return null;
     const children = visibleNodes
       .filter((node) => {
         if (parentId) return node.parentId === parentId;
