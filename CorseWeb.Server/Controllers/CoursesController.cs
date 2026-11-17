@@ -157,6 +157,11 @@ public class CoursesController : ControllerBase
         // se quiser mover para rascunho, mantemos como arquivar ou voltar a draft — aqui só alterna status ou arquiva
         if (target != "publicado" && target != "arquivado" && target != "rascunho")
             return BadRequest(new { error = "Status inválido" });
+        if (target == "publicado")
+        {
+            var contentError = CourseContentValidator.ValidateJson(c.ModulesJson);
+            if (contentError != null) return BadRequest(new { error = contentError });
+        }
         c.Status = target == "rascunho" ? "arquivado" : target; // Course não guarda rascunho — arquivado é o equivalente
         c.UpdatedAt = DateTime.UtcNow;
         c.UpdatedBy = CurrentUserId!;
