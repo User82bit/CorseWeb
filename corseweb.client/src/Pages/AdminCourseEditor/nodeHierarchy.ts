@@ -58,10 +58,13 @@ export function getNodeHierarchyDepth(nodes: CanvasNode[], nodeId: string): numb
 }
 
 /** Longest path from this node down to a leaf, counting this node. */
-export function getNodeSubtreeHeight(nodes: CanvasNode[], nodeId: string): number {
+export function getNodeSubtreeHeight(nodes: CanvasNode[], nodeId: string, path = new Set<string>()): number {
+  if (path.has(nodeId)) return MAX_NODE_HIERARCHY_DEPTH + 1;
+  const nextPath = new Set(path);
+  nextPath.add(nodeId);
   const descendants = nodes.filter((node) => node.parentId === nodeId);
   if (!descendants.length) return 1;
-  return 1 + Math.max(...descendants.map((node) => getNodeSubtreeHeight(nodes, node.id)));
+  return 1 + Math.max(...descendants.map((node) => getNodeSubtreeHeight(nodes, node.id, nextPath)));
 }
 
 export function getContainerContentBounds(container: CanvasNode): ContainerContentBounds {
@@ -119,7 +122,7 @@ export function getEligibleContainerParents(nodes: CanvasNode[], nodeId: string)
   return nodes
     .filter((node) => isContainerNode(node) && !forbidden.has(node.id))
     .filter((node) => canAssignNodeParent(nodes, nodeId, node.id).valid)
-    .sort((a, b) => getNodeHierarchyDepth(nodes, a.id) - getNodeHierarchyDepth(nodes, b.id) || a.order! - b.order!);
+    .sort((a, b) => getNodeHierarchyDepth(nodes, a.id) - getNodeHierarchyDepth(nodes, b.id) || (a.order ?? 0) - (b.order ?? 0));
 }
 
 export function findContainerDropTarget(
