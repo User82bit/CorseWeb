@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import { useTranslation } from "../../i18n/useTranslation";
@@ -56,7 +56,65 @@ function isInternalScriptNode(node: CanvasNode): boolean {
   return scriptNode || explicitlyInternal || (nodeType === "code" && isCorseLight);
 }
 
-function CanvasNodeContent({ node }: { node: CanvasNode }) {
+
+const SAFE_HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+function safeColor(value: unknown): string | undefined {
+  return typeof value === "string" && SAFE_HEX_COLOR.test(value.trim()) ? value.trim() : undefined;
+}
+
+function safeFontFamily(value: unknown): CSSProperties["fontFamily"] {
+  if (value === "serif") return "Georgia, 'Times New Roman', serif";
+  if (value === "mono") return "ui-monospace, SFMono-Regular, Consolas, monospace";
+  if (value === "sans") return "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  return undefined;
+}
+
+/** Converte somente valores previstos no contrato para estilos CSS. */
+export function getNodePresentationStyle(node: CanvasNode): CSSProperties {
+  const style = node.style ?? {};
+  const layout = node.layout ?? {};
+  const result: CSSProperties = {};
+  const color = safeColor(style.color);
+  const backgroundColor = safeColor(style.backgroundColor);
+  const fontFamily = safeFontFamily(style.fontFamily);
+  if (color) result.color = color;
+  if (backgroundColor) result.backgroundColor = backgroundColor;
+  if (fontFamily) result.fontFamily = fontFamily;
+  if (Number.isFinite(style.fontSize)) result.fontSize = `${Math.max(12, Math.min(48, Number(style.fontSize))}px`;
+  if ([400, 500, 600, 700].includes(Number(style.fontWeight))) result.fontWeight = Number(style.fontWeight);
+  if (style.textAlign && ["left", "center", "right"].includes(style.textAlign)) result.textAlign = style.textAlign;
+  if (Number.isFinite(style.borderRadius)) result.borderRadius = `${Math.max(0, Math.min(32, Number(style.borderRadius))}px`;
+  if (Number.isFinite(style.padding)) result.padding = `${Math.max(0, Math.min(48, Number(style.padding))}px`;
+
+  const widths = { narrow: "min(100%, 42rem)", medium: "min(100%, 56rem)", wide: "min(100%, 72rem)", full: "100%" };
+  if (layout.width && layout.width !== "auto") result.width = widths[layout.width];
+  if (layout.align === "center") result.marginInline = "auto";
+  else if (layout.align === "end") result.marginInlineStart = "auto";
+  else if (layout.align === "start") result.marginInlineEnd = "auto";
+  if (Number.isFinite(layout.spacingBefore)) result.marginBlockStart = `${Math.max(0, Math.min(96, Number(layout.spacingBefore))}px`;
+  if (Number.isFinite(layout.spacingAfter)) result.marginBlockEnd = `${Math.max(0, Math.min(96, Number(layout.spacingAfter))}px`;
+  return result;
+}
+
+export function getLessonPresentationStyle(presentation?: import("../../types/course").LessonPresentation): CSSProperties {
+  if (!presentation) return {};
+  const result: CSSProperties = {};
+  const backgroundColor = safeColor(presentation.backgroundColor);
+  const color = safeColor(presentation.textColor);
+  const fontFamily = safeFontFamily(presentation.fontFamily);
+  if (backgroundColor) result.backgroundColor = backgroundColor;
+  if (color) result.color = color;
+  if (fontFamily) result.fontFamily = fontFamily;
+  if (Number.isFinite(presentation.fontSize)) result.fontSize = `${Math.max(12, Math.min(24, Number(presentation.fontSize))}px`;
+  if (presentation.textAlign && ["left", "center", "right"].includes(presentation.textAlign)) result.textAlign = presentation.textAlign;
+  if (Number.isFinite(presentation.padding)) result.padding = `${Math.max(12, Math.min(64, Number(presentation.padding))}px`;
+  const widths = { narrow: "46rem", medium: "62rem", wide: "76rem" };
+  if (presentation.contentWidth) result.maxWidth = widths[presentation.contentWidth];
+  return result;
+}
+
+export function CanvasNodeContent({ node }: { node: CanvasNode }) {
   const props = node.props ?? {};
   const text = (value: unknown) => String(value ?? "");
   const safeUrl = (value: unknown) => {
@@ -372,7 +430,7 @@ function AppLessonPage() {
   // Geometria, conexões, portas e scripts internos não são renderizados na área do aluno.
   const studentNodes = [...(lesson.nodes ?? [])]
     .filter((node) => STUDENT_CONTENT_TYPES.has(node.type) && !isInternalScriptNode(node))
-    .sort((a, b) => a.y - b.y || a.x - b.x);
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -400,7 +458,7 @@ function AppLessonPage() {
       )}
 
       <main className="student-lesson__main" id="lesson-content">
-        <article className="student-lesson__article">
+        <article className="student-lesson__article" style={getLessonPresentationStyle(lesson.presentation)}>
           <nav className="student-lesson__breadcrumbs" aria-label={t.learning.lessonNavigation}>
             <Link to="/app/courses">{t.learning.myCoursesTitle}</Link>
             <span aria-hidden="true">/</span>
@@ -428,7 +486,11 @@ function AppLessonPage() {
           ) : (
             <div className="student-lesson__content-flow">
               {studentNodes.map((node) => (
-                <div className={`student-lesson__content-item student-lesson__content-item--${node.type}`} key={node.id}>
+                <div
+                  className={`student-lesson__content-item student-lesson__content-item--${node.type}`}
+                  key={node.id}
+                  style={getNodePresentationStyle(node)}
+                >
                   <CanvasNodeContent node={node} />
                 </div>
               ))}
