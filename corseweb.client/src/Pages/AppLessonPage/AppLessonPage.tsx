@@ -12,6 +12,7 @@ import {
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
 import type { CanvasNode, Course, Lesson, Module } from "../../types/course";
+import { getLessonPresentationStyle, getNodePresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import "./AppLessonPage.scss";
 
 function interpolate(template: string, values: Record<string, string | number>) {
@@ -19,44 +20,7 @@ function interpolate(template: string, values: Record<string, string | number>) 
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
 }
 
-const STUDENT_CONTENT_TYPES = new Set<CanvasNode["type"]>([
-  "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise",
-  "callout", "divider", "embed", "certificate",
-]);
-
-// CorseLight é código executável do curso, não um card pedagógico.
-// Aceita grafias usadas por versões antigas/importadas sem esconder exemplos
-// de código de outras linguagens.
-function normalizeScriptToken(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function isInternalScriptNode(node: CanvasNode): boolean {
-  const props = node.props ?? {};
-  const nodeType = normalizeScriptToken(node.type);
-  const role = normalizeScriptToken(props.role ?? props.kind ?? props.contentType);
-  const language = normalizeScriptToken(props.language ?? props.scriptLanguage ?? props.languageId ?? props.lang);
-
-  const scriptNode = ["script", "clscript", "corselight", "corselightscript"].includes(nodeType);
-  const explicitlyInternal = props.isScript === true
-    || props.isInternal === true
-    || props.visibleToStudent === false
-    || role === "script"
-    || role === "internal"
-    || role === "corselightscript";
-  const isCorseLight = language === "cl"
-    || language === "cl01"
-    || language === "clv01"
-    || language === "clv1"
-    || language === "corselight"
-    || language === "corselight01"
-    || language === "corselightv01"
-    || language.startsWith("corselight");
-
-  return scriptNode || explicitlyInternal || (nodeType === "code" && isCorseLight);
-}
-
-function CanvasNodeContent({ node }: { node: CanvasNode }) {
+export function CanvasNodeContent({ node }: { node: CanvasNode }) {
   const props = node.props ?? {};
   const text = (value: unknown) => String(value ?? "");
   const safeUrl = (value: unknown) => {
@@ -371,8 +335,8 @@ function AppLessonPage() {
   // Posições do editor determinam apenas a ordem de leitura nesta etapa.
   // Geometria, conexões, portas e scripts internos não são renderizados na área do aluno.
   const studentNodes = [...(lesson.nodes ?? [])]
-    .filter((node) => STUDENT_CONTENT_TYPES.has(node.type) && !isInternalScriptNode(node))
-    .sort((a, b) => a.y - b.y || a.x - b.x);
+    .filter(isStudentVisibleNode)
+    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -400,7 +364,7 @@ function AppLessonPage() {
       )}
 
       <main className="student-lesson__main" id="lesson-content">
-        <article className="student-lesson__article">
+        <article className="student-lesson__article" style={getLessonPresentationStyle(lesson.presentation)}>
           <nav className="student-lesson__breadcrumbs" aria-label={t.learning.lessonNavigation}>
             <Link to="/app/courses">{t.learning.myCoursesTitle}</Link>
             <span aria-hidden="true">/</span>
@@ -428,7 +392,11 @@ function AppLessonPage() {
           ) : (
             <div className="student-lesson__content-flow">
               {studentNodes.map((node) => (
-                <div className={`student-lesson__content-item student-lesson__content-item--${node.type}`} key={node.id}>
+                <div
+                  className={`student-lesson__content-item student-lesson__content-item--${node.type}`}
+                  key={node.id}
+                  style={getNodePresentationStyle(node)}
+                >
                   <CanvasNodeContent node={node} />
                 </div>
               ))}

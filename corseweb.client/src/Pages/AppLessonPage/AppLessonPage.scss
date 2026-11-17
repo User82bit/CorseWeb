@@ -630,3 +630,21 @@
   max-width: 100%;
   max-height: 42rem;
 }
+
+/* Text properties inherit the lesson settings and may be overridden per element. */
+.student-lesson__content-item .student-lesson__text,
+.student-lesson__content-item .student-lesson__list,
+.student-lesson__content-item .student-lesson__activity h3,
+.student-lesson__content-item .student-lesson__activity p,
+.student-lesson__content-item .student-lesson__callout,
+.student-lesson__content-item .student-lesson__callout p,
+.student-lesson__content-item .student-lesson__figure figcaption {
+  color: var(--presentation-text-color, inherit);
+  font-size: var(--presentation-font-size, inherit);
+}
+
+.student-lesson__content-item .student-lesson__content-heading {
+  color: var(--presentation-text-color, inherit);
+  font-size: clamp(1.1rem, calc(var(--presentation-font-size, 1rem) * 1.4), 2.1rem);
+}
+

@@ -16,7 +16,8 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 |---|---|---|
 | I18N-001 | Completar dicionários pt-BR/en/es e validar tradução integral das rotas | `src/i18n/` e páginas/componentes |
 | UI-001 | Validar páginas pública, login, aluno e administração | `src/Pages/`, `src/components/`, `src/UIComplement/` |
-| EDITOR-001 | Validar workspace e autoria de grafo | `src/Pages/AdminCourseEditor/LessonEditorPage.tsx`, `.scss`, `src/types/course.ts` |
+| EDITOR-001 | Validar workspace, autoria de grafo e experiência responsiva | `src/Pages/AdminCourseEditor/LessonEditorPage.tsx`, `.scss`, `src/types/course.ts` |
+| EDITOR-002 | Implementar containers com filhos e hierarquia visual | editor, renderer, tipos e validação |
 | STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
 | STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
 | E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | suíte de testes ainda a criar |
@@ -26,6 +27,8 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 - FE-009 (estrutura de módulos/aulas) e FE-010 (blocos/colunas) são etapas históricas; o contrato atual é o grafo FE-011.
 - FE-011 foi integrado em `Homologa` pelos PRs #35–#38. Inclui workspace, cards, nós/portas/conexões, câmera, pan/zoom e seleção múltipla.
 - FE-012/PRs #39–#40 separa o renderizador de leitura do canvas e oculta scripts internos CL da experiência do aluno.
+- FE-012 nesta branch adiciona navegação mobile por painéis, preview de celular/tablet/desktop, contrato de apresentação schema 2 e filtro de dados de autoria nas respostas públicas. A validação visual real e CI ainda são necessárias.
+- A hierarquia com containers aninháveis ainda não está implementada; parentId permanece reservado.
 - O grafo ainda não controla progressão; quiz/exercício não possuem avaliação automática no fluxo atual e a CorseLight não é executada.
 - Os critérios detalhados e pendências ficam em [`etapas/fe-011-lesson-editor-workspace.md`](./etapas/fe-011-lesson-editor-workspace.md).
 
