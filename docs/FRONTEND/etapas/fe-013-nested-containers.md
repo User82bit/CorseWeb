@@ -71,4 +71,4 @@ O renderizador mantém uma defesa adicional contra ciclos e profundidade superio
 10. Acessar a aula como aluno e confirmar que a hierarquia aparece como agrupamento visual.
 11. Enviar JSON adulterado diretamente à API e confirmar rejeição de pai inexistente, pai não-container, ciclo, profundidade acima de quatro níveis, filho fora dos limites e portas inválidas.
 
-A etapa deve permanecer em revisão até CI, inspeção manual e aceite do proprietário.
+CI #651 passou: ESLint, testes i18n, testes unitários da hierarquia, build frontend, restore e build Release .NET. A etapa permanece em revisão até inspeção manual das interações e aceite do proprietário.
