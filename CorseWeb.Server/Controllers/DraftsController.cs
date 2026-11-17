@@ -47,6 +47,8 @@ public class DraftsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length < 3) return BadRequest(new { error = "Título mínimo 3" });
         if (string.IsNullOrWhiteSpace(dto.Description) || dto.Description.Trim().Length < 20) return BadRequest(new { error = "Descrição mínima 20" });
+        var contentError = CourseContentValidator.Validate(dto.Modules);
+        if (contentError != null) return BadRequest(new { error = contentError });
         var baseSlug = !string.IsNullOrWhiteSpace(dto.Slug) ? SlugHelper.Slugify(dto.Slug!) : SlugHelper.Slugify(dto.Title);
         var mine = await _db.CourseDrafts.Where(d => d.OwnerId == UserId).Select(d => d.Slug).ToListAsync();
         var publishedSlugs = await _db.Courses.Select(c => c.Slug).ToListAsync();
@@ -65,6 +67,8 @@ public class DraftsController : ControllerBase
         var d = await _db.CourseDrafts.FirstOrDefaultAsync(x => x.Id == id);
         if (d == null) return NotFound();
         if (d.OwnerId != UserId) return Forbid();
+        var contentError = CourseContentValidator.Validate(dto.Modules);
+        if (contentError != null) return BadRequest(new { error = contentError });
         // se alterar slug, garantir unicidade
         if (dto.Slug != null)
         {
@@ -100,6 +104,8 @@ public class DraftsController : ControllerBase
         var d = await _db.CourseDrafts.FirstOrDefaultAsync(x => x.Id == id);
         if (d == null) return NotFound();
         if (d.OwnerId != UserId && User.FindFirstValue(ClaimTypes.Role) != "admin") return Forbid();
+        var contentError = CourseContentValidator.ValidateJson(d.ModulesJson);
+        if (contentError != null) return BadRequest(new { error = contentError });
 
         var user = await _db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
