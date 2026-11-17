@@ -1739,8 +1739,14 @@ function LessonEditorPage() {
                 {nodes.map((node) => (
                   <article
                     key={node.id}
-                    className={`lesson-editor-workspace__element${selectedNodeIds.includes(node.id) ? " lesson-editor-workspace__element--selected" : ""}`}
-                    style={{ left: node.x, top: node.y, width: node.width, height: node.height } as CSSProperties}
+                    className={`lesson-editor-workspace__element${node.type === "container" ? " lesson-editor-workspace__element--container" : ""}${node.parentId ? " lesson-editor-workspace__element--nested" : ""}${selectedNodeIds.includes(node.id) ? " lesson-editor-workspace__element--selected" : ""}`}
+                    style={{
+                      left: node.x,
+                      top: node.y,
+                      width: node.width,
+                      height: node.height,
+                      zIndex: Math.max(0, getNodeHierarchyDepth(nodes, node.id) - 1) * 2 + (node.type === "container" ? 0 : 1),
+                    } as CSSProperties}
                     role="group"
                     tabIndex={0}
                     aria-label={copy.cardNames[node.type]}
@@ -1753,6 +1759,19 @@ function LessonEditorPage() {
                       }
                     }}
                     onPointerDown={(event) => handleCardPointerDown(event, node)}
+                    onDragOver={(event) => {
+                      if (node.type !== "container") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDrop={(event) => {
+                      if (node.type !== "container") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
+                      if (NODE_TYPES.includes(type)) addNode(type, undefined, undefined, node.id);
+                    }}
                     onClick={() => {
                       if (window.matchMedia("(max-width: 899px)").matches) setMobilePanel("properties");
                     }}
