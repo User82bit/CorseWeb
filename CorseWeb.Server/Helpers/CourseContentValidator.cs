@@ -116,7 +116,14 @@ public static class CourseContentValidator
                     return $"{location}: o elemento '{id}' possui posição ou dimensões inválidas.";
                 }
 
-                var parentId = ReadString(node, "parentId");
+                string? parentId = null;
+                if (node.TryGetProperty("parentId", out var parentElement))
+                {
+                    if (parentElement.ValueKind == JsonValueKind.String)
+                        parentId = parentElement.GetString();
+                    else if (parentElement.ValueKind != JsonValueKind.Null)
+                        return $"{location}: o elemento '{id}' possui um parentId inválido.";
+                }
                 if (string.IsNullOrWhiteSpace(parentId)) parentId = null;
                 var inputs = ReadPortIds(node, "inputs");
                 var outputs = ReadPortIds(node, "outputs");
