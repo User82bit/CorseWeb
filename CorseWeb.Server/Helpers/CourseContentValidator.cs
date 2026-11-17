@@ -12,6 +12,8 @@ public static class CourseContentValidator
     private const int MaxHierarchyDepth = 4;
     private const double MinNodeWidth = 80;
     private const double MinNodeHeight = 60;
+    private const double MinContainerWidth = 160;
+    private const double MinContainerHeight = 128;
     private const double MaxNodeDimension = 5000;
     private const double ContainerInset = 20;
     private const double ContainerHeaderHeight = 48;
@@ -115,6 +117,9 @@ public static class CourseContentValidator
                 {
                     return $"{location}: o elemento '{id}' possui posição ou dimensões inválidas.";
                 }
+
+                if (type == "container" && (width < MinContainerWidth || height < MinContainerHeight))
+                    return $"{location}: o container '{id}' possui dimensões mínimas de {MinContainerWidth}×{MinContainerHeight} px.";
 
                 string? parentId = null;
                 if (node.TryGetProperty("parentId", out var parentElement))
