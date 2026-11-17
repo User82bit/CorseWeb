@@ -201,15 +201,18 @@ public static class CourseContentValidator
 
     private static string? ReadString(JsonElement element, string property)
     {
-        return element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
+        return element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(property, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
     }
 
     private static bool ReadFiniteNumber(JsonElement element, string property, out double number)
     {
         number = 0;
-        return element.TryGetProperty(property, out var value)
+        return element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(property, out var value)
             && value.ValueKind == JsonValueKind.Number
             && value.TryGetDouble(out number)
             && double.IsFinite(number);
