@@ -35,6 +35,7 @@ function AppLessonPage() {
   const lastTrackedLesson = useRef<string | null>(null);
   const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
   const pendingCompletionLesson = useRef<string | null>(null);
+  const progressRequestVersion = useRef(0);
 
   const loadLessonData = useCallback(async () => {
     if (!courseSlug) {
@@ -99,11 +100,12 @@ function AppLessonPage() {
       currentLessonId: lesson.id,
     };
     pendingProgress.current = progressUpdate;
+    const requestVersion = ++progressRequestVersion.current;
     updateEnrollmentProgress(course.slug, progressUpdate).then(updated => {
       if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
-      if (active) setEnrollment(updated);
+      if (active && requestVersion === progressRequestVersion.current) setEnrollment(updated);
     }).catch(() => {
-      if (active) setSaveError(true);
+      if (active && requestVersion === progressRequestVersion.current) setSaveError(true);
     });
     return () => { active = false; };
   }, [accessKey, course, enrollment, lesson]);
@@ -126,11 +128,12 @@ function AppLessonPage() {
     setSaving(true);
     setSaveError(false);
     pendingCompletionLesson.current = lesson.id;
+    const requestVersion = ++progressRequestVersion.current;
 
     try {
       const updated = await completeEnrollmentLesson(course.slug, lesson.id);
       pendingCompletionLesson.current = null;
-      setEnrollment(updated);
+      if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
     } catch {
       setSaveError(true);
     } finally {
@@ -145,6 +148,7 @@ function AppLessonPage() {
     const progressUpdate = pendingProgress.current ?? {
       currentLessonId: lesson?.id ?? enrollment.currentLessonId,
     };
+    const requestVersion = ++progressRequestVersion.current;
     setSaving(true);
     setSaveError(false);
 
@@ -155,7 +159,7 @@ function AppLessonPage() {
       if (completionLessonId && pendingCompletionLesson.current === completionLessonId)
         pendingCompletionLesson.current = null;
       if (!completionLessonId) pendingProgress.current = null;
-      setEnrollment(updated);
+      if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
     } catch {
       setSaveError(true);
     } finally {
