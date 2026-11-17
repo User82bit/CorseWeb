@@ -11,7 +11,7 @@ import {
   type CourseEnrollment,
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
-import type { Course, Lesson, Module } from "../../types/course";
+import type { Course } from "../../types/course";
 import { getLessonPresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import { LessonContentTree } from "./LessonContentRenderer";
 import "./AppLessonPage.scss";
