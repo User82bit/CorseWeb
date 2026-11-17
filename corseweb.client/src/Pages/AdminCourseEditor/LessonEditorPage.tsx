@@ -678,6 +678,8 @@ function validateLessonModules(modules: Module[]): string | null {
     for (const lesson of module.lessons ?? []) {
       const nodes = lesson.nodes ?? [];
       if (nodes.length > 500) return `A aula "${lesson.title}" excede o limite de 500 elementos.`;
+      const hierarchy = validateNodeHierarchy(nodes);
+      if (!hierarchy.valid) return `A aula "${lesson.title}": ${hierarchy.error ?? "hierarquia inválida"}`;
       const byId = new Map<string, CanvasNode>();
       for (const node of nodes) {
         if (!node.id || byId.has(node.id)) return `A aula "${lesson.title}" possui identificadores de elementos duplicados.`;
@@ -953,16 +955,92 @@ function LessonEditorPage() {
     updateLesson({ nodes: transform(activeLesson.nodes ?? []) });
   };
 
-  const addNode = (type: CanvasNodeType, requestedX?: number, requestedY?: number) => {
+  const reparentNode = (nodeId: string, requestedParentId: string | null) => {
+    const node = nodes.find((item) => item.id === nodeId);
+    if (!node) return;
+    const nextParentId = requestedParentId || null;
+    if ((node.parentId ?? null) === nextParentId) return;
+
+    const hierarchy = canAssignNodeParent(nodes, nodeId, nextParentId);
+    if (!hierarchy.valid) {
+      setError(hierarchy.error ?? copy.invalidHierarchy);
+      return;
+    }
+
+    let nextX = node.x;
+    let nextY = node.y;
+    if (nextParentId) {
+      const parent = nodes.find((item) => item.id === nextParentId);
+      if (!isContainerNode(parent)) {
+        setError(copy.invalidHierarchy);
+        return;
+      }
+      if (!fitsInsideContainer(node, parent)) {
+        const free = findFreePositionInContainer(nodes, parent, node.width, node.height);
+        if (!free) {
+          setError(copy.containerFull);
+          return;
+        }
+        nextX = free.x;
+        nextY = free.y;
+      }
+    }
+
+    const deltaX = nextX - node.x;
+    const deltaY = nextY - node.y;
+    const descendants = getNodeDescendantIds(nodes, nodeId);
+    const subtreeIds = new Set([nodeId, ...descendants]);
+    const siblingOrder = nodes.filter((item) =>
+      !subtreeIds.has(item.id) && (item.parentId ?? null) === nextParentId
+    ).length + 1;
+
+    updateNodes((current) => current.map((item) => {
+      if (item.id === nodeId) {
+        return { ...item, x: nextX, y: nextY, parentId: nextParentId, order: siblingOrder };
+      }
+      if (descendants.has(item.id)) {
+        return { ...item, x: item.x + deltaX, y: item.y + deltaY };
+      }
+      return item;
+    }));
+    setError(null);
+  };
+
+  const addNode = (type: CanvasNodeType, requestedX?: number, requestedY?: number, requestedParentId?: string | null) => {
     if (!activeLesson) return;
     const size = nodeDimensions(type);
-    const free = requestedX == null || requestedY == null
-      ? findFreePosition(nodes, size.width, size.height)
-      : { x: requestedX, y: requestedY };
-    const x = Math.max(GRID, Math.min(maxNodeX(size.width), snapToGrid(free.x)));
-    const y = Math.max(GRID, snapToGrid(free.y));
-    const node = createCanvasNode(type, x, y, nodes.length + 1);
+    const selectedContainer = selectedNode && isContainerNode(selectedNode) ? selectedNode : null;
+    const parentId = requestedParentId !== undefined
+      ? requestedParentId
+      : requestedX == null && requestedY == null ? selectedContainer?.id ?? null : null;
+    const parent = parentId ? nodes.find((item) => item.id === parentId) : null;
+    if (parentId && !isContainerNode(parent)) {
+      setError(copy.invalidHierarchy);
+      return;
+    }
+
+    let x: number;
+    let y: number;
+    if (parent) {
+      const position = findFreePositionInContainer(nodes, parent, size.width, size.height);
+      if (!position) {
+        setError(copy.containerFull);
+        return;
+      }
+      x = position.x;
+      y = position.y;
+    } else {
+      const free = requestedX == null || requestedY == null
+        ? findFreePosition(nodes.filter((node) => !node.parentId), size.width, size.height)
+        : { x: requestedX, y: requestedY };
+      x = Math.max(GRID, Math.min(maxNodeX(size.width), snapToGrid(free.x)));
+      y = Math.max(GRID, snapToGrid(free.y));
+    }
+
+    const siblingOrder = nodes.filter((node) => (node.parentId ?? null) === (parent?.id ?? null)).length + 1;
+    const node = createCanvasNode(type, x, y, siblingOrder, parent?.id ?? null);
     updateNodes((current) => [...current, node]);
+    setError(null);
     setMobilePanel("canvas");
     setSelectedNodeId(node.id);
     setSelectedNodeIds([node.id]);
@@ -992,7 +1070,7 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    addNode(type, snapToGrid(point.x), snapToGrid(point.y));
+    addNode(type, snapToGrid(point.x), snapToGrid(point.y), null);
   };
 
   const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
