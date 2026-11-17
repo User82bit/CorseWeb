@@ -705,7 +705,8 @@ function validateLessonModules(modules: Module[]): string | null {
       for (const node of nodes) {
         if (!node.id || byId.has(node.id)) return `A aula "${lesson.title}" possui identificadores de elementos duplicados.`;
         byId.set(node.id, node);
-        if (![node.x, node.y, node.width, node.height].every(Number.isFinite) || node.width < 80 || node.height < 60 || node.width > 5000 || node.height > 5000) {
+        const invalidContainerSize = node.type === "container" && (node.width < 160 || node.height < 128);
+        if (![node.x, node.y, node.width, node.height].every(Number.isFinite) || node.width < 80 || node.height < 60 || node.width > 5000 || node.height > 5000 || invalidContainerSize) {
           return `O elemento "${node.id}" possui posição ou dimensões inválidas.`;
         }
       }
