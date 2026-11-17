@@ -4,4 +4,5 @@
     <Deploy />
   </Project>
   <Project Path="CorseWeb.Server/CorseWeb.Server.csproj" />
+  <Project Path="CorseWeb.ProgressTests/CorseWeb.ProgressTests.csproj" />
 </Solution>
