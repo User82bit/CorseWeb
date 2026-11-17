@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
-import { canAssignNodeParent, CONTAINER_CONTENT_INSET, CONTAINER_HEADER_HEIGHT, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, validateNodeHierarchy } from "./nodeHierarchy";
+import { canAssignNodeParent, CONTAINER_CONTENT_INSET, CONTAINER_HEADER_HEIGHT, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, MAX_NODE_HIERARCHY_DEPTH, validateNodeHierarchy } from "./nodeHierarchy";
 import { LessonContentTree } from "../AppLessonPage/LessonContentRenderer";
 import { getLessonPresentationStyle } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
@@ -1019,6 +1019,10 @@ function LessonEditorPage() {
       : requestedX == null && requestedY == null ? selectedContainer?.id ?? null : null;
     const parent = parentId ? nodes.find((item) => item.id === parentId) : null;
     if (parentId && !isContainerNode(parent)) {
+      setError(copy.invalidHierarchy);
+      return;
+    }
+    if (parent && getNodeHierarchyDepth(nodes, parent.id) + 1 > MAX_NODE_HIERARCHY_DEPTH) {
       setError(copy.invalidHierarchy);
       return;
     }
