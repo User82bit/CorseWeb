@@ -48,7 +48,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Revisão
 
-- **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. Falta CI, inspeção manual de interação e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
+- **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. CI #651 passou (ESLint, i18n, testes de hierarquia, build frontend e build .NET). Falta inspeção manual de interação e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 
 - **UI-001 · P1 · Revisar as áreas pública, do aluno e administrativa.** As rotas e páginas estão no código; falta aceite visual/funcional do proprietário. Verificar estados vazio/erro/carregamento, responsividade, acessibilidade, navegação e integração com API.
 - **AUTH-001 · P1 · Validar autenticação e autorização.** Google ID token, conta local, cookie e `AdminEmails` existem; faltam testes reais dos fluxos, expiração/reemissão, usuário comum/admin e revisão CSRF/HTTPS. Ver [achados](./SECURITY/audit-findings.md).
