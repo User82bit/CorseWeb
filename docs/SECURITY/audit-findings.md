@@ -1,12 +1,12 @@
 # Achados da auditoria — segurança e integridade
 
-Atualizado em 2026-11-07. Esta página registra comportamentos observados no código da branch `Homologa`; não substitui teste de invasão, revisão jurídica ou validação operacional.
+Atualizado em 2026-11-17. Esta página registra comportamentos observados no código da branch `Homologa`; não substitui teste de invasão, revisão jurídica ou validação operacional.
 
 ## Resumo por prioridade
 
 | ID | Prioridade | Estado Kanban | Tema |
 |---|---|---|---|
-| PROG-001 | P0 | Precisa de correção | O servidor confia no percentual de progresso enviado pelo cliente |
+| PROG-001 | P0 | Revisão | Percentual/progresso migrados para eventos de conclusão validados pelo servidor; falta validação dinâmica e de aceite |
 | VERSION-001 | P1 | Precisa de correção | Alteração de status não cria versão nem snapshot |
 | DB-001 | P1 | Revisão | Migração da coluna de senha depende de compatibilidade manual SQLite |
 | AUTH-001 | P1 | Revisão | Rever sessão por cookie, CSRF e configuração por ambiente |
@@ -15,20 +15,22 @@ Atualizado em 2026-11-07. Esta página registra comportamentos observados no có
 
 ## PROG-001 — progresso controlado pelo cliente
 
-**Evidência:** `AppLessonPage.tsx` monta `overallPercent`, `currentLessonId` e `modulesProgress` no navegador. `EnrollmentsController.UpdateProgress` aceita os três valores do DTO; limita `overallPercent` a 0–100, serializa o JSON recebido e define `CompletedAt` quando `OverallPercent >= 100`.
+**Evidência original:** `AppLessonPage.tsx` montava `overallPercent`, `currentLessonId` e `modulesProgress` no navegador. `EnrollmentsController.UpdateProgress` aceitava os três valores, limitava o percentual a 0–100 e marcava a matrícula concluída quando o cliente enviava 100%.
 
-**Impacto:** o servidor não comprova que as aulas, quizzes ou atividades foram concluídos. Um cliente pode enviar 100% e um progresso de módulos arbitrário, fazendo a matrícula parecer concluída sem a validação pedagógica correspondente.
+**Remediação implementada na branch de tarefa:**
 
-**Correção recomendada:**
+1. `PUT /api/enrollments/{courseId}/progress` aceita somente `currentLessonId`; o backend valida se a aula pertence ao curso publicado e se `isPublished` é verdadeiro.
+2. `POST /api/enrollments/{courseId}/lessons/{lessonId}/complete` valida curso, matrícula do usuário autenticado e aula publicada antes de registrar a conclusão.
+3. Cada conclusão é persistida em `CourseLessonCompletions`, com timestamp gerado pelo servidor, FK para matrícula e índice único `EnrollmentId + LessonId` para repetição/concor­rência.
+4. `EnrollmentProgressProjector` calcula progresso de módulos, percentual e `CompletedAt` usando somente as aulas publicadas e os eventos persistidos.
+5. O DTO não usa os antigos `OverallPercent`, `CompletedAt` ou `ModulesProgressJson` como fonte de verdade. Registros antigos do formato client-side deixam de ser considerados.
+6. Testes de regressão do projetor cobrem valores legados adulterados, aulas não publicadas, IDs desconhecidos, progresso parcial/completo e eventos de outra matrícula.
 
-1. Fazer o servidor validar se o curso, módulo e aula pertencem à matrícula/curso publicado.
-2. Não aceitar `overallPercent` como autoridade. Calcular totais e conclusão a partir de eventos de conclusão validados pelo servidor.
-3. Criar contratos de tentativa de quiz/atividade; corrigir resposta e pontuação no servidor, sem confiar em gabarito/nota do navegador.
-4. Rejeitar progresso impossível, IDs de aula desconhecidos, módulos duplicados e transições inválidas.
-5. Persistir conclusão e `CompletedAt` na mesma transação após validar o evento.
-6. Adicionar testes positivos e negativos para 0%, 100%, IDs estrangeiros, matrícula inexistente e repetição concorrente.
+**Limitações restantes / interpretação de segurança:**
 
-Até isso ser implementado, não usar o percentual do aluno para liberar certificados, conteúdos pagos ou decisões de acesso.
+- A ação atual de concluir é uma autodeclaração explícita do aluno; o servidor valida a legitimidade da aula e registra o evento, mas não consegue provar que o conteúdo foi lido.
+- Quiz/exercício ainda não tem avaliação executada no backend. Quando essa função existir, tentativas, gabarito e pontuação deverão ser calculados no servidor.
+- A migração e as rotas ainda precisam de teste dinâmico em banco SQLite e sessão real. Até a avaliação do servidor existir, não usar o percentual para certificados, conteúdo pago ou decisões de acesso de alto valor.
 
 ## VERSION-001 — status fora do histórico de versões
 
