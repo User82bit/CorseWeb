@@ -1108,14 +1108,25 @@ function LessonEditorPage() {
       return;
     }
 
-    const groupIds = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
+    const explicitGroupIds = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
+    const groupIds = new Set(explicitGroupIds);
+    for (const selectedId of explicitGroupIds) {
+      for (const descendantId of getNodeDescendantIds(nodes, selectedId)) groupIds.add(descendantId);
+    }
     const origins = nodes
-      .filter((candidate) => groupIds.includes(candidate.id))
+      .filter((candidate) => groupIds.has(candidate.id))
       .map((candidate) => ({ id: candidate.id, x: candidate.x, y: candidate.y, width: candidate.width }));
-    setSelectedNodeIds(groupIds);
+    setSelectedNodeIds([...groupIds]);
     setSelectedNodeId(node.id);
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { clientX: event.clientX, clientY: event.clientY, origins };
+    dragRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      anchorId: node.id,
+      allowReparent: explicitGroupIds.length === 1,
+      moved: false,
+      origins,
+    };
   };
 
   const handleCanvasPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -1193,6 +1204,7 @@ function LessonEditorPage() {
       const current = nodes.find((node) => node.id === position.id);
       return current && current.x === position.x && current.y === position.y;
     })) return;
+    drag.moved = true;
     updateNodes((current) => current.map((item) => {
       const position = positions.find((candidate) => candidate.id === item.id);
       return position ? { ...item, x: position.x, y: position.y } : item;
@@ -1237,6 +1249,50 @@ function LessonEditorPage() {
   };
 
   const handleCanvasPointerUp = () => {
+    const drag = dragRef.current;
+    if (drag?.moved && drag.allowReparent) {
+      const anchor = nodes.find((node) => node.id === drag.anchorId);
+      if (anchor) {
+        const centerX = anchor.x + anchor.width / 2;
+        const centerY = anchor.y + anchor.height / 2;
+        const target = findContainerDropTarget(nodes, anchor.id, centerX, centerY);
+        const nextParentId = target?.id ?? null;
+        const currentParentId = anchor.parentId ?? null;
+        if (nextParentId !== currentParentId || (target && !fitsInsideContainer(anchor, target))) {
+          const validation = canAssignNodeParent(nodes, anchor.id, nextParentId);
+          if (!validation.valid) {
+            setError(validation.error ?? copy.invalidHierarchy);
+          } else {
+            let nextX = anchor.x;
+            let nextY = anchor.y;
+            if (target) {
+              const bounds = getContainerContentBounds(target);
+              if (anchor.width > bounds.right - bounds.left || anchor.height > bounds.bottom - bounds.top) {
+                setError(copy.containerFull);
+              } else {
+                nextX = Math.max(bounds.left, Math.min(bounds.right - anchor.width, anchor.x));
+                nextY = Math.max(bounds.top, Math.min(bounds.bottom - anchor.height, anchor.y));
+              }
+            }
+            if (!target || (anchor.width <= target.width && anchor.height <= target.height)) {
+              const deltaX = nextX - anchor.x;
+              const deltaY = nextY - anchor.y;
+              const descendants = getNodeDescendantIds(nodes, anchor.id);
+              const subtree = new Set([anchor.id, ...descendants]);
+              const order = nodes.filter((node) =>
+                !subtree.has(node.id) && (node.parentId ?? null) === nextParentId
+              ).length + 1;
+              updateNodes((current) => current.map((node) => {
+                if (node.id === anchor.id) return { ...node, parentId: nextParentId, order, x: nextX, y: nextY };
+                if (descendants.has(node.id)) return { ...node, x: node.x + deltaX, y: node.y + deltaY };
+                return node;
+              }));
+              setError(null);
+            }
+          }
+        }
+      }
+    }
     if (cameraDragRef.current) {
       cameraDragRef.current = null;
       setIsPanning(false);
