@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<CourseDraft> CourseDrafts => Set<CourseDraft>();
     public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
     public DbSet<CourseEnrollment> Enrollments => Set<CourseEnrollment>();
+    public DbSet<CourseLessonCompletion> LessonCompletions => Set<CourseLessonCompletion>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -47,6 +48,16 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+        });
+
+        b.Entity<CourseLessonCompletion>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.EnrollmentId, x.LessonId }).IsUnique();
+            e.HasOne<CourseEnrollment>()
+                .WithMany()
+                .HasForeignKey(x => x.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
