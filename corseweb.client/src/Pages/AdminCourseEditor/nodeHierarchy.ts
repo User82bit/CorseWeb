@@ -158,7 +158,8 @@ export function findContainerAtPosition(
     .filter(isContainerNode)
     .filter((container) => {
       const bounds = getContainerContentBounds(container);
-      return getNodeHierarchyDepth(nodes, container.id) < MAX_NODE_HIERARCHY_DEPTH
+      const depth = getNodeHierarchyDepth(nodes, container.id);
+      return depth > 0 && depth < MAX_NODE_HIERARCHY_DEPTH
         && x >= bounds.left && y >= bounds.top
         && x + width <= bounds.right && y + height <= bounds.bottom;
     })
