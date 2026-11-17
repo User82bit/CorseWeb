@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
+import { canAssignNodeParent, CONTAINER_CONTENT_INSET, CONTAINER_HEADER_HEIGHT, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, validateNodeHierarchy } from "./nodeHierarchy";
 import { LessonContentTree } from "../AppLessonPage/LessonContentRenderer";
 import { getLessonPresentationStyle } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
@@ -16,7 +17,7 @@ const ZOOM_STEP = 0.1;
 const PALETTE_DRAG_TYPE = "application/x-corseweb-canvas-node";
 
 const NODE_TYPES: CanvasNodeType[] = [
-  "start", "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise", "callout", "divider", "embed", "certificate",
+  "start", "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise", "callout", "divider", "embed", "certificate", "container",
 ];
 
 interface PendingConnection {
@@ -109,6 +110,13 @@ const COPY: Record<"pt-BR" | "en" | "es", {
   fontFamily: string;
   fontSize: string;
   textAlign: string;
+  parentContainer: string;
+  outsideContainer: string;
+  hierarchy: string;
+  addChild: string;
+  containerHint: string;
+  containerFull: string;
+  invalidHierarchy: string;
   cardNames: Record<CanvasNodeType, string>;
 }> = {
   "pt-BR": {
@@ -178,9 +186,16 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     fontFamily: "Fonte",
     fontSize: "Tamanho da fonte (px)",
     textAlign: "Alinhamento do texto",
+    parentContainer: "Container pai",
+    outsideContainer: "Fora de container",
+    hierarchy: "Hierarquia",
+    addChild: "Adicionar elemento filho",
+    containerHint: "Este container agrupa outros cards. Selecione Cards para inserir um filho ou arraste um card para esta área.",
+    containerFull: "Não há espaço interno suficiente. Aumente o tamanho do container ou reorganize seus filhos.",
+    invalidHierarchy: "Esta alteração criaria uma hierarquia inválida.",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagem", video: "Vídeo",
-      code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação", start: "Início", certificate: "Certificado",
+      code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação", start: "Início", certificate: "Certificado", container: "Container",
     },
   },
   en: {
@@ -250,9 +265,16 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     fontFamily: "Font",
     fontSize: "Font size (px)",
     textAlign: "Text alignment",
+    parentContainer: "Parent container",
+    outsideContainer: "Outside a container",
+    hierarchy: "Hierarchy",
+    addChild: "Add child element",
+    containerHint: "This container groups other cards. Open Cards to add a child or drag a card into this area.",
+    containerFull: "There is not enough space inside this container. Resize it or rearrange its children.",
+    invalidHierarchy: "This change would create an invalid hierarchy.",
     cardNames: {
       heading: "Heading", paragraph: "Text", list: "List", image: "Image", video: "Video",
-      code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed", start: "Start", certificate: "Certificate",
+      code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed", start: "Start", certificate: "Certificate", container: "Container",
     },
   },
   es: {
@@ -322,9 +344,16 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     fontFamily: "Fuente",
     fontSize: "Tamaño de fuente (px)",
     textAlign: "Alineación del texto",
+    parentContainer: "Contenedor padre",
+    outsideContainer: "Fuera de un contenedor",
+    hierarchy: "Jerarquía",
+    addChild: "Añadir elemento hijo",
+    containerHint: "Este contenedor agrupa otras tarjetas. Abre Tarjetas para añadir un hijo o arrastra una tarjeta a esta área.",
+    containerFull: "No hay suficiente espacio dentro del contenedor. Auméntalo o reorganiza sus elementos.",
+    invalidHierarchy: "Este cambio crearía una jerarquía no válida.",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagen", video: "Vídeo",
-      code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación", start: "Inicio", certificate: "Certificado",
+      code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación", start: "Inicio", certificate: "Certificado", container: "Contenedor",
     },
   },
 };
@@ -351,6 +380,7 @@ function getText(node: CanvasNode, key: string, fallback = ""): string {
 
 function nodeDimensions(type: CanvasNodeType): { width: number; height: number } {
   switch (type) {
+    case "container": return { width: 520, height: 420 };
     case "divider": return { width: 600, height: 72 };
     case "quiz":
     case "exercise": return { width: 384, height: 216 };
@@ -382,6 +412,7 @@ function defaultProps(type: CanvasNodeType): Record<string, unknown> {
     case "callout": return { title: "Destaque", content: "Escreva uma informação importante." };
     case "divider": return { style: "solid" };
     case "embed": return { url: "", title: "" };
+    case "container": return { title: "Novo container", content: "Agrupe elementos relacionados nesta área." };
   }
 }
 
