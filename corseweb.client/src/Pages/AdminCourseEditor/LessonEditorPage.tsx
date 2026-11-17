@@ -369,6 +369,13 @@ function snapToGrid(value: number): number {
   return Math.round(value / GRID) * GRID;
 }
 
+function nextSiblingOrder(nodes: CanvasNode[], parentId: string | null, excludedIds = new Set<string>()): number {
+  const siblingOrders = nodes
+    .filter((node) => !excludedIds.has(node.id) && (node.parentId ?? null) === parentId)
+    .map((node) => typeof node.order === "number" && Number.isFinite(node.order) ? node.order : 0);
+  return Math.max(0, ...siblingOrders) + 1;
+}
+
 function maxNodeX(width: number): number {
   return Math.max(GRID, Math.floor((CANVAS_WIDTH - width - GRID) / GRID) * GRID);
 }
@@ -990,9 +997,7 @@ function LessonEditorPage() {
     const deltaY = nextY - node.y;
     const descendants = getNodeDescendantIds(nodes, nodeId);
     const subtreeIds = new Set([nodeId, ...descendants]);
-    const siblingOrder = nodes.filter((item) =>
-      !subtreeIds.has(item.id) && (item.parentId ?? null) === nextParentId
-    ).length + 1;
+    const siblingOrder = nextSiblingOrder(nodes, nextParentId, subtreeIds);
 
     updateNodes((current) => current.map((item) => {
       if (item.id === nodeId) {
@@ -1060,7 +1065,7 @@ function LessonEditorPage() {
       y = Math.max(GRID, snapToGrid(free.y));
     }
 
-    const siblingOrder = nodes.filter((node) => (node.parentId ?? null) === (parent?.id ?? null)).length + 1;
+    const siblingOrder = nextSiblingOrder(nodes, parent?.id ?? null);
     const node = createCanvasNode(type, x, y, siblingOrder, parent?.id ?? null);
     updateNodes((current) => [...current, node]);
     setError(null);
@@ -1306,9 +1311,7 @@ function LessonEditorPage() {
               const deltaY = nextY - anchor.y;
               const descendants = getNodeDescendantIds(nodes, anchor.id);
               const subtree = new Set([anchor.id, ...descendants]);
-              const order = nodes.filter((node) =>
-                !subtree.has(node.id) && (node.parentId ?? null) === nextParentId
-              ).length + 1;
+              const order = nextSiblingOrder(nodes, nextParentId, subtree);
               updateNodes((current) => current.map((node) => {
                 if (node.id === anchor.id) return { ...node, parentId: nextParentId, order, x: nextX, y: nextY };
                 if (descendants.has(node.id)) return { ...node, x: node.x + deltaX, y: node.y + deltaY };
@@ -1421,7 +1424,7 @@ function LessonEditorPage() {
       x: node.x + deltaX,
       y: node.y + deltaY,
       order: node.id === selectedNode.id
-        ? nodes.filter((item) => (item.parentId ?? null) === (selectedNode.parentId ?? null)).length + 1
+        ? nextSiblingOrder(nodes, selectedNode.parentId ?? null)
         : node.order,
       props: { ...node.props },
       inputs: node.inputs.map((port) => ({ ...port })),
