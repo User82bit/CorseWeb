@@ -3,6 +3,9 @@ using CorseWeb.Server.Helpers;
 using CorseWeb.Server.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 var testCount = 0;
 
@@ -130,6 +133,26 @@ var options = new DbContextOptionsBuilder<AppDbContext>()
 
 await using (var db = new AppDbContext(options))
 {
+    var migrationsAssembly = db.GetService<IMigrationsAssembly>();
+    var snapshotModel = migrationsAssembly.ModelSnapshot?.Model;
+    if (snapshotModel != null)
+    {
+        var currentModel = db.GetService<IDesignTimeModel>().Model;
+        var modelDiffer = db.GetService<IMigrationsModelDiffer>();
+        var pendingOperations = modelDiffer.GetDifferences(
+            snapshotModel.GetRelationalModel(),
+            currentModel.GetRelationalModel());
+
+        foreach (var operation in pendingOperations)
+        {
+            var details = operation.GetType().GetProperties()
+                .Where(property => property.PropertyType == typeof(string)
+                    || property.PropertyType.IsPrimitive)
+                .Select(property => $"{property.Name}={property.GetValue(operation)}");
+            Console.WriteLine($"Pending EF model difference: {operation.GetType().Name} {string.Join(", ", details)}");
+        }
+    }
+
     await db.Database.MigrateAsync();
     var appliedMigrations = await db.Database.GetAppliedMigrationsAsync();
     Assert(
