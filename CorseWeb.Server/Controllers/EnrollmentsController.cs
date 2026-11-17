@@ -39,8 +39,8 @@ public class EnrollmentsController : ControllerBase
             .ToDictionaryAsync(course => course.Id);
 
         var completions = enrollmentIds.Length == 0
-            ? []
-            : await _db.LessonCompletions
+            ? new List<CourseLessonCompletion>()
+            : await _db.CourseLessonCompletions
                 .Where(completion => enrollmentIds.Contains(completion.EnrollmentId))
                 .ToListAsync();
 
@@ -141,7 +141,7 @@ public class EnrollmentsController : ControllerBase
             .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
         if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
 
-        var completionExists = await _db.LessonCompletions.AnyAsync(record =>
+        var completionExists = await _db.CourseLessonCompletions.AnyAsync(record =>
             record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
 
         if (!completionExists)
@@ -153,7 +153,7 @@ public class EnrollmentsController : ControllerBase
                 CompletedAt = DateTime.UtcNow
             };
 
-            _db.LessonCompletions.Add(completion);
+            _db.CourseLessonCompletions.Add(completion);
             try
             {
                 await _db.SaveChangesAsync();
@@ -163,7 +163,7 @@ public class EnrollmentsController : ControllerBase
                 // A unique index makes simultaneous duplicate requests idempotent.
                 // Detach the failed insert and confirm another request persisted it.
                 _db.Entry(completion).State = EntityState.Detached;
-                var wasRecorded = await _db.LessonCompletions.AnyAsync(record =>
+                var wasRecorded = await _db.CourseLessonCompletions.AnyAsync(record =>
                     record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
                 if (!wasRecorded) throw;
             }
@@ -199,7 +199,7 @@ public class EnrollmentsController : ControllerBase
 
     private async Task<EnrollmentDto> BuildEnrollmentDtoAsync(CourseEnrollment enrollment, Course course)
     {
-        var completions = await _db.LessonCompletions
+        var completions = await _db.CourseLessonCompletions
             .Where(record => record.EnrollmentId == enrollment.Id)
             .ToListAsync();
 
