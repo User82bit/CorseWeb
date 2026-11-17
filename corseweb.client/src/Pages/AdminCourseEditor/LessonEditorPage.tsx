@@ -1615,6 +1615,13 @@ function LessonEditorPage() {
                     <option value="auto">Automático</option><option value="narrow">Estreito</option><option value="medium">Médio</option><option value="wide">Largo</option><option value="full">Total</option>
                   </select>
                 </label>
+                <label><span>Alinhamento do elemento</span>
+                  <select value={selectedNode.layout?.align ?? "start"} onChange={(event) => patchSelectedLayout({ align: event.target.value as CanvasNodeLayout["align"] })}>
+                    <option value="start">Início</option><option value="center">Centro</option><option value="end">Fim</option><option value="stretch">Esticar</option>
+                  </select>
+                </label>
+                <label><span>Espaço antes (px)</span><input type="number" min={0} max={96} value={selectedNode.layout?.spacingBefore ?? 0} onChange={(event) => patchSelectedLayout({ spacingBefore: Math.max(0, Math.min(96, Number(event.target.value) || 0)) })} /></label>
+                <label><span>Espaço depois (px)</span><input type="number" min={0} max={96} value={selectedNode.layout?.spacingAfter ?? 0} onChange={(event) => patchSelectedLayout({ spacingAfter: Math.max(0, Math.min(96, Number(event.target.value) || 0)) })} /></label>
                 <label><span>{copy.textColor}</span><input type="color" value={selectedNode.style?.color ?? "#202734"} onChange={(event) => patchSelectedStyle({ color: event.target.value })} /></label>
                 <label><span>{copy.backgroundColor}</span><input type="color" value={selectedNode.style?.backgroundColor ?? "#ffffff"} onChange={(event) => patchSelectedStyle({ backgroundColor: event.target.value })} /></label>
                 <label><span>{copy.fontFamily}</span>
@@ -1628,6 +1635,13 @@ function LessonEditorPage() {
                     <option value="left">Esquerda</option><option value="center">Centralizado</option><option value="right">Direita</option>
                   </select>
                 </label>
+                <label><span>Espessura da fonte</span>
+                  <select value={selectedNode.style?.fontWeight ?? 400} onChange={(event) => patchSelectedStyle({ fontWeight: Number(event.target.value) as CanvasNodeStyle["fontWeight"] })}>
+                    <option value={400}>Normal</option><option value={500}>Média</option><option value={600}>Seminegrito</option><option value={700}>Negrito</option>
+                  </select>
+                </label>
+                <label><span>Arredondamento (px)</span><input type="number" min={0} max={32} value={selectedNode.style?.borderRadius ?? 0} onChange={(event) => patchSelectedStyle({ borderRadius: Math.max(0, Math.min(32, Number(event.target.value) || 0)) })} /></label>
+                <label><span>Espaçamento interno (px)</span><input type="number" min={0} max={48} value={selectedNode.style?.padding ?? 0} onChange={(event) => patchSelectedStyle({ padding: Math.max(0, Math.min(48, Number(event.target.value) || 0)) })} /></label>
               </section>
               <div className="lesson-editor-workspace__element-actions">
                 <button type="button" className="lesson-editor-workspace__secondary" onClick={handleDuplicateNode}>{copy.duplicate}</button>
