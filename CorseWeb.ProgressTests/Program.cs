@@ -137,11 +137,14 @@ await using (var db = new AppDbContext(options))
     var snapshotModel = migrationsAssembly.ModelSnapshot?.Model;
     if (snapshotModel != null)
     {
-        var currentModel = db.GetService<IDesignTimeModel>().Model;
+        var modelInitializer = db.GetService<IModelRuntimeInitializer>();
+        var initializedSnapshot = modelInitializer.Initialize(snapshotModel, designTime: true);
+        var designTimeModel = db.GetService<IDesignTimeModel>().Model;
+        var initializedCurrent = modelInitializer.Initialize(designTimeModel, designTime: true);
         var modelDiffer = db.GetService<IMigrationsModelDiffer>();
         var pendingOperations = modelDiffer.GetDifferences(
-            snapshotModel.GetRelationalModel(),
-            currentModel.GetRelationalModel());
+            initializedSnapshot.GetRelationalModel(),
+            initializedCurrent.GetRelationalModel());
 
         foreach (var operation in pendingOperations)
         {
