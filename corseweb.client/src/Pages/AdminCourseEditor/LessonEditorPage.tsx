@@ -1346,7 +1346,11 @@ function LessonEditorPage() {
 
   const handleRemoveNode = () => {
     if (!selectedNode) return;
-    const idsToRemove = new Set(selectedNodeIds.includes(selectedNode.id) ? selectedNodeIds : [selectedNode.id]);
+    const selectedRoots = selectedNodeIds.includes(selectedNode.id) ? selectedNodeIds : [selectedNode.id];
+    const idsToRemove = new Set(selectedRoots);
+    for (const rootId of selectedRoots) {
+      for (const descendantId of getNodeDescendantIds(nodes, rootId)) idsToRemove.add(descendantId);
+    }
     updateLesson({
       nodes: nodes.filter((node) => !idsToRemove.has(node.id)),
       connections: connections.filter((connection) =>
@@ -1359,11 +1363,66 @@ function LessonEditorPage() {
 
   const handleDuplicateNode = () => {
     if (!selectedNode) return;
-    const position = findFreePosition(nodes, selectedNode.width, selectedNode.height);
-    const copy = { ...selectedNode, id: createId("card"), x: position.x, y: position.y, props: { ...selectedNode.props } };
-    updateNodes((current) => [...current, copy]);
-    setSelectedNodeId(copy.id);
-    setSelectedNodeIds([copy.id]);
+    const subtreeIds = new Set([selectedNode.id, ...getNodeDescendantIds(nodes, selectedNode.id)]);
+    const originalSubtree = nodes.filter((node) => subtreeIds.has(node.id));
+    let rootPosition: { x: number; y: number } | null = null;
+
+    if (selectedNode.parentId) {
+      const parent = nodes.find((node) => node.id === selectedNode.parentId);
+      if (!isContainerNode(parent)) {
+        setError(copy.invalidHierarchy);
+        return;
+      }
+      rootPosition = findFreePositionInContainer(nodes, parent, selectedNode.width, selectedNode.height);
+    } else {
+      rootPosition = findFreePosition(nodes, selectedNode.width, selectedNode.height);
+    }
+    if (!rootPosition) {
+      setError(copy.containerFull);
+      return;
+    }
+
+    const deltaX = rootPosition.x - selectedNode.x;
+    const deltaY = rootPosition.y - selectedNode.y;
+    const ids = new Map(originalSubtree.map((node) => [node.id, createId("card")]));
+    const copies = originalSubtree.map((node) => ({
+      ...node,
+      id: ids.get(node.id)!,
+      parentId: node.id === selectedNode.id
+        ? selectedNode.parentId ?? null
+        : ids.get(node.parentId ?? "") ?? node.parentId ?? null,
+      x: node.x + deltaX,
+      y: node.y + deltaY,
+      order: node.id === selectedNode.id
+        ? nodes.filter((item) => (item.parentId ?? null) === (selectedNode.parentId ?? null)).length + 1
+        : node.order,
+      props: { ...node.props },
+      inputs: node.inputs.map((port) => ({ ...port })),
+      outputs: node.outputs.map((port) => ({ ...port })),
+      style: node.style ? { ...node.style } : {},
+      layout: node.layout ? { ...node.layout } : {},
+    }));
+    const copiedConnections = connections
+      .filter((connection) => ids.has(connection.sourceNode) && ids.has(connection.targetNode))
+      .map((connection) => ({
+        ...connection,
+        id: createId("connection"),
+        sourceNode: ids.get(connection.sourceNode)!,
+        targetNode: ids.get(connection.targetNode)!,
+      }));
+    updateLesson({
+      nodes: [...nodes, ...copies],
+      connections: [...connections, ...copiedConnections],
+    });
+    const duplicatedRootId = ids.get(selectedNode.id)!;
+    setSelectedNodeId(duplicatedRootId);
+    setSelectedNodeIds([duplicatedRootId]);
+    setError(null);
+  };
+
+  const reparentSelectedNode = (parentId: string | null) => {
+    if (!selectedNode) return;
+    reparentNode(selectedNode.id, parentId);
   };
 
   const patchSelectedProps = (patch: Record<string, unknown>) => {
@@ -1394,10 +1453,30 @@ function LessonEditorPage() {
 
   const patchSelectedSize = (key: "width" | "height", value: number) => {
     if (!selectedNode) return;
-    const nextValue = Math.max(GRID * 4, Math.min(key === "width" ? CANVAS_WIDTH - GRID * 2 : 2400, snapToGrid(value)));
+    const directChildren = selectedNode.type === "container"
+      ? nodes.filter((node) => node.parentId === selectedNode.id)
+      : [];
+    const requiredWidth = directChildren.length
+      ? Math.max(...directChildren.map((node) => node.x + node.width - selectedNode.x + CONTAINER_CONTENT_INSET))
+      : GRID * 4;
+    const requiredHeight = directChildren.length
+      ? Math.max(...directChildren.map((node) => node.y + node.height - selectedNode.y + CONTAINER_CONTENT_INSET))
+      : GRID * 4;
+    const parent = selectedNode.parentId ? nodes.find((node) => node.id === selectedNode.parentId) : null;
+    const parentBounds = isContainerNode(parent) ? getContainerContentBounds(parent) : null;
+    const maxAllowed = key === "width"
+      ? parentBounds ? parentBounds.right - selectedNode.x : CANVAS_WIDTH - selectedNode.x - GRID
+      : parentBounds ? parentBounds.bottom - selectedNode.y : 5000;
+    const minRequired = key === "width" ? requiredWidth : requiredHeight;
+    if (maxAllowed < minRequired) {
+      setError(copy.containerFull);
+      return;
+    }
+    const nextValue = Math.max(minRequired, Math.min(maxAllowed, snapToGrid(value)));
     updateNodes((current) => current.map((node) => node.id === selectedNode.id
       ? { ...node, [key]: nextValue, x: key === "width" ? Math.min(node.x, CANVAS_WIDTH - nextValue - GRID) : node.x }
       : node));
+    setError(null);
   };
 
   const handleSave = async (): Promise<boolean> => {
