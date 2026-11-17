@@ -608,6 +608,37 @@ function NodePreview({ node }: { node: CanvasNode }) {
 type WorkspacePanel = "cards" | "canvas" | "properties" | "preview";
 type PreviewDevice = "mobile" | "tablet" | "desktop";
 
+
+function validateLessonModules(modules: Module[]): string | null {
+  for (const module of modules) {
+    for (const lesson of module.lessons ?? []) {
+      const nodes = lesson.nodes ?? [];
+      if (nodes.length > 500) return `A aula "${lesson.title}" excede o limite de 500 elementos.`;
+      const byId = new Map<string, CanvasNode>();
+      for (const node of nodes) {
+        if (!node.id || byId.has(node.id)) return `A aula "${lesson.title}" possui identificadores de elementos duplicados.`;
+        byId.set(node.id, node);
+        if (![node.x, node.y, node.width, node.height].every(Number.isFinite) || node.width < 80 || node.height < 80 || node.width > 5000 || node.height > 5000) {
+          return `O elemento "${node.id}" possui posição ou dimensões inválidas.`;
+        }
+      }
+      const targets = new Set<string>();
+      for (const connection of lesson.connections ?? []) {
+        const source = byId.get(connection.sourceNode);
+        const target = byId.get(connection.targetNode);
+        if (!source || !target) return `A aula "${lesson.title}" possui uma conexão apontando para um elemento inexistente.`;
+        if (!source.outputs.some((port) => port.id === connection.sourcePort) || !target.inputs.some((port) => port.id === connection.targetPort)) {
+          return `A aula "${lesson.title}" possui uma conexão com porta inválida.`;
+        }
+        const targetKey = `${connection.targetNode}:${connection.targetPort}`;
+        if (targets.has(targetKey)) return `A aula "${lesson.title}" conecta mais de uma origem à mesma entrada.`;
+        targets.add(targetKey);
+      }
+    }
+  }
+  return null;
+}
+
 function LessonEditorPage() {
   const navigate = useNavigate();
   const { courseSlug } = useParams<{ courseSlug: string }>();
@@ -1161,6 +1192,12 @@ function LessonEditorPage() {
 
   const handleSave = async (): Promise<boolean> => {
     if (!courseSlug || !course || saving) return false;
+    const validationError = validateLessonModules(modules);
+    if (validationError) {
+      setError(validationError);
+      setNotice(null);
+      return false;
+    }
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -1174,6 +1211,8 @@ function LessonEditorPage() {
           void discardedLegacyElements;
           return {
             ...lessonData,
+            contentSchemaVersion: 2,
+            presentation: lesson.presentation ?? { contentWidth: "medium", fontFamily: "sans", fontSize: 16, textAlign: "left", padding: 24 },
             nodes: Array.isArray(lesson.nodes) ? lesson.nodes : [],
             connections: Array.isArray(lesson.connections) ? lesson.connections : [],
             order: lessonIndex + 1,
