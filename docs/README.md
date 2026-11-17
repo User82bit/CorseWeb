@@ -1,6 +1,6 @@
 # CorseWeb — documentação
 
-Última atualização: 2026-11-07.
+Última atualização: 2026-11-17.
 
 Esta pasta reúne a explicação técnica do produto, os contratos atuais e o planejamento único do projeto. O quadro central fica em [`TODO.md`](./TODO.md); os arquivos de frontend e backend por domínio apontam para ele para evitar listas divergentes.
 
