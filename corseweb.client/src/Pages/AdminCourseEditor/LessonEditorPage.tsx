@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
-import { CanvasNodeContent, getLessonPresentationStyle, getNodePresentationStyle, isStudentVisibleNode } from "../AppLessonPage/AppLessonPage";
+import { CanvasNodeContent } from "../AppLessonPage/AppLessonPage";
+import { getLessonPresentationStyle, getNodePresentationStyle, isStudentVisibleNode } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
 
@@ -726,7 +727,7 @@ function LessonEditorPage() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [courseSlug, copy.notFound]);
+  }, [courseSlug, copy.notFound, copy.unsupportedSchema]);
 
   const lessonEntries = modules.flatMap((module) =>
     module.lessons.map((lesson) => ({ module, lesson }))
@@ -875,6 +876,8 @@ function LessonEditorPage() {
     // Frame the active lesson on open/switch, while allowing the user to pan freely afterwards.
     const frame = window.requestAnimationFrame(() => fitCamera());
     return () => window.cancelAnimationFrame(frame);
+  // Intentionally frame only when the lesson changes, not whenever node coordinates change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLesson?.id]);
 
   const commitModules = (next: Module[]) => {
