@@ -157,6 +157,17 @@ await using (var db = new AppDbContext(options))
     }
 
     await db.Database.MigrateAsync();
+    SqliteSchemaCompatibility.EnsurePasswordHashColumn(db);
+    var userColumns = new List<string>();
+    using (var command = connection.CreateCommand())
+    {
+        command.CommandText = "PRAGMA table_info('Users');";
+        using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            userColumns.Add(reader.GetString(1));
+    }
+    Assert(userColumns.Contains("PasswordHash"), "SQLite startup compatibility must ensure the nullable PasswordHash column.");
+
     var appliedMigrations = await db.Database.GetAppliedMigrationsAsync();
     Assert(
         appliedMigrations.Contains("20261117120000_AddCourseLessonCompletions"),
