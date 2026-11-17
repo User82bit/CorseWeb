@@ -16,7 +16,9 @@ export interface HierarchyValidation {
   error?: string;
 }
 
-export function isContainerNode(node: CanvasNode | undefined): node is CanvasNode {
+export function isContainerNode(
+  node: CanvasNode | null | undefined
+): node is CanvasNode & { type: "container" } {
   return node?.type === "container";
 }
 
