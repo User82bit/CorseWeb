@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
-import { canAssignNodeParent, CONTAINER_CONTENT_INSET, CONTAINER_HEADER_HEIGHT, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, MAX_NODE_HIERARCHY_DEPTH, validateNodeHierarchy } from "./nodeHierarchy";
+import { canAssignNodeParent, CONTAINER_CONTENT_INSET, CONTAINER_HEADER_HEIGHT, findContainerAtPosition, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, MAX_NODE_HIERARCHY_DEPTH, validateNodeHierarchy } from "./nodeHierarchy";
 import { LessonContentTree } from "../AppLessonPage/LessonContentRenderer";
 import { getLessonPresentationStyle } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
@@ -1030,7 +1030,22 @@ function LessonEditorPage() {
     let x: number;
     let y: number;
     if (parent) {
-      const position = findFreePositionInContainer(nodes, parent, size.width, size.height);
+      const requested = requestedX != null && requestedY != null
+        ? { x: snapToGrid(requestedX), y: snapToGrid(requestedY) }
+        : null;
+      const bounds = getContainerContentBounds(parent);
+      const requestedFits = Boolean(requested
+        && requested.x >= bounds.left
+        && requested.y >= bounds.top
+        && requested.x + size.width <= bounds.right
+        && requested.y + size.height <= bounds.bottom
+        && !nodes.some((node) => node.parentId === parent.id && overlaps(
+          { ...requested, width: size.width, height: size.height },
+          node
+        )));
+      const position = requestedFits
+        ? requested
+        : findFreePositionInContainer(nodes, parent, size.width, size.height);
       if (!position) {
         setError(copy.containerFull);
         return;
@@ -1078,7 +1093,9 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    addNode(type, snapToGrid(point.x), snapToGrid(point.y), null);
+    const size = nodeDimensions(type);
+    const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), size.width, size.height);
+    addNode(type, snapToGrid(point.x), snapToGrid(point.y), target?.id ?? null);
   };
 
   const handleCardPointerDown = (event: ReactPointerEvent<HTMLElement>, node: CanvasNode) => {
@@ -1778,7 +1795,10 @@ function LessonEditorPage() {
                       event.preventDefault();
                       event.stopPropagation();
                       const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
-                      if (NODE_TYPES.includes(type)) addNode(type, undefined, undefined, node.id);
+                      if (NODE_TYPES.includes(type)) {
+                        const point = canvasPoint(event.clientX, event.clientY);
+                        addNode(type, snapToGrid(point.x), snapToGrid(point.y), node.id);
+                      }
                     }}
                     onClick={() => {
                       if (window.matchMedia("(max-width: 899px)").matches) setMobilePanel("properties");
