@@ -127,7 +127,7 @@ using (var scope = app.Services.CreateScope())
         try
         {
             db.Database.EnsureCreated();
-            EnsurePasswordHashColumn(db);
+            SqliteSchemaCompatibility.EnsurePasswordHashColumn(db);
         }
         catch (Exception fallbackException)
         {
