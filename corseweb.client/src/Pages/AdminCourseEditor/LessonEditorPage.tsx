@@ -51,6 +51,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
   publishing: string;
   loading: string;
   notFound: string;
+  unsupportedSchema: string;
   palette: string;
   paletteHint: string;
   canvas: string;
@@ -119,6 +120,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     publishing: "Publicando…",
     loading: "Abrindo o editor visual…",
     notFound: "Curso não encontrado ou sem permissão de edição.",
+    unsupportedSchema: "Este curso usa uma versão de conteúdo mais recente que este editor. Atualize o CorseWeb antes de editá-lo.",
     palette: "Cards",
     paletteHint: "Arraste um card para o canvas ou toque para adicionar.",
     canvas: "Canvas",
@@ -190,6 +192,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     publishing: "Publishing…",
     loading: "Opening visual editor…",
     notFound: "Course not found or you do not have permission to edit it.",
+    unsupportedSchema: "This course uses a newer content version. Update CorseWeb before editing it.",
     palette: "Cards",
     paletteHint: "Drag a card onto the canvas or click to add it.",
     canvas: "Canvas",
@@ -261,6 +264,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     publishing: "Publicando…",
     loading: "Abriendo el editor visual…",
     notFound: "Curso no encontrado o sin permiso de edición.",
+    unsupportedSchema: "Este curso usa una versión de contenido más reciente. Actualiza CorseWeb antes de editarlo.",
     palette: "Tarjetas",
     paletteHint: "Arrastra una tarjeta al lienzo o pulsa para añadirla.",
     canvas: "Lienzo",
@@ -505,6 +509,13 @@ function createModule(course: Course, order: number): Module {
   };
 }
 
+
+function hasUnsupportedContentSchema(course?: Course): boolean {
+  return Boolean(course?.modules?.some((module) =>
+    module.lessons?.some((lesson) => Number(lesson.contentSchemaVersion ?? 1) > 2)
+  ));
+}
+
 function prepareModules(course: Course): Module[] {
   const received = (course.modules ?? []).map((module, moduleIndex) => ({
     ...module,
@@ -653,7 +664,7 @@ function LessonEditorPage() {
   const dirty = useRef(false);
 
   const [course, setCourse] = useState<Course | undefined>(() => cachedCourse);
-  const [modules, setModules] = useState<Module[]>(() => cachedCourse ? prepareModules(cachedCourse) : []);
+  const [modules, setModules] = useState<Module[]>(() => cachedCourse && !hasUnsupportedContentSchema(cachedCourse) ? prepareModules(cachedCourse) : []);
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -682,6 +693,11 @@ function LessonEditorPage() {
         if (cancelled) return;
         const loaded = getCourseBySlugStore(courseSlug);
         setCourse(loaded);
+        if (hasUnsupportedContentSchema(loaded)) {
+          setError(copy.unsupportedSchema);
+          setLoading(false);
+          return;
+        }
         if (loaded && !dirty.current) {
           const prepared = prepareModules(loaded);
           setModules(prepared);
@@ -694,6 +710,11 @@ function LessonEditorPage() {
         const local = getCourseBySlugStore(courseSlug);
         if (local) {
           setCourse(local);
+          if (hasUnsupportedContentSchema(local)) {
+            setError(copy.unsupportedSchema);
+            setLoading(false);
+            return;
+          }
           if (!dirty.current) {
             const prepared = prepareModules(local);
             setModules(prepared);
@@ -1285,6 +1306,15 @@ function LessonEditorPage() {
     return <main className="lesson-editor-workspace lesson-editor-workspace--status"><p role="status">{copy.loading}</p></main>;
   }
 
+  if (course && hasUnsupportedContentSchema(course)) {
+    return (
+      <main className="lesson-editor-workspace lesson-editor-workspace--status">
+        <p role="alert">{copy.unsupportedSchema}</p>
+        <Link to="/admin/courses" className="lesson-editor-workspace__primary">{copy.back}</Link>
+      </main>
+    );
+  }
+
   if (!course || error === copy.notFound) {
     return (
       <main className="lesson-editor-workspace lesson-editor-workspace--status">
@@ -1673,6 +1703,7 @@ function LessonEditorPage() {
                     <option value="left">Esquerda</option><option value="center">Centralizado</option><option value="right">Direita</option>
                   </select>
                 </label>
+                <label><span>Espaçamento interno (px)</span><input type="number" min={12} max={64} value={activeLesson.presentation?.padding ?? 24} onChange={(event) => patchLessonPresentation({ padding: Math.max(12, Math.min(64, Number(event.target.value) || 24)) })} /></label>
               </section>
             </div>
           ) : <p>{copy.inspectorHint}</p>}
