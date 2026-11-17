@@ -76,7 +76,7 @@ public static class EnrollmentProgressProjector
             var modulePercent = lessonProgress.Length == 0
                 ? 0
                 : (int)Math.Round(moduleCompletedCount * 100d / lessonProgress.Length, MidpointRounding.AwayFromZero);
-            var moduleCompletedAt = moduleCompletedCount == lessonProgress.Length && lessonProgress.Length > 0
+            DateTime? moduleCompletedAt = moduleCompletedCount == lessonProgress.Length && lessonProgress.Length > 0
                 ? lessonProgress
                     .Where(item => item.CompletedAt.HasValue)
                     .Max(item => item.CompletedAt!.Value)
