@@ -94,7 +94,7 @@ export function LessonContentTree({ nodes }: { nodes: CanvasNode[] }) {
         if (parentId) return node.parentId === parentId;
         if (!node.parentId) return true;
         const parent = visibleById.get(node.parentId) ?? sourceById.get(node.parentId);
-        return !isStudentVisibleNode(parent) || parent.type !== "container";
+        return !parent || !isStudentVisibleNode(parent) || parent.type !== "container";
       })
       .sort(compareReadingOrder);
 
