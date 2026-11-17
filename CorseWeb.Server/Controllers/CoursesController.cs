@@ -45,7 +45,9 @@ public class CoursesController : ControllerBase
         }
 
         var list = await q.OrderByDescending(c => c.UpdatedAt).Take(200).ToListAsync();
-        return Ok(list.Select(CourseMapper.ToDto));
+        return Ok(list.Select(course => IsAdmin || course.AuthorId == CurrentUserId
+            ? CourseMapper.ToDto(course)
+            : CourseMapper.ToStudentDto(course)));
     }
 
     [HttpGet("{slug}")]
@@ -55,7 +57,9 @@ public class CoursesController : ControllerBase
         if (c == null) return NotFound(new { error = "Curso não encontrado" });
         if (c.Status != "publicado" && !IsAdmin && c.AuthorId != CurrentUserId)
             return NotFound(new { error = "Curso não encontrado" });
-        return Ok(CourseMapper.ToDto(c));
+        return Ok(IsAdmin || c.AuthorId == CurrentUserId
+            ? CourseMapper.ToDto(c)
+            : CourseMapper.ToStudentDto(c));
     }
 
     [Authorize]
