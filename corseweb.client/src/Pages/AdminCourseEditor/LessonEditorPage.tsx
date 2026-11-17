@@ -684,7 +684,7 @@ function validateLessonModules(modules: Module[]): string | null {
       for (const node of nodes) {
         if (!node.id || byId.has(node.id)) return `A aula "${lesson.title}" possui identificadores de elementos duplicados.`;
         byId.set(node.id, node);
-        if (![node.x, node.y, node.width, node.height].every(Number.isFinite) || node.width < 80 || node.height < 80 || node.width > 5000 || node.height > 5000) {
+        if (![node.x, node.y, node.width, node.height].every(Number.isFinite) || node.width < 80 || node.height < 60 || node.width > 5000 || node.height > 5000) {
           return `O elemento "${node.id}" possui posição ou dimensões inválidas.`;
         }
       }
@@ -1035,7 +1035,7 @@ function LessonEditorPage() {
       y = position.y;
     } else {
       const free = requestedX == null || requestedY == null
-        ? findFreePosition(nodes.filter((node) => !node.parentId), size.width, size.height)
+        ? findFreePosition(nodes, size.width, size.height)
         : { x: requestedX, y: requestedY };
       x = Math.max(GRID, Math.min(maxNodeX(size.width), snapToGrid(free.x)));
       y = Math.max(GRID, snapToGrid(free.y));
