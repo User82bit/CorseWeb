@@ -152,14 +152,15 @@ export function findContainerAtPosition(
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
+  maxParentDepth = MAX_NODE_HIERARCHY_DEPTH - 1
 ): CanvasNode | null {
   return nodes
     .filter(isContainerNode)
     .filter((container) => {
       const bounds = getContainerContentBounds(container);
       const depth = getNodeHierarchyDepth(nodes, container.id);
-      return depth > 0 && depth < MAX_NODE_HIERARCHY_DEPTH
+      return depth > 0 && depth <= maxParentDepth
         && x >= bounds.left && y >= bounds.top
         && x + width <= bounds.right && y + height <= bounds.bottom;
     })
