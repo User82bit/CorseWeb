@@ -144,6 +144,24 @@ export function findContainerDropTarget(
     .sort((a, b) => getNodeHierarchyDepth(nodes, b.id) - getNodeHierarchyDepth(nodes, a.id))[0] ?? null;
 }
 
+/** Find the deepest container that can fully contain a newly dropped card rectangle. */
+export function findContainerAtPosition(
+  nodes: CanvasNode[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): CanvasNode | null {
+  return nodes
+    .filter(isContainerNode)
+    .filter((container) => {
+      const bounds = getContainerContentBounds(container);
+      return x >= bounds.left && y >= bounds.top
+        && x + width <= bounds.right && y + height <= bounds.bottom;
+    })
+    .sort((a, b) => getNodeHierarchyDepth(nodes, b.id) - getNodeHierarchyDepth(nodes, a.id))[0] ?? null;
+}
+
 export function validateNodeHierarchy(nodes: CanvasNode[]): HierarchyValidation {
   const ids = new Set(nodes.map((node) => node.id));
   for (const node of nodes) {
