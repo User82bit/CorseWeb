@@ -385,9 +385,12 @@ function getText(node: CanvasNode, key: string, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function nodeDimensions(type: CanvasNodeType): { width: number; height: number } {
+function nodeDimensions(type: CanvasNodeType, parentDepth = 0): { width: number; height: number } {
   switch (type) {
-    case "container": return { width: 520, height: 420 };
+    case "container":
+      if (parentDepth >= 2) return { width: 220, height: 200 };
+      if (parentDepth === 1) return { width: 360, height: 280 };
+      return { width: 520, height: 420 };
     case "divider": return { width: 600, height: 72 };
     case "quiz":
     case "exercise": return { width: 384, height: 216 };
@@ -1013,7 +1016,6 @@ function LessonEditorPage() {
 
   const addNode = (type: CanvasNodeType, requestedX?: number, requestedY?: number, requestedParentId?: string | null) => {
     if (!activeLesson) return;
-    const size = nodeDimensions(type);
     const selectedContainer = selectedNode && isContainerNode(selectedNode)
       ? selectedNode
       : selectedNode?.parentId
@@ -1027,10 +1029,18 @@ function LessonEditorPage() {
       setError(copy.invalidHierarchy);
       return;
     }
-    if (parent && getNodeHierarchyDepth(nodes, parent.id) + 1 > MAX_NODE_HIERARCHY_DEPTH) {
+    const parentDepth = parent ? getNodeHierarchyDepth(nodes, parent.id) : 0;
+    if (parent && parentDepth + 1 > MAX_NODE_HIERARCHY_DEPTH) {
       setError(copy.invalidHierarchy);
       return;
     }
+    // A fourth-level container would have no room for a child within the
+    // four-level tree. Keep the fourth level for leaf learning elements.
+    if (type === "container" && parent && parentDepth >= MAX_NODE_HIERARCHY_DEPTH - 1) {
+      setError(copy.invalidHierarchy);
+      return;
+    }
+    const size = nodeDimensions(type, parentDepth);
 
     let x: number;
     let y: number;
@@ -1098,7 +1108,7 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const size = nodeDimensions(type);
+    const size = type === "container" ? { width: 160, height: 128 } : nodeDimensions(type);
     const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), size.width, size.height);
     addNode(type, snapToGrid(point.x), snapToGrid(point.y), target?.id ?? null);
   };
