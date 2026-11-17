@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CorseWeb.Server.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
     partial class AddCourseLessonCompletions
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
