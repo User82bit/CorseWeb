@@ -12,7 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<CourseDraft> CourseDrafts => Set<CourseDraft>();
     public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
     public DbSet<CourseEnrollment> Enrollments => Set<CourseEnrollment>();
-    public DbSet<CourseLessonCompletion> LessonCompletions => Set<CourseLessonCompletion>();
+    public DbSet<CourseLessonCompletion> CourseLessonCompletions => Set<CourseLessonCompletion>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
