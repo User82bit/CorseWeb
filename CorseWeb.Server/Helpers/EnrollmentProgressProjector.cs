@@ -79,7 +79,7 @@ public static class EnrollmentProgressProjector
             var moduleCompletedAt = moduleCompletedCount == lessonProgress.Length && lessonProgress.Length > 0
                 ? lessonProgress
                     .Where(item => item.CompletedAt.HasValue)
-                    .Max(item => item.CompletedAt)
+                    .Max(item => item.CompletedAt!.Value)
                 : null;
 
             return new ModuleProgressPayload(module.ModuleId, moduleCompletedAt, modulePercent, lessonProgress);
