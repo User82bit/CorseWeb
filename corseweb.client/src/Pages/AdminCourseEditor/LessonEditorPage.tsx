@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent as Reac
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
-import { CanvasNodeContent } from "../AppLessonPage/AppLessonPage";
-import { getLessonPresentationStyle, getNodePresentationStyle, isStudentVisibleNode } from "../AppLessonPage/lessonPresentation";
+import { LessonContentTree } from "../AppLessonPage/LessonContentRenderer";
+import { getLessonPresentationStyle } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
 
@@ -1419,16 +1419,7 @@ function LessonEditorPage() {
                       <h1>{activeLesson.title}</h1>
                       {activeLesson.description && <p>{activeLesson.description}</p>}
                     </header>
-                    <div className="student-lesson__content-flow">
-                      {[...nodes]
-                        .filter(isStudentVisibleNode)
-                        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x)
-                        .map((node) => (
-                          <div className={`student-lesson__content-item student-lesson__content-item--${node.type}`} key={node.id} style={getNodePresentationStyle(node)}>
-                            <CanvasNodeContent node={node} />
-                          </div>
-                        ))}
-                    </div>
+                    <LessonContentTree nodes={nodes} />
                   </>
                 )}
               </article>
