@@ -1,5 +1,8 @@
+using CorseWeb.Server.Data;
 using CorseWeb.Server.Helpers;
 using CorseWeb.Server.Models;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 var testCount = 0;
 
@@ -86,6 +89,16 @@ Assert(
     partialProjection.ModulesProgress[1].GetProperty("percent").GetInt32() == 0,
     "Uncompleted modules must remain at zero percent.");
 
+var duplicateCompletion = new CourseLessonCompletion
+{
+    Id = "completion-duplicate",
+    EnrollmentId = enrollment.Id,
+    LessonId = "lesson-published-1",
+    CompletedAt = DateTime.UtcNow
+};
+var duplicateProjection = EnrollmentProgressProjector.ToDto(enrollment, course, [completion, duplicateCompletion]);
+Assert(duplicateProjection.OverallPercent == 50, "Duplicate records must not inflate completion percentage.");
+
 var secondCompletion = new CourseLessonCompletion
 {
     Id = "completion-2",
@@ -107,4 +120,75 @@ var foreignEnrollmentCompletion = new CourseLessonCompletion
 var foreignProjection = EnrollmentProgressProjector.ToDto(enrollment, course, [foreignEnrollmentCompletion]);
 Assert(foreignProjection.OverallPercent == 0, "Completion records from another enrollment must be ignored.");
 
-Console.WriteLine($"Passed {testCount} server progress contract assertions.");
+// Run the real EF Core migrations against an isolated in-memory SQLite database.
+await using var connection = new SqliteConnection("Data Source=:memory:");
+await connection.OpenAsync();
+
+var options = new DbContextOptionsBuilder<AppDbContext>()
+    .UseSqlite(connection)
+    .Options;
+
+await using (var db = new AppDbContext(options))
+{
+    await db.Database.MigrateAsync();
+    var appliedMigrations = await db.Database.GetAppliedMigrationsAsync();
+    Assert(
+        appliedMigrations.Contains("20261117120000_AddCourseLessonCompletions"),
+        "The lesson-completion migration must be discoverable and applied.");
+
+    var persistedEnrollment = new CourseEnrollment
+    {
+        Id = "sqlite-enrollment",
+        CourseId = "sqlite-course",
+        UserId = "sqlite-student",
+        EnrolledAt = DateTime.UtcNow,
+        LastAccessedAt = DateTime.UtcNow
+    };
+    db.Enrollments.Add(persistedEnrollment);
+    await db.SaveChangesAsync();
+
+    var persistedCompletion = new CourseLessonCompletion
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        CompletedAt = DateTime.UtcNow
+    };
+    db.CourseLessonCompletions.Add(persistedCompletion);
+    await db.SaveChangesAsync();
+
+    Assert(
+        await db.CourseLessonCompletions.CountAsync() == 1,
+        "A completion record must persist in the migrated SQLite schema.");
+
+    db.CourseLessonCompletions.Add(new CourseLessonCompletion
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        CompletedAt = DateTime.UtcNow
+    });
+
+    var duplicateRejected = false;
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException)
+    {
+        duplicateRejected = true;
+        foreach (var entry in db.ChangeTracker.Entries<CourseLessonCompletion>()
+                     .Where(entry => entry.State == EntityState.Added))
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    Assert(duplicateRejected, "SQLite must reject duplicate completion rows for the same enrollment/lesson.");
+
+    db.Enrollments.Remove(persistedEnrollment);
+    await db.SaveChangesAsync();
+    Assert(
+        await db.CourseLessonCompletions.CountAsync() == 0,
+        "Deleting an enrollment must cascade-delete its completion records.");
+}
+
+Console.WriteLine($"Passed {testCount} server progress and SQLite migration assertions.");
