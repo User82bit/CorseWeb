@@ -59,6 +59,37 @@ export interface CanvasPort {
   label: string;
 }
 
+/** Layout de leitura, independente das coordenadas usadas pelo canvas do autor. */
+export interface CanvasNodeLayout {
+  width?: "auto" | "narrow" | "medium" | "wide" | "full";
+  align?: "start" | "center" | "end" | "stretch";
+  spacingBefore?: number;
+  spacingAfter?: number;
+}
+
+/** Estilo visual seguro e serializável de um elemento. */
+export interface CanvasNodeStyle {
+  color?: string;
+  backgroundColor?: string;
+  fontFamily?: "sans" | "serif" | "mono";
+  fontSize?: number;
+  fontWeight?: 400 | 500 | 600 | 700;
+  textAlign?: "left" | "center" | "right";
+  borderRadius?: number;
+  padding?: number;
+}
+
+/** Configuração de apresentação herdada pelos elementos da aula. */
+export interface LessonPresentation {
+  contentWidth?: "narrow" | "medium" | "wide";
+  backgroundColor?: string;
+  textColor?: string;
+  fontFamily?: "sans" | "serif" | "mono";
+  fontSize?: number;
+  textAlign?: "left" | "center" | "right";
+  padding?: number;
+}
+
 export interface CanvasNode {
   id: string;
   type: CanvasNodeType;
@@ -69,6 +100,12 @@ export interface CanvasNode {
   props: Record<string, unknown>;
   inputs: CanvasPort[];
   outputs: CanvasPort[];
+  /** Ordem explícita no fluxo de leitura; fallback legado usa y/x. */
+  order?: number;
+  /** Reservado para a hierarquia de containers da próxima etapa. */
+  parentId?: string | null;
+  layout?: CanvasNodeLayout;
+  style?: CanvasNodeStyle;
 }
 
 export interface CanvasConnection {
@@ -88,6 +125,9 @@ export interface Lesson extends BaseEntity {
   description?: string;
   order: number;
   estimatedMinutes: number;
+  /** Schema 2 separa apresentação de aula, layout de leitura e geometria do canvas. */
+  contentSchemaVersion?: number;
+  presentation?: LessonPresentation;
   nodes: CanvasNode[];
   connections: CanvasConnection[];
   // Progresso
