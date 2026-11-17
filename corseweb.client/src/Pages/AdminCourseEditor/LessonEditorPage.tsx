@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
-import type { CanvasConnection, CanvasNode, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
+import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
 import { CanvasNodeContent, getLessonPresentationStyle, getNodePresentationStyle } from "../AppLessonPage/AppLessonPage";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
@@ -1139,6 +1139,13 @@ function LessonEditorPage() {
       : node));
   };
 
+  const patchSelectedLayout = (patch: Partial<CanvasNodeLayout>) => {
+    if (!selectedNode) return;
+    updateNodes((current) => current.map((node) => node.id === selectedNode.id
+      ? { ...node, layout: { ...(node.layout ?? {}), ...patch } }
+      : node));
+  };
+
   const patchLessonPresentation = (patch: Partial<LessonPresentation>) => {
     if (!activeLesson) return;
     updateLesson({ presentation: { ...(activeLesson.presentation ?? {}), ...patch } });
@@ -1560,7 +1567,7 @@ function LessonEditorPage() {
               <section className="lesson-editor-workspace__presentation-fields">
                 <h3>{copy.presentation}</h3>
                 <label><span>{copy.contentWidth}</span>
-                  <select value={selectedNode.layout?.width ?? "auto"} onChange={(event) => patchSelectedStyle({} ) || updateNodes((current) => current.map((node) => node.id === selectedNode.id ? { ...node, layout: { ...(node.layout ?? {}), width: event.target.value as NonNullable<CanvasNode["layout"]>["width"] } } : node))}>
+                  <select value={selectedNode.layout?.width ?? "auto"} onChange={(event) => patchSelectedLayout({ width: event.target.value as CanvasNodeLayout["width"] })}>
                     <option value="auto">Automático</option><option value="narrow">Estreito</option><option value="medium">Médio</option><option value="wide">Largo</option><option value="full">Total</option>
                   </select>
                 </label>
