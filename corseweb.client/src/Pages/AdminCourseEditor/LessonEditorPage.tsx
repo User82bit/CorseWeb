@@ -385,10 +385,10 @@ function getText(node: CanvasNode, key: string, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-function nodeDimensions(type: CanvasNodeType, parent?: CanvasNode): { width: number; height: number } {
+function nodeDimensions(type: CanvasNodeType, parent?: CanvasNode, parentDepth = 0): { width: number; height: number } {
   if (type === "container") {
     if (!parent) return { width: 520, height: 420 };
-    return getNodeHierarchyDepth([parent], parent.id) === 1
+    return parentDepth === 1
       ? { width: 360, height: 300 }
       : { width: 220, height: 220 };
   }
@@ -1051,7 +1051,7 @@ function LessonEditorPage() {
       setError(copy.invalidHierarchy);
       return;
     }
-    const size = nodeDimensions(type, parent ?? undefined);
+    const size = nodeDimensions(type, parent ?? undefined, parentDepth);
 
     let x: number;
     let y: number;
