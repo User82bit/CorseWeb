@@ -35,7 +35,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 ### Não iniciada
 
 - **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Separar `scripts[]` de `modules[]`; parser/AST próprio; validação de sintaxe, tipos, eventos, funções permitidas, permissões, limites e testes unitários. Não usar JavaScript/C# scripting, `eval` ou reflexão. Dependência: revisão/aceite de CL-001.
-- **EDITOR-002 · P1 · Implementar hierarquia real de containers aninháveis.** O contrato prevê `parentId`, mas paleta, canvas e renderizador ainda não criam nem mostram filhos dentro de containers. Implementar reparenting, ordem de irmãos, profundidade máxima, prevenção de ciclos, exclusão em cascata e visualização da hierarquia na prévia/aluno.
+
 - **FLOW-001 · P1 · Executar o grafo de fluxo pedagógico.** Interpretar conexões no servidor; definir semântica de `success`/`failed`; controlar liberação de nós/aulas e tentativas; integrar Quiz, Exercício e certificados reais. O editor atual apenas desenha/persiste conexões.
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Cobrir autenticação, roles, propriedade de curso/rascunho, publicação, versões, matrículas, progresso, uploads e migrações em banco descartável.
 - **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
@@ -47,6 +47,8 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
 ### Revisão
+
+- **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. Falta CI, inspeção manual de interação e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 
 - **UI-001 · P1 · Revisar as áreas pública, do aluno e administrativa.** As rotas e páginas estão no código; falta aceite visual/funcional do proprietário. Verificar estados vazio/erro/carregamento, responsividade, acessibilidade, navegação e integração com API.
 - **AUTH-001 · P1 · Validar autenticação e autorização.** Google ID token, conta local, cookie e `AdminEmails` existem; faltam testes reais dos fluxos, expiração/reemissão, usuário comum/admin e revisão CSRF/HTTPS. Ver [achados](./SECURITY/audit-findings.md).
