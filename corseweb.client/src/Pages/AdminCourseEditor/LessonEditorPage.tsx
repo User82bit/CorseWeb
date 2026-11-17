@@ -1009,7 +1009,11 @@ function LessonEditorPage() {
   const addNode = (type: CanvasNodeType, requestedX?: number, requestedY?: number, requestedParentId?: string | null) => {
     if (!activeLesson) return;
     const size = nodeDimensions(type);
-    const selectedContainer = selectedNode && isContainerNode(selectedNode) ? selectedNode : null;
+    const selectedContainer = selectedNode && isContainerNode(selectedNode)
+      ? selectedNode
+      : selectedNode?.parentId
+        ? nodes.find((node) => node.id === selectedNode.parentId && isContainerNode(node)) ?? null
+        : null;
     const parentId = requestedParentId !== undefined
       ? requestedParentId
       : requestedX == null && requestedY == null ? selectedContainer?.id ?? null : null;
@@ -1849,7 +1853,7 @@ function LessonEditorPage() {
 
           {selectedNode ? (
             <div className="lesson-editor-workspace__inspector-form">
-              {["start", "certificate"].includes(selectedNode.type) && (
+              {["start", "certificate", "container"].includes(selectedNode.type) && (
                 <>
                   <label><span>{copy.title}</span><input value={getText(selectedNode, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
                   <label><span>{copy.content}</span><textarea rows={4} value={getText(selectedNode, "content")} onChange={(event) => patchSelectedProps({ content: event.target.value })} /></label>
@@ -1908,6 +1912,29 @@ function LessonEditorPage() {
                   <label><span>{copy.title}</span><input value={getText(selectedNode, "title")} onChange={(event) => patchSelectedProps({ title: event.target.value })} /></label>
                   <label><span>{copy.url}</span><input value={getText(selectedNode, "url")} onChange={(event) => patchSelectedProps({ url: event.target.value })} placeholder="https://…" /></label>
                 </>
+              )}
+              {selectedNode.type !== "start" && (
+                <section className="lesson-editor-workspace__hierarchy-fields">
+                  <h3>{copy.hierarchy}</h3>
+                  <label>
+                    <span>{copy.parentContainer}</span>
+                    <select value={selectedNode.parentId ?? ""} onChange={(event) => reparentSelectedNode(event.target.value || null)}>
+                      <option value="">{copy.outsideContainer}</option>
+                      {getEligibleContainerParents(nodes, selectedNode.id).map((container) => (
+                        <option value={container.id} key={container.id}>
+                          {getText(container, "title", copy.cardNames.container) || copy.cardNames.container}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {selectedNode.type === "container" && (
+                    <div className="lesson-editor-workspace__container-actions">
+                      <p>{copy.containerHint}</p>
+                      <span>{nodes.filter((node) => node.parentId === selectedNode.id).length} elementos filhos diretos</span>
+                      <button type="button" className="lesson-editor-workspace__secondary" onClick={() => setMobilePanel("cards")}>{copy.addChild}</button>
+                    </div>
+                  )}
+                </section>
               )}
               <div className="lesson-editor-workspace__size-fields">
                 <label><span>{copy.width}</span><input type="number" step={GRID} min={GRID * 4} max={CANVAS_WIDTH - GRID * 2} value={selectedNode.width} onChange={(event) => patchSelectedSize("width", Number(event.target.value))} /></label>
