@@ -20,7 +20,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 | DB-001 | Alinhar migrações, model snapshot e coluna `PasswordHash` | `Program.cs`, `Migrations/`, `Models/AppUser.cs` |
 | MEDIA-001 | Reforçar validação e ciclo de vida do upload de capas | `Controllers/CourseMediaController.cs` |
 | CL-001 / CL-002 | Aprovar spec e implementar parser/runtime controlado | `docs/ARCHITECTURE/corselight-language-v0.1.md` e backend futuro |
-| API-TEST-001 | Criar testes automatizados para endpoints e regras | projeto de testes .NET ainda inexistente |
+| API-TEST-001 | Criar testes de integração HTTP/EF Core para endpoints e regras | `CorseWeb.ProgressTests` contém apenas testes de contrato do projetor; falta infraestrutura HTTP/SQLite de integração |
 
 ## Limites atuais importantes
 
