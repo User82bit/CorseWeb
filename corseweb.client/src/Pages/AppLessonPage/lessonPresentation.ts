@@ -3,7 +3,7 @@ import type { CanvasNode, LessonPresentation } from "../../types/course";
 
 const STUDENT_CONTENT_TYPES = new Set<CanvasNode["type"]>([
   "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise",
-  "callout", "divider", "embed", "certificate",
+  "callout", "divider", "embed", "certificate", "container",
 ]);
 
 function normalizeScriptToken(value: unknown): string {
@@ -65,7 +65,10 @@ export function getNodePresentationStyle(node: CanvasNode): CSSProperties {
     result.color = color;
     customProperties["--presentation-text-color"] = color;
   }
-  if (backgroundColor) result.backgroundColor = backgroundColor;
+  if (backgroundColor) {
+    result.backgroundColor = backgroundColor;
+    customProperties["--presentation-container-background"] = backgroundColor;
+  }
   if (fontFamily) result.fontFamily = fontFamily;
   if (Number.isFinite(style.fontSize)) {
     const fontSize = `${Math.max(12, Math.min(48, Number(style.fontSize)))}px`;
@@ -74,8 +77,16 @@ export function getNodePresentationStyle(node: CanvasNode): CSSProperties {
   }
   if ([400, 500, 600, 700].includes(Number(style.fontWeight))) result.fontWeight = Number(style.fontWeight);
   if (style.textAlign && ["left", "center", "right"].includes(style.textAlign)) result.textAlign = style.textAlign;
-  if (Number.isFinite(style.borderRadius)) result.borderRadius = `${Math.max(0, Math.min(32, Number(style.borderRadius)))}px`;
-  if (Number.isFinite(style.padding)) result.padding = `${Math.max(0, Math.min(48, Number(style.padding)))}px`;
+  if (Number.isFinite(style.borderRadius)) {
+    const borderRadius = `${Math.max(0, Math.min(32, Number(style.borderRadius)))}px`;
+    result.borderRadius = borderRadius;
+    customProperties["--presentation-container-radius"] = borderRadius;
+  }
+  if (Number.isFinite(style.padding)) {
+    const padding = `${Math.max(0, Math.min(48, Number(style.padding)))}px`;
+    result.padding = padding;
+    customProperties["--presentation-container-padding"] = padding;
+  }
 
   const widths = { narrow: "min(100%, 42rem)", medium: "min(100%, 56rem)", wide: "min(100%, 72rem)", full: "100%" };
   if (layout.width && layout.width !== "auto") result.width = widths[layout.width];

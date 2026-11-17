@@ -11,86 +11,14 @@ import {
   type EnrollmentModuleProgress,
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
-import type { CanvasNode, Course, Lesson, Module } from "../../types/course";
-import { getLessonPresentationStyle, getNodePresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
+import type { Course, Lesson, Module } from "../../types/course";
+import { getLessonPresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
+import { LessonContentTree } from "./LessonContentRenderer";
 import "./AppLessonPage.scss";
 
 function interpolate(template: string, values: Record<string, string | number>) {
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
-}
-
-export function CanvasNodeContent({ node }: { node: CanvasNode }) {
-  const props = node.props ?? {};
-  const text = (value: unknown) => String(value ?? "");
-  const safeUrl = (value: unknown) => {
-    const source = text(value).trim();
-    if (!source) return "";
-    try {
-      const parsed = new URL(source, window.location.origin);
-      return parsed.protocol === "https:" || parsed.origin === window.location.origin ? parsed.href : "";
-    } catch {
-      return "";
-    }
-  };
-
-  switch (node.type) {
-    // Início é um nó de controle do editor, não conteúdo pedagógico para o aluno.
-    case "start":
-      return null;
-    case "certificate":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Certificado</span><h3>{text(props.title || "Certificado")}</h3><p>{text(props.content)}</p></section>;
-    case "heading": {
-      const level = Number(props.level ?? 2);
-      const Tag = level === 1 ? "h2" : level === 3 ? "h4" : "h3";
-      return <Tag className="student-lesson__content-heading">{text(props.content)}</Tag>;
-    }
-    case "paragraph":
-      return <p className="student-lesson__text">{text(props.content)}</p>;
-    case "list": {
-      const items = Array.isArray(props.items) ? props.items.map((item) => String(item)) : [];
-      const Tag = props.ordered ? "ol" : "ul";
-      return <Tag className="student-lesson__list">{items.map((item, index) => <li key={index}>{item}</li>)}</Tag>;
-    }
-    case "code":
-      return <pre className="student-lesson__code">{typeof props.language === "string" && props.language && <span className="student-lesson__code-language">{text(props.language)}</span>}<code>{text(props.code)}</code></pre>;
-    case "image": {
-      const src = safeUrl(props.url);
-      return src ? <figure className="student-lesson__figure"><img src={src} alt={text(props.alt)} loading="lazy" decoding="async" />{typeof props.caption === "string" && props.caption && <figcaption>{text(props.caption)}</figcaption>}</figure> : <p className="student-lesson__unsupported">{text(props.alt || props.caption)}</p>;
-    }
-    case "video": {
-      const src = safeUrl(props.url);
-      return src ? <div className="student-lesson__video"><video controls preload="metadata" src={src}><track kind="captions" /></video>{typeof props.caption === "string" && props.caption && <p>{text(props.caption)}</p>}</div> : <p className="student-lesson__unsupported">{text(props.caption)}</p>;
-    }
-    case "quiz": {
-      const options = Array.isArray(props.options) ? props.options.map((option) => String(option ?? "")) : [];
-      return (
-        <section className="student-lesson__activity">
-          <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Atividade</span>
-          <h3>{text(props.question)}</h3>
-          {options.length > 0 && (
-            <ol className="student-lesson__quiz-options" type="A">
-              {options.map((option, index) => <li key={index}>{option}</li>)}
-            </ol>
-          )}
-          <p className="student-lesson__activity-note">A resposta e a validação automática serão habilitadas pelo motor de atividades.</p>
-        </section>
-      );
-    }
-    case "exercise":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Exercício</span><p>{text(props.instruction)}</p><pre className="student-lesson__code"><code>{text(props.starterCode)}</code></pre></section>;
-    case "callout":
-      return <aside className="student-lesson__callout student-lesson__callout--info">{typeof props.title === "string" && props.title && <strong>{text(props.title)}</strong>}<p>{text(props.content)}</p></aside>;
-    case "divider":
-      return <hr className="student-lesson__divider student-lesson__divider--solid" />;
-    case "embed": {
-      const url = safeUrl(props.url);
-      return url ? <div className="student-lesson__embed"><strong>{text(props.title || "Incorporação")}</strong><a href={url} target="_blank" rel="noreferrer">{url}<SvgIcon name="arrow-right" size="0.9rem" /></a></div> : null;
-    }
-    default:
-      // Tipos desconhecidos (incluindo metadados/scripts internos) não são publicados como conteúdo.
-      return null;
-  }
 }
 
 function AppLessonPage() {
@@ -390,17 +318,7 @@ function AppLessonPage() {
               <p>{t.learning.noLessonContentDescription}</p>
             </div>
           ) : (
-            <div className="student-lesson__content-flow">
-              {studentNodes.map((node) => (
-                <div
-                  className={`student-lesson__content-item student-lesson__content-item--${node.type}`}
-                  key={node.id}
-                  style={getNodePresentationStyle(node)}
-                >
-                  <CanvasNodeContent node={node} />
-                </div>
-              ))}
-            </div>
+            <LessonContentTree nodes={lesson.nodes ?? []} />
           )}
 
           <section className="student-lesson__completion">

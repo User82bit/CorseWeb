@@ -71,6 +71,8 @@ public class CoursesController : ControllerBase
         if (user == null) return Unauthorized();
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length < 3) return BadRequest(new { error = "Título mínimo 3 caracteres" });
         if (string.IsNullOrWhiteSpace(dto.Description) || dto.Description.Trim().Length < 20) return BadRequest(new { error = "Descrição mínima 20 caracteres" });
+        var contentError = CourseContentValidator.Validate(dto.Modules);
+        if (contentError != null) return BadRequest(new { error = contentError });
 
         var baseSlug = SlugHelper.Slugify(dto.Title);
         var existingSlugs = await _db.Courses.Select(c => c.Slug).ToListAsync();
@@ -102,6 +104,8 @@ public class CoursesController : ControllerBase
         var c = await _db.Courses.FirstOrDefaultAsync(x => x.Slug == slug);
         if (c == null) return NotFound();
         if (!IsAdmin && c.AuthorId != CurrentUserId) return Forbid();
+        var contentError = CourseContentValidator.Validate(dto.Modules);
+        if (contentError != null) return BadRequest(new { error = contentError });
         CourseMapper.ApplyUpdate(c, dto, CurrentUserId!);
         _db.CourseVersions.Add(new CorseWeb.Server.Models.CourseVersion
         {
@@ -153,6 +157,11 @@ public class CoursesController : ControllerBase
         // se quiser mover para rascunho, mantemos como arquivar ou voltar a draft — aqui só alterna status ou arquiva
         if (target != "publicado" && target != "arquivado" && target != "rascunho")
             return BadRequest(new { error = "Status inválido" });
+        if (target == "publicado")
+        {
+            var contentError = CourseContentValidator.ValidateJson(c.ModulesJson);
+            if (contentError != null) return BadRequest(new { error = contentError });
+        }
         c.Status = target == "rascunho" ? "arquivado" : target; // Course não guarda rascunho — arquivado é o equivalente
         c.UpdatedAt = DateTime.UtcNow;
         c.UpdatedBy = CurrentUserId!;

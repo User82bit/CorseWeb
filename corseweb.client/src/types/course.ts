@@ -52,7 +52,8 @@ export type CanvasNodeType =
   | "callout"
   | "divider"
   | "embed"
-  | "certificate";
+  | "certificate"
+  | "container";
 
 export interface CanvasPort {
   id: string;
@@ -102,7 +103,7 @@ export interface CanvasNode {
   outputs: CanvasPort[];
   /** Ordem explícita no fluxo de leitura; fallback legado usa y/x. */
   order?: number;
-  /** Reservado para a hierarquia de containers da próxima etapa. */
+  /** Pai visual. Somente nós do tipo container podem receber filhos. */
   parentId?: string | null;
   layout?: CanvasNodeLayout;
   style?: CanvasNodeStyle;

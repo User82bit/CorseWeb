@@ -32,11 +32,21 @@ Cada nó possui:
 | `order` | Ordem explícita no fluxo de leitura; fallback legado usa y/x |
 | `layout` | Largura, alinhamento e espaçamentos na página publicada |
 | `style` | Cores, família/tamanho/peso da fonte, alinhamento, borda e padding |
-| `parentId` | Reservado à futura hierarquia de containers; filhos ainda não são editáveis/renderizados |
+| `parentId` | ID do nó container pai; ausente/nulo significa nível principal |
 
-Tipos previstos no contrato TypeScript: `start`, `heading`, `paragraph`, `list`, `image`, `video`, `code`, `quiz`, `exercise`, `callout`, `divider`, `embed` e `certificate`.
+Tipos previstos no contrato TypeScript: `start`, `heading`, `paragraph`, `list`, `image`, `video`, `code`, `quiz`, `exercise`, `callout`, `divider`, `embed`, `certificate` e `container`.
 
-O nó `start` é um marcador de controle. O nó `certificate` existe como card de conteúdo; sua presença não significa que o backend emita um certificado.
+O nó `start` é um marcador de controle e permanece no nível principal. O nó `certificate` existe como card de conteúdo; sua presença não significa que o backend emita um certificado.
+
+### Hierarquia visual de containers
+
+O container é o único tipo que pode receber filhos. A aula mantém uma lista plana `nodes[]`; cada filho aparece uma única vez e aponta para o ID do pai por `parentId`. Não duplicar os filhos em `children[]`. Os filhos mantêm coordenadas absolutas do canvas, limitadas à área interna do pai (20 px de margem, 48 px reservados ao cabeçalho e 20 px de margem inferior).
+
+A hierarquia tem no máximo quatro níveis, incluindo o nível principal. Containers podem conter outros containers; todos os outros tipos são folhas. O editor oferece adição dentro do container selecionado, arrasto para reparenting, seleção do pai no inspetor, duplicação do subtree e exclusão em cascata. Ao mover/duplicar um container, seus descendentes acompanham o movimento e recebem novos IDs ao duplicar.
+
+A ordem de leitura é `order` entre irmãos do mesmo pai. As conexões continuam independentes da contenção: não atravessam automaticamente a hierarquia nem determinam a sequência de leitura. Remover um container remove todos os descendentes e conexões que referenciem qualquer nó removido.
+
+O frontend e o backend validam IDs únicos, pais existentes do tipo container, ausência de ciclos, profundidade máxima, limites internos do container, dimensões e portas de conexão. O backend é a autoridade final na criação/atualização de cursos e rascunhos e antes de publicar.
 
 ### `connections[]`
 
@@ -98,7 +108,7 @@ O backend mantém o conteúdo de módulos como JSON em `Course.ModulesJson`/`Cou
 3. renderiza texto, título, lista, imagem, vídeo, código, quiz, exercício, destaque, divisor, incorporação e certificado;
 4. aplica o tema de apresentação da aula e as opções layout/style de cada elemento, sem usar coordenadas do canvas.
 
-A página não usa as coordenadas para posicionar os cartões, não mostra portas/conexões e não executa scripts. Preview do editor e página do aluno compartilham o renderizador e o filtro de nós visíveis.
+A página não usa as coordenadas do canvas para posicionar elementos dentro do fluxo, não mostra portas/conexões e não executa scripts. Containers são representados como seções agrupadoras e seus filhos são renderizados recursivamente. Preview do editor e página do aluno compartilham o renderizador e o filtro de nós visíveis.
 
 **Importante:** a ordenação espacial é uma convenção de leitura atual. As ligações do grafo não determinam a progressão do aluno. O quiz mostra pergunta e opções, mas não aceita uma resposta nem calcula o resultado no fluxo atual. O exercício mostra instrução e código inicial, sem executar ou verificar a solução.
 

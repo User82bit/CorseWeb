@@ -648,3 +648,35 @@
   font-size: clamp(1.1rem, calc(var(--presentation-font-size, 1rem) * 1.4), 2.1rem);
 }
 
+/* Nested pedagogical containers preserve their hierarchy in the reading flow. */
+.student-lesson__container {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--presentation-container-padding, var(--space-4));
+  border: 1px solid var(--color-border);
+  border-radius: var(--presentation-container-radius, var(--radius-lg));
+  background: var(--presentation-container-background, var(--color-bg-subtle));
+}
+
+.student-lesson__container-title {
+  margin: 0;
+  color: var(--presentation-text-color, var(--color-text));
+  font-size: 1.05em;
+  font-weight: var(--font-semibold);
+}
+
+.student-lesson__container-description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.student-lesson__container-children {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+

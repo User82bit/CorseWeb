@@ -51,6 +51,10 @@ jobs:
         working-directory: corseweb.client
         run: npm run test:i18n
 
+      - name: Test nested container hierarchy
+        working-directory: corseweb.client
+        run: npm run test:hierarchy
+
       - name: Build frontend
         working-directory: corseweb.client
         run: npm run build
