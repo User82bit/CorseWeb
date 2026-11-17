@@ -3,7 +3,7 @@ import type { CanvasNode, LessonPresentation } from "../../types/course";
 
 const STUDENT_CONTENT_TYPES = new Set<CanvasNode["type"]>([
   "heading", "paragraph", "list", "image", "video", "code", "quiz", "exercise",
-  "callout", "divider", "embed", "certificate",
+  "callout", "divider", "embed", "certificate", "container",
 ]);
 
 function normalizeScriptToken(value: unknown): string {
