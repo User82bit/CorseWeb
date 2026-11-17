@@ -78,13 +78,21 @@ export function getNodePresentationStyle(node: CanvasNode): CSSProperties {
   const style = node.style ?? {};
   const layout = node.layout ?? {};
   const result: CSSProperties = {};
+  const customProperties: Record<string, string> = {};
   const color = safeColor(style.color);
   const backgroundColor = safeColor(style.backgroundColor);
   const fontFamily = safeFontFamily(style.fontFamily);
-  if (color) result.color = color;
+  if (color) {
+    result.color = color;
+    customProperties["--presentation-text-color"] = color;
+  }
   if (backgroundColor) result.backgroundColor = backgroundColor;
   if (fontFamily) result.fontFamily = fontFamily;
-  if (Number.isFinite(style.fontSize)) result.fontSize = `${Math.max(12, Math.min(48, Number(style.fontSize)))}px`;
+  if (Number.isFinite(style.fontSize)) {
+    const fontSize = `${Math.max(12, Math.min(48, Number(style.fontSize)))}px`;
+    result.fontSize = fontSize;
+    customProperties["--presentation-font-size"] = fontSize;
+  }
   if ([400, 500, 600, 700].includes(Number(style.fontWeight))) result.fontWeight = Number(style.fontWeight);
   if (style.textAlign && ["left", "center", "right"].includes(style.textAlign)) result.textAlign = style.textAlign;
   if (Number.isFinite(style.borderRadius)) result.borderRadius = `${Math.max(0, Math.min(32, Number(style.borderRadius)))}px`;
@@ -95,26 +103,35 @@ export function getNodePresentationStyle(node: CanvasNode): CSSProperties {
   if (layout.align === "center") result.marginInline = "auto";
   else if (layout.align === "end") result.marginInlineStart = "auto";
   else if (layout.align === "start") result.marginInlineEnd = "auto";
+  else if (layout.align === "stretch") result.width = "100%";
   if (Number.isFinite(layout.spacingBefore)) result.marginBlockStart = `${Math.max(0, Math.min(96, Number(layout.spacingBefore)))}px`;
   if (Number.isFinite(layout.spacingAfter)) result.marginBlockEnd = `${Math.max(0, Math.min(96, Number(layout.spacingAfter)))}px`;
-  return result;
+  return Object.assign(result, customProperties) as CSSProperties;
 }
 
 export function getLessonPresentationStyle(presentation?: import("../../types/course").LessonPresentation): CSSProperties {
   if (!presentation) return {};
   const result: CSSProperties = {};
+  const customProperties: Record<string, string> = {};
   const backgroundColor = safeColor(presentation.backgroundColor);
   const color = safeColor(presentation.textColor);
   const fontFamily = safeFontFamily(presentation.fontFamily);
   if (backgroundColor) result.backgroundColor = backgroundColor;
-  if (color) result.color = color;
+  if (color) {
+    result.color = color;
+    customProperties["--presentation-text-color"] = color;
+  }
   if (fontFamily) result.fontFamily = fontFamily;
-  if (Number.isFinite(presentation.fontSize)) result.fontSize = `${Math.max(12, Math.min(24, Number(presentation.fontSize)))}px`;
+  if (Number.isFinite(presentation.fontSize)) {
+    const fontSize = `${Math.max(12, Math.min(24, Number(presentation.fontSize)))}px`;
+    result.fontSize = fontSize;
+    customProperties["--presentation-font-size"] = fontSize;
+  }
   if (presentation.textAlign && ["left", "center", "right"].includes(presentation.textAlign)) result.textAlign = presentation.textAlign;
   if (Number.isFinite(presentation.padding)) result.padding = `${Math.max(12, Math.min(64, Number(presentation.padding)))}px`;
   const widths = { narrow: "46rem", medium: "62rem", wide: "76rem" };
   if (presentation.contentWidth) result.maxWidth = widths[presentation.contentWidth];
-  return result;
+  return Object.assign(result, customProperties) as CSSProperties;
 }
 
 export function CanvasNodeContent({ node }: { node: CanvasNode }) {
