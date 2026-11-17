@@ -476,7 +476,7 @@ function findFreePosition(nodes: CanvasNode[], width: number, height: number): {
   return { x: GRID, y: Math.max(GRID, ...nodes.map((node) => snapToGrid(node.y + node.height + GRID))) };
 }
 
-function createCanvasNode(type: CanvasNodeType, x: number, y: number, order = 1): CanvasNode {
+function createCanvasNode(type: CanvasNodeType, x: number, y: number, order = 1, parentId: string | null = null): CanvasNode {
   const size = nodeDimensions(type);
   return {
     id: createId("card"),
@@ -487,10 +487,24 @@ function createCanvasNode(type: CanvasNodeType, x: number, y: number, order = 1)
     height: size.height,
     props: defaultProps(type),
     order,
+    parentId,
     layout: { width: "auto", align: "start" },
     style: {},
     ...defaultPorts(type),
   };
+}
+
+function findFreePositionInContainer(nodes: CanvasNode[], container: CanvasNode, width: number, height: number): { x: number; y: number } | null {
+  const bounds = getContainerContentBounds(container);
+  if (width > bounds.right - bounds.left || height > bounds.bottom - bounds.top) return null;
+  const siblings = nodes.filter((node) => node.parentId === container.id);
+  for (let y = snapToGrid(bounds.top); y + height <= bounds.bottom; y += GRID) {
+    for (let x = snapToGrid(bounds.left); x + width <= bounds.right; x += GRID) {
+      const candidate = { x, y, width, height };
+      if (!siblings.some((node) => overlaps(candidate, node))) return { x, y };
+    }
+  }
+  return null;
 }
 
 function createLesson(course: Course, moduleId: string, order: number, title: string): Lesson {
@@ -610,6 +624,8 @@ function NodePreview({ node }: { node: CanvasNode }) {
   switch (node.type) {
     case "start":
       return <div className="lesson-editor-workspace__preview-flow"><strong>{text("title", "Início")}</strong><p>{text("content", "Ponto inicial do fluxo.")}</p></div>;
+    case "container":
+      return <div className="lesson-editor-workspace__preview-container"><strong>{text("title", "Novo container")}</strong><p>{text("content", "Agrupe elementos relacionados nesta área.")}</p><small>Área para cards filhos</small></div>;
     case "certificate":
       return <div className="lesson-editor-workspace__preview-flow"><strong>{text("title", "Certificado")}</strong><p>{text("content", "Certificado de conclusão.")}</p></div>;
     case "heading": {
@@ -706,7 +722,7 @@ function LessonEditorPage() {
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const dragRef = useRef<{ clientX: number; clientY: number; origins: Array<{ id: string; x: number; y: number; width: number }> } | null>(null);
+  const dragRef = useRef<{ clientX: number; clientY: number; anchorId: string; allowReparent: boolean; moved: boolean; origins: Array<{ id: string; x: number; y: number; width: number }> } | null>(null);
   const [pendingConnection, setPendingConnection] = useState<PendingConnection | null>(null);
   const [camera, setCamera] = useState<CanvasCamera>({ x: 0, y: 0, zoom: 0.75 });
   const cameraRef = useRef<CanvasCamera>(camera);
