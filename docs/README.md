@@ -1,6 +1,6 @@
 # CorseWeb — documentação
 
-Última atualização: 2026-11-07.
+Última atualização: 2026-11-17.
 
 Esta pasta reúne a explicação técnica do produto, os contratos atuais e o planejamento único do projeto. O quadro central fica em [`TODO.md`](./TODO.md); os arquivos de frontend e backend por domínio apontam para ele para evitar listas divergentes.
 
@@ -20,6 +20,7 @@ Esta pasta reúne a explicação técnica do produto, os contratos atuais e o pl
 - [Workspace do editor visual e grafo pedagógico — FE-011](./FRONTEND/etapas/fe-011-lesson-editor-workspace.md).
 - [Editor responsivo, prévia e apresentação schema 2 — FE-012](./FRONTEND/etapas/fe-012-responsive-editor-and-presentation.md).
 - [Containers aninháveis e hierarquia de elementos — FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
+- [Progresso autoritativo no servidor — PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
 - [Pipeline de CI inicial](./CI/etapas/ci-initial-validation-pipeline.md).
 
 Os documentos de etapas FE-009 e FE-010 são mantidos como histórico: seus editores/contratos foram substituídos pela evolução FE-011.

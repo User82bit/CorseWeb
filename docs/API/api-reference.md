@@ -48,12 +48,17 @@ Todos os endpoints exigem sessão.
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/enrollments` | Lista matrículas do usuário atual |
+| `GET` | `/api/enrollments` | Lista matrículas do usuário atual; progresso é calculado a partir dos eventos de conclusão persistidos |
 | `POST` | `/api/enrollments/{courseId}` | Matricula usuário em curso publicado; aceita ID ou slug |
-| `PUT` | `/api/enrollments/{courseId}/progress` | Atualiza aula atual, percentual e progresso dos módulos |
-| `DELETE` | `/api/enrollments/{courseId}` | Cancela matrícula |
+| `PUT` | `/api/enrollments/{courseId}/progress` | Atualiza somente a aula atual, desde que pertença ao curso e esteja publicada |
+| `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/complete` | Registra de forma idempotente a ação de conclusão de uma aula publicada |
+| `DELETE` | `/api/enrollments/{courseId}` | Cancela matrícula e remove os eventos de conclusão associados |
 
-`ProgressUpdateDto` atualmente recebe `overallPercent`, `currentLessonId` e `modulesProgress` do cliente. O servidor limita o percentual a 0–100, mas não recalcula a conclusão a partir de atividades verificadas. Essa é uma pendência de correção, não um contrato a ser tratado como seguro.
+O corpo de `PUT .../progress` aceita apenas `currentLessonId`. Percentuais, estados de aulas/módulos e datas de conclusão não são aceitos como autoridade do navegador. No `POST .../complete`, o backend exige sessão e matrícula do usuário atual, curso publicado e aula com `isPublished: true` dentro daquele curso. A data é criada pelo servidor; um índice único por matrícula/aula torna a ação idempotente.
+
+O servidor calcula `overallPercent`, `modulesProgress` e `completedAt` a partir das aulas publicadas e dos eventos existentes em `CourseLessonCompletions`. Aulas não publicadas ou IDs de outro curso não entram no cálculo. Valores legados gravados pelo contrato antigo do cliente são ignorados; matrículas antigas voltam a mostrar 0% até que novos eventos válidos sejam registrados.
+
+**Limite funcional atual:** o botão de conclusão é uma autodeclaração explícita do aluno. O produto ainda não avalia respostas de quiz/exercício no servidor. Portanto, esse percentual não deve liberar certificados, conteúdo pago ou decisões de acesso que exijam avaliação comprovada.
 
 ## 5. Mídia — `/api/course-media`
 

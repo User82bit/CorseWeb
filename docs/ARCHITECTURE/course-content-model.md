@@ -112,17 +112,25 @@ A página não usa as coordenadas do canvas para posicionar elementos dentro do 
 
 **Importante:** a ordenação espacial é uma convenção de leitura atual. As ligações do grafo não determinam a progressão do aluno. O quiz mostra pergunta e opções, mas não aceita uma resposta nem calcula o resultado no fluxo atual. O exercício mostra instrução e código inicial, sem executar ou verificar a solução.
 
-## 6. Separação de dados de autoria e aluno
+## 6. Progresso e conclusão de aulas
+
+O progresso da matrícula não é calculado pelo navegador. A tabela `CourseLessonCompletions` registra eventos por matrícula/aula com timestamp do servidor e índice único em `(EnrollmentId, LessonId)`. Uma aula só pode gerar evento quando o curso está publicado, a matrícula pertence ao usuário autenticado e a aula aparece no JSON do curso com `isPublished: true`.
+
+O endpoint de atualização de navegação aceita apenas `currentLessonId`; percentual, status de módulos e datas enviados pelo cliente não fazem parte do contrato. O backend projeta `modulesProgress`, `overallPercent` e `completedAt` a partir dos eventos persistidos e das aulas atualmente publicadas. Dados antigos guardados em `ModulesProgressJson`/colunas de percentual não são mais considerados como fonte confiável.
+
+A conclusão atual é uma autodeclaração do aluno pelo botão “Concluir aula”. Ela não é uma avaliação de aprendizagem: quizzes e exercícios ainda não são corrigidos no servidor. Não usar esse percentual como prova para emissão de certificado, acesso pago ou decisão de alto valor até existir avaliação server-side.
+
+## 7. Separação de dados de autoria e aluno
 
 As respostas dos endpoints públicos de cursos usam CourseMapper.ToStudentDto, que remove propriedades privadas dos props dos nós, incluindo correctIndex, solution, answer, acceptedAnswers e expectedOutput. Administradores e autores continuam recebendo o DTO completo no acesso autenticado. Esconder esses campos apenas na interface não é controle de segurança.
 
-## 7. Quebra intencional de compatibilidade
+## 8. Quebra intencional de compatibilidade
 
 A migração FE-011 removeu o editor anterior de blocos/componentes. `prepareModules` ignora e descarta os campos legados `blocks[]` e `elements[]`; o projeto documenta que não há dados antigos a converter e não manterá camada de compatibilidade.
 
 Não reintroduzir silenciosamente os campos antigos. Qualquer necessidade futura de importar conteúdo de versões antigas deve ser uma ferramenta de conversão separada, com entrada/saída validadas e decisão explícita do proprietário.
 
-## 8. CorseLight
+## 9. CorseLight
 
 CorseLight (CL) é uma linguagem proposta para lógica restrita de cursos, distinta do card pedagógico `code`.
 
@@ -132,7 +140,7 @@ CorseLight (CL) é uma linguagem proposta para lógica restrita de cursos, disti
 - O filtro do renderizador do aluno oculta nós/tags identificados como scripts CL; isso é uma proteção de apresentação, não execução segura nem implementação da linguagem.
 - Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime futuro deve obedecer à lista de funções e aos limites explícitos da especificação.
 
-## 9. Referências no código
+## 10. Referências no código
 
 - Tipos: `corseweb.client/src/types/course.ts`.
 - Formulário de criação de curso: `corseweb.client/src/Pages/AdminCourseEditor/AdminCourseEditor.tsx`.

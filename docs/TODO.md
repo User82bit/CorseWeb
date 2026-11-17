@@ -1,6 +1,6 @@
 # CorseWeb — Kanban do projeto
 
-Última atualização: 2026-11-07.
+Última atualização: 2026-11-17.
 
 Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
@@ -48,7 +48,9 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Revisão
 
-- **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. CI #651 passou (ESLint, i18n, testes de hierarquia, build frontend e build .NET). Falta inspeção manual de interação e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
+- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** A nova API remove `overallPercent`/`modulesProgress` do contrato de escrita, valida curso/matrícula/aula publicada e grava um evento de conclusão por aula em tabela própria com índice único. Percentual, progresso dos módulos e `CompletedAt` são projetados no servidor a partir desses eventos; valores legados enviados pelo cliente deixam de ser fonte de verdade. Testes de regressão de projeção foram adicionados. Falta validação dinâmica da migração/rotas e revisão do proprietário; o botão atual representa autodeclaração do aluno, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
+
+- **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 foi integrado à `Homologa` pelo PR #43. Implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. CI #655 passou. Falta inspeção manual das interações e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 
 - **UI-001 · P1 · Revisar as áreas pública, do aluno e administrativa.** As rotas e páginas estão no código; falta aceite visual/funcional do proprietário. Verificar estados vazio/erro/carregamento, responsividade, acessibilidade, navegação e integração com API.
 - **AUTH-001 · P1 · Validar autenticação e autorização.** Google ID token, conta local, cookie e `AdminEmails` existem; faltam testes reais dos fluxos, expiração/reemissão, usuário comum/admin e revisão CSRF/HTTPS. Ver [achados](./SECURITY/audit-findings.md).
@@ -67,7 +69,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Precisa de correção
 
-- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** `EnrollmentsController.UpdateProgress` aceita `overallPercent`, `currentLessonId` e JSON de módulos enviado pelo navegador; limita o percentual mas não comprova conclusão e marca a matrícula concluída quando o valor recebido chega a 100. Recalcular progresso no servidor a partir de eventos/atividades validados e criar testes negativos. Evidência e recomendação em [achados da auditoria](./SECURITY/audit-findings.md#prog-001--progresso-controlado-pelo-cliente).
+
 - **VERSION-001 · P1 · Versionar alterações de status de publicação.** `CoursesController.PublishToggle` altera status/data/autor sem incrementar `Course.Version` nem gravar `CourseVersion`, ao contrário das atualizações normais e publicação de rascunho. Definir a semântica de arquivar/retornar a publicar e registrar snapshot de forma atômica. Evidência em [achados](./SECURITY/audit-findings.md#version-001--status-fora-do-historico-de-versoes).
 
 ## Fluxo de contribuição

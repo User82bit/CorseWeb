@@ -1,5 +1,7 @@
 # CorseWeb — índice de tarefas do frontend
 
+Última atualização: 2026-11-17.
+
 Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os estados ficam somente em [`docs/TODO.md`](../TODO.md)**; não mantenha estados duplicados neste arquivo.
 
 ## Diretrizes
@@ -28,8 +30,9 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 - FE-011 foi integrado em `Homologa` pelos PRs #35–#38. Inclui workspace, cards, nós/portas/conexões, câmera, pan/zoom e seleção múltipla.
 - FE-012/PRs #39–#40 separa o renderizador de leitura do canvas e oculta scripts internos CL da experiência do aluno.
 - FE-012 nesta branch adiciona navegação mobile por painéis, preview de celular/tablet/desktop, contrato de apresentação schema 2 e filtro de dados de autoria nas respostas públicas. A validação visual real e CI ainda são necessárias.
-- FE-013 nesta branch implementa containers aninháveis: nós em lista plana com parentId, quatro níveis, reparenting, duplicação e exclusão de subtree, preview/aluno recursivos e validação frontend/backend. O CI #651 passou; falta inspeção manual e aceite.
+- FE-013 foi integrada em `Homologa` pelo PR #43: containers aninháveis com `parentId`, quatro níveis, reparenting, duplicação/exclusão de subtree, preview/aluno recursivos e validação frontend/backend. O CI #655 passou; falta inspeção manual e aceite.
 - O grafo ainda não controla progressão; quiz/exercício não possuem avaliação automática no fluxo atual e a CorseLight não é executada.
+- PROG-001 altera a página da aula para solicitar conclusão ao servidor; o cliente não calcula mais percentuais nem envia status de módulos/aulas.
 - Os critérios detalhados e pendências ficam em [`etapas/fe-011-lesson-editor-workspace.md`](./etapas/fe-011-lesson-editor-workspace.md).
 
 ## Validação visual mínima

@@ -6,12 +6,12 @@ import { getCourseBySlugStore, refreshCourses, subscribeCourses } from "../../st
 import {
   enrollInCourse,
   getMyEnrollments,
+  completeEnrollmentLesson,
   updateEnrollmentProgress,
   type CourseEnrollment,
-  type EnrollmentModuleProgress,
   type EnrollmentProgressUpdate,
 } from "../../store/enrollmentStore";
-import type { Course, Lesson, Module } from "../../types/course";
+import type { Course } from "../../types/course";
 import { getLessonPresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import { LessonContentTree } from "./LessonContentRenderer";
 import "./AppLessonPage.scss";
@@ -34,6 +34,8 @@ function AppLessonPage() {
   const [enrollmentError, setEnrollmentError] = useState(false);
   const lastTrackedLesson = useRef<string | null>(null);
   const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
+  const pendingCompletionLesson = useRef<string | null>(null);
+  const progressRequestVersion = useRef(0);
 
   const loadLessonData = useCallback(async () => {
     if (!courseSlug) {
@@ -95,16 +97,15 @@ function AppLessonPage() {
     let active = true;
     setSaveError(false);
     const progressUpdate: EnrollmentProgressUpdate = {
-      overallPercent: enrollment.overallPercent,
       currentLessonId: lesson.id,
-      modulesProgress: enrollment.modulesProgress,
     };
     pendingProgress.current = progressUpdate;
+    const requestVersion = ++progressRequestVersion.current;
     updateEnrollmentProgress(course.slug, progressUpdate).then(updated => {
       if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
-      if (active) setEnrollment(updated);
+      if (active && requestVersion === progressRequestVersion.current) setEnrollment(updated);
     }).catch(() => {
-      if (active) setSaveError(true);
+      if (active && requestVersion === progressRequestVersion.current) setSaveError(true);
     });
     return () => { active = false; };
   }, [accessKey, course, enrollment, lesson]);
@@ -126,53 +127,13 @@ function AppLessonPage() {
     if (!course || !lesson || !enrollment || saving || isLessonComplete) return;
     setSaving(true);
     setSaveError(false);
+    pendingCompletionLesson.current = lesson.id;
+    const requestVersion = ++progressRequestVersion.current;
 
-    const nextModulesProgress: EnrollmentModuleProgress[] = modules.map((module: Module) => {
-      const currentProgress = enrollment.modulesProgress.find(item => item.moduleId === module.id);
-      const previousLessons = currentProgress?.lessons ?? [];
-      const lessonStatus = new Map(previousLessons.map(item => [item.lessonId, item]));
-      const lessons = module.lessons.map((moduleLesson: Lesson) => {
-        const existing = lessonStatus.get(moduleLesson.id);
-        if (moduleLesson.id === lesson.id) {
-          return {
-            lessonId: moduleLesson.id,
-            status: "concluido" as const,
-            startedAt: existing?.startedAt ?? new Date().toISOString(),
-            completedAt: existing?.completedAt ?? new Date().toISOString(),
-            timeSpentMinutes: existing?.timeSpentMinutes ?? 0,
-          };
-        }
-        return existing ?? {
-          lessonId: moduleLesson.id,
-          status: "nao-iniciado" as const,
-          timeSpentMinutes: 0,
-        };
-      });
-      const completedCount = lessons.filter(item => item.status === "concluido").length;
-      return {
-        moduleId: module.id,
-        percent: module.lessons.length ? Math.round(completedCount / module.lessons.length * 100) : 0,
-        ...(module.lessons.length > 0 && completedCount === module.lessons.length ? { completedAt: currentProgress?.completedAt ?? new Date().toISOString() } : {}),
-        lessons,
-      };
-    });
-
-    const completedLessonIds = new Set(nextModulesProgress.flatMap(module =>
-      module.lessons.filter(item => item.status === "concluido").map(item => item.lessonId)));
-    const overallPercent = allLessons.length
-      ? Math.round(completedLessonIds.size / allLessons.length * 100)
-      : 0;
-
-    const progressUpdate: EnrollmentProgressUpdate = {
-      overallPercent,
-      currentLessonId: lesson.id,
-      modulesProgress: nextModulesProgress,
-    };
-    pendingProgress.current = progressUpdate;
     try {
-      const updated = await updateEnrollmentProgress(course.slug, progressUpdate);
-      if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
-      setEnrollment(updated);
+      const updated = await completeEnrollmentLesson(course.slug, lesson.id);
+      pendingCompletionLesson.current = null;
+      if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
     } catch {
       setSaveError(true);
     } finally {
@@ -182,17 +143,23 @@ function AppLessonPage() {
 
   const handleRetryProgress = async () => {
     if (!course || !enrollment || saving) return;
+
+    const completionLessonId = pendingCompletionLesson.current;
     const progressUpdate = pendingProgress.current ?? {
-      overallPercent: enrollment.overallPercent,
       currentLessonId: lesson?.id ?? enrollment.currentLessonId,
-      modulesProgress: enrollment.modulesProgress,
     };
+    const requestVersion = ++progressRequestVersion.current;
     setSaving(true);
     setSaveError(false);
+
     try {
-      const updated = await updateEnrollmentProgress(course.slug, progressUpdate);
-      pendingProgress.current = null;
-      setEnrollment(updated);
+      const updated = completionLessonId
+        ? await completeEnrollmentLesson(course.slug, completionLessonId)
+        : await updateEnrollmentProgress(course.slug, progressUpdate);
+      if (completionLessonId && pendingCompletionLesson.current === completionLessonId)
+        pendingCompletionLesson.current = null;
+      if (!completionLessonId) pendingProgress.current = null;
+      if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
     } catch {
       setSaveError(true);
     } finally {

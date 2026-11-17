@@ -26,9 +26,7 @@ export type CourseEnrollment = {
 };
 
 export type EnrollmentProgressUpdate = {
-  overallPercent?: number;
   currentLessonId?: string | null;
-  modulesProgress?: EnrollmentModuleProgress[];
 };
 
 function normalizeEnrollment(raw: unknown): CourseEnrollment {
@@ -68,11 +66,24 @@ export async function updateEnrollmentProgress(
     {
       method: "PUT",
       body: JSON.stringify({
-        overallPercent: progress.overallPercent,
         currentLessonId: progress.currentLessonId,
-        modulesProgress: progress.modulesProgress,
       }),
     },
+  );
+  return normalizeEnrollment(result);
+}
+
+/**
+ * Records the student's completion action for one lesson.
+ * The API validates publication and calculates all progress values.
+ */
+export async function completeEnrollmentLesson(
+  courseSlug: string,
+  lessonId: string,
+): Promise<CourseEnrollment> {
+  const result = await apiJson<unknown>(
+    `/api/enrollments/${encodeURIComponent(courseSlug)}/lessons/${encodeURIComponent(lessonId)}/complete`,
+    { method: "POST" },
   );
   return normalizeEnrollment(result);
 }
