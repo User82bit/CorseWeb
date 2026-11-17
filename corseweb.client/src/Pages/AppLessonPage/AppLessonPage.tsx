@@ -56,6 +56,9 @@ function isInternalScriptNode(node: CanvasNode): boolean {
   return scriptNode || explicitlyInternal || (nodeType === "code" && isCorseLight);
 }
 
+export function isStudentVisibleNode(node: CanvasNode): boolean {
+  return STUDENT_CONTENT_TYPES.has(node.type) && !isInternalScriptNode(node);
+}
 
 const SAFE_HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
@@ -429,7 +432,7 @@ function AppLessonPage() {
   // Posições do editor determinam apenas a ordem de leitura nesta etapa.
   // Geometria, conexões, portas e scripts internos não são renderizados na área do aluno.
   const studentNodes = [...(lesson.nodes ?? [])]
-    .filter((node) => STUDENT_CONTENT_TYPES.has(node.type) && !isInternalScriptNode(node))
+    .filter(isStudentVisibleNode)
     .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
