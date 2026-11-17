@@ -518,7 +518,7 @@ function hasUnsupportedContentSchema(course?: Course): boolean {
 }
 
 function prepareModules(course: Course): Module[] {
-  const received = (course.modules ?? []).map((module, moduleIndex) => ({
+  const received: Module[] = (course.modules ?? []).map((module, moduleIndex) => ({
     ...module,
     order: moduleIndex + 1,
     lessons: (module.lessons ?? []).map((lesson, lessonIndex) => {
@@ -537,7 +537,7 @@ function prepareModules(course: Course): Module[] {
       );
       const nodes = Array.isArray(lesson.nodes) ? lesson.nodes.map((node) => ({
         ...node,
-        order: Number.isFinite(node.order) ? node.order : legacyReadingOrder.get(node.id) ?? 1,
+        order: typeof node.order === "number" && Number.isFinite(node.order) ? node.order : legacyReadingOrder.get(node.id) ?? 1,
         layout: node.layout ?? { width: "auto" as const, align: "start" as const },
         style: node.style ?? {},
         inputs: Array.isArray(node.inputs) ? node.inputs : defaultPorts(node.type).inputs,
