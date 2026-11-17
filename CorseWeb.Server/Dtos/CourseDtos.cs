@@ -60,4 +60,5 @@ public record EnrollmentDto(
     string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent, string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress
 );
 
-public record ProgressUpdateDto(int? OverallPercent, string? CurrentLessonId, JsonElement? ModulesProgress);
+// Only the current lesson is client-updatable. Completion and percentages are server-derived.
+public record ProgressUpdateDto(string? CurrentLessonId);
