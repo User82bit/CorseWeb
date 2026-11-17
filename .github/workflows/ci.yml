@@ -66,4 +66,4 @@ jobs:
         run: dotnet build CorseWeb.slnx --no-restore --configuration Release
 
       - name: Test server progress contracts
-        run: dotnet run --project CorseWeb.ProgressTests/CorseWeb.ProgressTests.csproj --no-build --configuration Release
+        run: dotnet run --project CorseWeb.ProgressTests/CorseWeb.ProgressTests.csproj --no-build --no-restore --configuration Release
