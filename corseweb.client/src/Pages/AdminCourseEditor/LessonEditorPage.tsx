@@ -388,9 +388,14 @@ function getText(node: CanvasNode, key: string, fallback = ""): string {
 function nodeDimensions(type: CanvasNodeType, parent?: CanvasNode, parentDepth = 0): { width: number; height: number } {
   if (type === "container") {
     if (!parent) return { width: 520, height: 420 };
-    return parentDepth === 1
+    const preferred = parentDepth === 1
       ? { width: 360, height: 300 }
       : { width: 220, height: 220 };
+    const bounds = getContainerContentBounds(parent);
+    return {
+      width: Math.max(160, Math.min(preferred.width, bounds.right - bounds.left)),
+      height: Math.max(128, Math.min(preferred.height, bounds.bottom - bounds.top)),
+    };
   }
 
   let dimensions: { width: number; height: number };
@@ -1127,7 +1132,8 @@ function LessonEditorPage() {
     const type = event.dataTransfer.getData(PALETTE_DRAG_TYPE) as CanvasNodeType;
     if (!NODE_TYPES.includes(type)) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), 80, 60);
+    const maxParentDepth = type === "container" ? MAX_NODE_HIERARCHY_DEPTH - 2 : MAX_NODE_HIERARCHY_DEPTH - 1;
+    const target = findContainerAtPosition(nodes, snapToGrid(point.x), snapToGrid(point.y), 80, 60, maxParentDepth);
     addNode(type, snapToGrid(point.x), snapToGrid(point.y), target?.id ?? null);
   };
 
