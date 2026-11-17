@@ -1116,7 +1116,7 @@ function LessonEditorPage() {
     const origins = nodes
       .filter((candidate) => groupIds.has(candidate.id))
       .map((candidate) => ({ id: candidate.id, x: candidate.x, y: candidate.y, width: candidate.width }));
-    setSelectedNodeIds([...groupIds]);
+    setSelectedNodeIds(explicitGroupIds);
     setSelectedNodeId(node.id);
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = {
@@ -1265,16 +1265,18 @@ function LessonEditorPage() {
           } else {
             let nextX = anchor.x;
             let nextY = anchor.y;
+            let canPlace = true;
             if (target) {
               const bounds = getContainerContentBounds(target);
               if (anchor.width > bounds.right - bounds.left || anchor.height > bounds.bottom - bounds.top) {
+                canPlace = false;
                 setError(copy.containerFull);
               } else {
                 nextX = Math.max(bounds.left, Math.min(bounds.right - anchor.width, anchor.x));
                 nextY = Math.max(bounds.top, Math.min(bounds.bottom - anchor.height, anchor.y));
               }
             }
-            if (!target || (anchor.width <= target.width && anchor.height <= target.height)) {
+            if (canPlace) {
               const deltaX = nextX - anchor.x;
               const deltaY = nextY - anchor.y;
               const descendants = getNodeDescendantIds(nodes, anchor.id);
