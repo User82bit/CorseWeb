@@ -19,6 +19,7 @@ Esta pasta reúne a explicação técnica do produto, os contratos atuais e o pl
 - [Especificação inicial da CorseLight v0.1](./ARCHITECTURE/corselight-language-v0.1.md).
 - [Workspace do editor visual e grafo pedagógico — FE-011](./FRONTEND/etapas/fe-011-lesson-editor-workspace.md).
 - [Editor responsivo, prévia e apresentação schema 2 — FE-012](./FRONTEND/etapas/fe-012-responsive-editor-and-presentation.md).
+- [Containers aninháveis e hierarquia de elementos — FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 - [Pipeline de CI inicial](./CI/etapas/ci-initial-validation-pipeline.md).
 
 Os documentos de etapas FE-009 e FE-010 são mantidos como histórico: seus editores/contratos foram substituídos pela evolução FE-011.
