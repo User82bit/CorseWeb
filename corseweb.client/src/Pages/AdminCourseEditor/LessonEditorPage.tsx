@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
-import type { CanvasConnection, CanvasNode, CanvasNodeType, Course, Lesson, Module } from "../../types/course";
+import type { CanvasConnection, CanvasNode, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
+import { CanvasNodeContent, getLessonPresentationStyle, getNodePresentationStyle } from "../AppLessonPage/AppLessonPage";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
 
@@ -91,6 +92,21 @@ const COPY: Record<"pt-BR" | "en" | "es", {
   zoomIn: string;
   fitView: string;
   resetView: string;
+  cardsTab: string;
+  canvasTab: string;
+  propertiesTab: string;
+  preview: string;
+  backToCanvas: string;
+  previewMobile: string;
+  previewTablet: string;
+  previewDesktop: string;
+  presentation: string;
+  contentWidth: string;
+  textColor: string;
+  backgroundColor: string;
+  fontFamily: string;
+  fontSize: string;
+  textAlign: string;
   cardNames: Record<CanvasNodeType, string>;
 }> = {
   "pt-BR": {
@@ -144,6 +160,21 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     zoomIn: "Aumentar zoom",
     fitView: "Ajustar conteúdo à tela",
     resetView: "Centralizar canvas em 100%",
+    cardsTab: "Cards",
+    canvasTab: "Canvas",
+    propertiesTab: "Propriedades",
+    preview: "Prévia",
+    backToCanvas: "Voltar ao canvas",
+    previewMobile: "Celular",
+    previewTablet: "Tablet",
+    previewDesktop: "Desktop",
+    presentation: "Apresentação",
+    contentWidth: "Largura do conteúdo",
+    textColor: "Cor do texto",
+    backgroundColor: "Cor de fundo",
+    fontFamily: "Fonte",
+    fontSize: "Tamanho da fonte (px)",
+    textAlign: "Alinhamento do texto",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagem", video: "Vídeo",
       code: "Código", quiz: "Quiz", exercise: "Exercício", callout: "Destaque", divider: "Divisor", embed: "Incorporação", start: "Início", certificate: "Certificado",
@@ -200,6 +231,21 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     zoomIn: "Zoom in",
     fitView: "Fit content to view",
     resetView: "Center canvas at 100%",
+    cardsTab: "Cards",
+    canvasTab: "Canvas",
+    propertiesTab: "Properties",
+    preview: "Preview",
+    backToCanvas: "Back to canvas",
+    previewMobile: "Phone",
+    previewTablet: "Tablet",
+    previewDesktop: "Desktop",
+    presentation: "Presentation",
+    contentWidth: "Content width",
+    textColor: "Text color",
+    backgroundColor: "Background color",
+    fontFamily: "Font",
+    fontSize: "Font size (px)",
+    textAlign: "Text alignment",
     cardNames: {
       heading: "Heading", paragraph: "Text", list: "List", image: "Image", video: "Video",
       code: "Code", quiz: "Quiz", exercise: "Exercise", callout: "Callout", divider: "Divider", embed: "Embed", start: "Start", certificate: "Certificate",
@@ -256,6 +302,21 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     zoomIn: "Acercar",
     fitView: "Ajustar contenido a la pantalla",
     resetView: "Centrar lienzo al 100%",
+    cardsTab: "Tarjetas",
+    canvasTab: "Lienzo",
+    propertiesTab: "Propiedades",
+    preview: "Vista previa",
+    backToCanvas: "Volver al lienzo",
+    previewMobile: "Móvil",
+    previewTablet: "Tableta",
+    previewDesktop: "Escritorio",
+    presentation: "Presentación",
+    contentWidth: "Ancho del contenido",
+    textColor: "Color del texto",
+    backgroundColor: "Color de fondo",
+    fontFamily: "Fuente",
+    fontSize: "Tamaño de fuente (px)",
+    textAlign: "Alineación del texto",
     cardNames: {
       heading: "Título", paragraph: "Texto", list: "Lista", image: "Imagen", video: "Vídeo",
       code: "Código", quiz: "Cuestionario", exercise: "Ejercicio", callout: "Destacado", divider: "Separador", embed: "Incrustación", start: "Inicio", certificate: "Certificado",
@@ -379,7 +440,7 @@ function findFreePosition(nodes: CanvasNode[], width: number, height: number): {
   return { x: GRID, y: Math.max(GRID, ...nodes.map((node) => snapToGrid(node.y + node.height + GRID))) };
 }
 
-function createCanvasNode(type: CanvasNodeType, x: number, y: number): CanvasNode {
+function createCanvasNode(type: CanvasNodeType, x: number, y: number, order = 1): CanvasNode {
   const size = nodeDimensions(type);
   return {
     id: createId("card"),
@@ -389,6 +450,9 @@ function createCanvasNode(type: CanvasNodeType, x: number, y: number): CanvasNod
     width: size.width,
     height: size.height,
     props: defaultProps(type),
+    order,
+    layout: { width: "auto", align: "start" },
+    style: {},
     ...defaultPorts(type),
   };
 }
@@ -406,6 +470,8 @@ function createLesson(course: Course, moduleId: string, order: number, title: st
     description: "",
     order,
     estimatedMinutes: 5,
+    contentSchemaVersion: 2,
+    presentation: { contentWidth: "medium", fontFamily: "sans", fontSize: 16, textAlign: "left", padding: 24 },
     nodes: [],
     connections: [],
     isPublished: false,
@@ -452,13 +518,18 @@ function prepareModules(course: Course): Module[] {
       } = lesson as Lesson & { blocks?: unknown; elements?: unknown };
       void discardedLegacyBlocks;
       void discardedLegacyElements;
-      const nodes = Array.isArray(lesson.nodes) ? lesson.nodes.map((node) => ({
+      const nodes = Array.isArray(lesson.nodes) ? lesson.nodes.map((node, nodeIndex) => ({
         ...node,
+        order: Number.isFinite(node.order) ? node.order : nodeIndex + 1,
+        layout: node.layout ?? { width: "auto" as const, align: "start" as const },
+        style: node.style ?? {},
         inputs: Array.isArray(node.inputs) ? node.inputs : defaultPorts(node.type).inputs,
         outputs: Array.isArray(node.outputs) ? node.outputs : defaultPorts(node.type).outputs,
       })) : [];
       return {
         ...lessonWithoutLegacyContent,
+        contentSchemaVersion: 2,
+        presentation: lesson.presentation ?? { contentWidth: "medium", fontFamily: "sans", fontSize: 16, textAlign: "left", padding: 24 },
         nodes,
         connections: Array.isArray(lesson.connections) ? lesson.connections : [],
         order: lessonIndex + 1,
@@ -534,6 +605,9 @@ function NodePreview({ node }: { node: CanvasNode }) {
   }
 }
 
+type WorkspacePanel = "cards" | "canvas" | "properties" | "preview";
+type PreviewDevice = "mobile" | "tablet" | "desktop";
+
 function LessonEditorPage() {
   const navigate = useNavigate();
   const { courseSlug } = useParams<{ courseSlug: string }>();
@@ -560,6 +634,8 @@ function LessonEditorPage() {
   const cameraDragRef = useRef<CameraDrag | null>(null);
   const spacePressedRef = useRef(false);
   const [isPanning, setIsPanning] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<WorkspacePanel>("canvas");
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("mobile");
   const canvasViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -778,8 +854,9 @@ function LessonEditorPage() {
       : { x: requestedX, y: requestedY };
     const x = Math.max(GRID, Math.min(maxNodeX(size.width), snapToGrid(free.x)));
     const y = Math.max(GRID, snapToGrid(free.y));
-    const node = createCanvasNode(type, x, y);
+    const node = createCanvasNode(type, x, y, nodes.length + 1);
     updateNodes((current) => [...current, node]);
+    setMobilePanel("canvas");
     setSelectedNodeId(node.id);
     setSelectedNodeIds([node.id]);
   };
@@ -1055,6 +1132,18 @@ function LessonEditorPage() {
       : node));
   };
 
+  const patchSelectedStyle = (patch: Partial<CanvasNodeStyle>) => {
+    if (!selectedNode) return;
+    updateNodes((current) => current.map((node) => node.id === selectedNode.id
+      ? { ...node, style: { ...(node.style ?? {}), ...patch } }
+      : node));
+  };
+
+  const patchLessonPresentation = (patch: Partial<LessonPresentation>) => {
+    if (!activeLesson) return;
+    updateLesson({ presentation: { ...(activeLesson.presentation ?? {}), ...patch } });
+  };
+
   const patchSelectedSize = (key: "width" | "height", value: number) => {
     if (!selectedNode) return;
     const nextValue = Math.max(GRID * 4, Math.min(key === "width" ? CANVAS_WIDTH - GRID * 2 : 2400, snapToGrid(value)));
@@ -1134,6 +1223,7 @@ function LessonEditorPage() {
   };
 
   const handleLessonChange = (lessonId: string) => {
+    setMobilePanel("canvas");
     setSelectedLessonId(lessonId);
     setSelectedNodeId(null);
     setSelectedNodeIds([]);
@@ -1154,7 +1244,7 @@ function LessonEditorPage() {
   }
 
   return (
-    <main className="lesson-editor-workspace">
+    <main className="lesson-editor-workspace" data-mobile-panel={mobilePanel}>
       <header className="lesson-editor-workspace__toolbar">
         <div className="lesson-editor-workspace__brand">
           <Link to="/admin/courses" className="lesson-editor-workspace__back" aria-label={copy.back} title={copy.back}>←</Link>
@@ -1182,8 +1272,16 @@ function LessonEditorPage() {
         </label>
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddModule}>{copy.addModule}</button>
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddLesson} disabled={!activeModule}>{copy.addLesson}</button>
+        <button type="button" className="lesson-editor-workspace__secondary lesson-editor-workspace__desktop-preview-toggle" onClick={() => setMobilePanel((current) => current === "preview" ? "canvas" : "preview")} aria-pressed={mobilePanel === "preview"}>{mobilePanel === "preview" ? copy.backToCanvas : copy.preview}</button>
         <span className="lesson-editor-workspace__grid-scale">Grid · 20 px</span>
       </div>
+
+      <nav className="lesson-editor-workspace__mobile-tabs" aria-label={copy.canvas}>
+        <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "cards"} onClick={() => setMobilePanel("cards")}>{copy.cardsTab}</button>
+        <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "canvas"} onClick={() => setMobilePanel("canvas")}>{copy.canvasTab}</button>
+        <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "properties"} onClick={() => setMobilePanel("properties")}>{copy.propertiesTab}</button>
+        <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "preview"} onClick={() => setMobilePanel("preview")}>{copy.preview}</button>
+      </nav>
 
       <div className="lesson-editor-workspace__body">
         <aside className="lesson-editor-workspace__palette" aria-label={copy.palette}>
@@ -1219,6 +1317,40 @@ function LessonEditorPage() {
             </div>
             <span>{nodes.length} cards</span>
           </div>
+          <div className="lesson-editor-workspace__preview" hidden={mobilePanel !== "preview"}>
+            <div className="lesson-editor-workspace__preview-toolbar">
+              <strong>{copy.preview}</strong>
+              <div role="group" aria-label={copy.preview}>
+                <button type="button" aria-pressed={previewDevice === "mobile"} onClick={() => setPreviewDevice("mobile")}>{copy.previewMobile}</button>
+                <button type="button" aria-pressed={previewDevice === "tablet"} onClick={() => setPreviewDevice("tablet")}>{copy.previewTablet}</button>
+                <button type="button" aria-pressed={previewDevice === "desktop"} onClick={() => setPreviewDevice("desktop")}>{copy.previewDesktop}</button>
+              </div>
+            </div>
+            <div className="lesson-editor-workspace__preview-viewport">
+              <article className={`lesson-editor-workspace__preview-page lesson-editor-workspace__preview-page--${previewDevice} student-lesson__article`} style={getLessonPresentationStyle(activeLesson?.presentation)}>
+                {activeLesson && (
+                  <>
+                    <header className="lesson-editor-workspace__preview-lesson-heading">
+                      <p>{activeModule?.title}</p>
+                      <h1>{activeLesson.title}</h1>
+                      {activeLesson.description && <p>{activeLesson.description}</p>}
+                    </header>
+                    <div className="student-lesson__content-flow">
+                      {[...nodes]
+                        .filter((node) => node.type !== "start" && node.props?.isInternal !== true && node.props?.visibleToStudent !== false)
+                        .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x)
+                        .map((node) => (
+                          <div className={`student-lesson__content-item student-lesson__content-item--${node.type}`} key={node.id} style={getNodePresentationStyle(node)}>
+                            <CanvasNodeContent node={node} />
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
+              </article>
+            </div>
+          </div>
+
           <div
             ref={canvasViewportRef}
             className={`lesson-editor-workspace__canvas-scroll${isPanning ? " lesson-editor-workspace__canvas-scroll--panning" : ""}`}
@@ -1280,9 +1412,13 @@ function LessonEditorPage() {
                         event.preventDefault();
                         setSelectedNodeId(node.id);
                         setSelectedNodeIds([node.id]);
+                        if (window.matchMedia("(max-width: 899px)").matches) setMobilePanel("properties");
                       }
                     }}
                     onPointerDown={(event) => handleCardPointerDown(event, node)}
+                    onClick={() => {
+                      if (window.matchMedia("(max-width: 899px)").matches) setMobilePanel("properties");
+                    }}
                     title={copy.cardNames[node.type]}
                   >
                     {node.inputs.map((port, index) => (
@@ -1421,6 +1557,27 @@ function LessonEditorPage() {
                 <label><span>{copy.width}</span><input type="number" step={GRID} min={GRID * 4} max={CANVAS_WIDTH - GRID * 2} value={selectedNode.width} onChange={(event) => patchSelectedSize("width", Number(event.target.value))} /></label>
                 <label><span>{copy.height}</span><input type="number" step={GRID} min={GRID * 4} max={2400} value={selectedNode.height} onChange={(event) => patchSelectedSize("height", Number(event.target.value))} /></label>
               </div>
+              <section className="lesson-editor-workspace__presentation-fields">
+                <h3>{copy.presentation}</h3>
+                <label><span>{copy.contentWidth}</span>
+                  <select value={selectedNode.layout?.width ?? "auto"} onChange={(event) => patchSelectedStyle({} ) || updateNodes((current) => current.map((node) => node.id === selectedNode.id ? { ...node, layout: { ...(node.layout ?? {}), width: event.target.value as NonNullable<CanvasNode["layout"]>["width"] } } : node))}>
+                    <option value="auto">Automático</option><option value="narrow">Estreito</option><option value="medium">Médio</option><option value="wide">Largo</option><option value="full">Total</option>
+                  </select>
+                </label>
+                <label><span>{copy.textColor}</span><input type="color" value={selectedNode.style?.color ?? "#202734"} onChange={(event) => patchSelectedStyle({ color: event.target.value })} /></label>
+                <label><span>{copy.backgroundColor}</span><input type="color" value={selectedNode.style?.backgroundColor ?? "#ffffff"} onChange={(event) => patchSelectedStyle({ backgroundColor: event.target.value })} /></label>
+                <label><span>{copy.fontFamily}</span>
+                  <select value={selectedNode.style?.fontFamily ?? "sans"} onChange={(event) => patchSelectedStyle({ fontFamily: event.target.value as CanvasNodeStyle["fontFamily"] })}>
+                    <option value="sans">Sans-serif</option><option value="serif">Serif</option><option value="mono">Monoespaçada</option>
+                  </select>
+                </label>
+                <label><span>{copy.fontSize}</span><input type="number" min={12} max={48} value={selectedNode.style?.fontSize ?? 16} onChange={(event) => patchSelectedStyle({ fontSize: Math.max(12, Math.min(48, Number(event.target.value) || 16)) })} /></label>
+                <label><span>{copy.textAlign}</span>
+                  <select value={selectedNode.style?.textAlign ?? "left"} onChange={(event) => patchSelectedStyle({ textAlign: event.target.value as CanvasNodeStyle["textAlign"] })}>
+                    <option value="left">Esquerda</option><option value="center">Centralizado</option><option value="right">Direita</option>
+                  </select>
+                </label>
+              </section>
               <div className="lesson-editor-workspace__element-actions">
                 <button type="button" className="lesson-editor-workspace__secondary" onClick={handleDuplicateNode}>{copy.duplicate}</button>
                 <button type="button" className="lesson-editor-workspace__danger" onClick={handleRemoveNode}>{copy.remove}</button>
@@ -1431,6 +1588,27 @@ function LessonEditorPage() {
               <label><span>{copy.lessonName}</span><input value={activeLesson.title} maxLength={120} onChange={(event) => updateLesson({ title: event.target.value })} /></label>
               <label><span>{copy.content}</span><textarea rows={4} value={activeLesson.description ?? ""} onChange={(event) => updateLesson({ description: event.target.value })} /></label>
               <label><span>{copy.duration}</span><input type="number" min={1} max={600} value={activeLesson.estimatedMinutes} onChange={(event) => updateLesson({ estimatedMinutes: Math.max(1, Math.min(600, Number(event.target.value) || 1)) })} /></label>
+              <section className="lesson-editor-workspace__presentation-fields">
+                <h3>{copy.presentation}</h3>
+                <label><span>{copy.contentWidth}</span>
+                  <select value={activeLesson.presentation?.contentWidth ?? "medium"} onChange={(event) => patchLessonPresentation({ contentWidth: event.target.value as LessonPresentation["contentWidth"] })}>
+                    <option value="narrow">Estreito</option><option value="medium">Médio</option><option value="wide">Largo</option>
+                  </select>
+                </label>
+                <label><span>{copy.backgroundColor}</span><input type="color" value={activeLesson.presentation?.backgroundColor ?? "#ffffff"} onChange={(event) => patchLessonPresentation({ backgroundColor: event.target.value })} /></label>
+                <label><span>{copy.textColor}</span><input type="color" value={activeLesson.presentation?.textColor ?? "#202734"} onChange={(event) => patchLessonPresentation({ textColor: event.target.value })} /></label>
+                <label><span>{copy.fontFamily}</span>
+                  <select value={activeLesson.presentation?.fontFamily ?? "sans"} onChange={(event) => patchLessonPresentation({ fontFamily: event.target.value as LessonPresentation["fontFamily"] })}>
+                    <option value="sans">Sans-serif</option><option value="serif">Serif</option><option value="mono">Monoespaçada</option>
+                  </select>
+                </label>
+                <label><span>{copy.fontSize}</span><input type="number" min={12} max={24} value={activeLesson.presentation?.fontSize ?? 16} onChange={(event) => patchLessonPresentation({ fontSize: Math.max(12, Math.min(24, Number(event.target.value) || 16)) })} /></label>
+                <label><span>{copy.textAlign}</span>
+                  <select value={activeLesson.presentation?.textAlign ?? "left"} onChange={(event) => patchLessonPresentation({ textAlign: event.target.value as LessonPresentation["textAlign"] })}>
+                    <option value="left">Esquerda</option><option value="center">Centralizado</option><option value="right">Direita</option>
+                  </select>
+                </label>
+              </section>
             </div>
           ) : <p>{copy.inspectorHint}</p>}
           {notice && <p className="lesson-editor-workspace__notice" role="status">{notice}</p>}
