@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
 import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
@@ -133,7 +133,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Cards",
     paletteHint: "Arraste um card para o canvas ou toque para adicionar.",
     canvas: "Canvas",
-    canvasHint: "Arraste cards e conecte a saída inferior de um nó à entrada superior de outro. Tudo encaixa na grade.",
+    canvasHint: "Arraste os cards. Para conectar, toque/clique na saída de um nó e depois na entrada de outro. Tudo encaixa na grade.",
     inspector: "Propriedades",
     inspectorHint: "Selecione um card no canvas para editar suas propriedades.",
     course: "Curso",
@@ -212,7 +212,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Cards",
     paletteHint: "Drag a card onto the canvas or click to add it.",
     canvas: "Canvas",
-    canvasHint: "Drag cards and connect a node's bottom output to another node's top input. Everything snaps to the grid.",
+    canvasHint: "Drag cards. To connect them, click or tap a node output, then another node input. Everything snaps to the grid.",
     inspector: "Properties",
     inspectorHint: "Select a card on the canvas to edit its properties.",
     course: "Course",
@@ -291,7 +291,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     palette: "Tarjetas",
     paletteHint: "Arrastra una tarjeta al lienzo o pulsa para añadirla.",
     canvas: "Lienzo",
-    canvasHint: "Arrastra tarjetas y conecta la salida inferior de un nodo a la entrada superior de otro. Todo se ajusta a la cuadrícula.",
+    canvasHint: "Arrastra las tarjetas. Para conectarlas, pulsa la salida de un nodo y luego la entrada de otro. Todo se ajusta a la cuadrícula.",
     inspector: "Propiedades",
     inspectorHint: "Selecciona una tarjeta del lienzo para editar sus propiedades.",
     course: "Curso",
@@ -1275,29 +1275,47 @@ function LessonEditorPage() {
     }));
   };
 
-  const handleOutputPortPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, node: CanvasNode, portId: string) => {
+  const handleOutputPortClick = (event: ReactMouseEvent<HTMLButtonElement>, node: CanvasNode, portId: string) => {
     event.preventDefault();
     event.stopPropagation();
+
+    // A two-step click/tap gesture works on touch devices where implicit
+    // pointer capture prevents pointerup from reaching a different port.
+    if (pendingConnection?.sourceNode === node.id && pendingConnection.sourcePort === portId) {
+      setPendingConnection(null);
+      return;
+    }
+
     const anchor = getPortAnchor(node, "output", portId);
     setSelectedNodeId(node.id);
     setSelectedNodeIds([node.id]);
-    setPendingConnection({ sourceNode: node.id, sourcePort: portId, x1: anchor.x, y1: anchor.y, x2: anchor.x, y2: anchor.y });
+    setPendingConnection({
+      sourceNode: node.id,
+      sourcePort: portId,
+      x1: anchor.x,
+      y1: anchor.y,
+      x2: anchor.x,
+      y2: anchor.y,
+    });
   };
 
-  const handleInputPortPointerUp = (event: ReactPointerEvent<HTMLButtonElement>, targetNode: CanvasNode, targetPort: string) => {
+  const handleInputPortClick = (event: ReactMouseEvent<HTMLButtonElement>, targetNode: CanvasNode, targetPort: string) => {
     event.preventDefault();
     event.stopPropagation();
     if (!pendingConnection) return;
+
     if (pendingConnection.sourceNode === targetNode.id) {
       setPendingConnection(null);
       return;
     }
+
     const sourceNode = nodes.find((node) => node.id === pendingConnection.sourceNode);
     if (!sourceNode?.outputs.some((port) => port.id === pendingConnection.sourcePort)
       || !targetNode.inputs.some((port) => port.id === targetPort)) {
       setPendingConnection(null);
       return;
     }
+
     const nextConnection: CanvasConnection = {
       id: createId("connection"),
       sourceNode: pendingConnection.sourceNode,
@@ -1376,7 +1394,6 @@ function LessonEditorPage() {
     }
     dragRef.current = null;
     setSelectionRect(null);
-    setPendingConnection(null);
   };
 
   const handleCanvasPointerCancel = () => {
@@ -1853,7 +1870,7 @@ function LessonEditorPage() {
                           className="lesson-editor-workspace__port"
                           aria-label={"Entrada " + port.label + " — " + copy.cardNames[node.type]}
                           title={"Entrada: " + port.label}
-                          onPointerUp={(event) => handleInputPortPointerUp(event, node, port.id)}
+                          onClick={(event) => handleInputPortClick(event, node, port.id)}
                         />
                         <span className="lesson-editor-workspace__port-label">{port.label}</span>
                       </div>
@@ -1869,7 +1886,7 @@ function LessonEditorPage() {
                           className="lesson-editor-workspace__port"
                           aria-label={"Saída " + port.label + " — " + copy.cardNames[node.type]}
                           title={"Saída: " + port.label}
-                          onPointerDown={(event) => handleOutputPortPointerDown(event, node, port.id)}
+                          onClick={(event) => handleOutputPortClick(event, node, port.id)}
                         />
                         <span className="lesson-editor-workspace__port-label">{port.label}</span>
                       </div>
