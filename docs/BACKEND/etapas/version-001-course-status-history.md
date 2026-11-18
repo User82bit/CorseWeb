@@ -31,7 +31,7 @@ O harness SQLite verifica:
 
 ## Validação pendente
 
-- CI (lint/build/teste SQLite).
+- CI #733 aprovada no HEAD `dde047f`: lint, testes de idioma, hierarquia, build frontend, restore/build .NET e harness SQLite.
 - Revisão do contrato e do uso do endpoint pelo frontend.
 - Teste HTTP de integração com sessão real, autorização do proprietário/admin e banco SQLite.
 - Aceite do proprietário.
