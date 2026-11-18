@@ -48,7 +48,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Revisão
 
-- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** A nova API remove `overallPercent`/`modulesProgress` do contrato de escrita, valida curso/matrícula/aula publicada e grava um evento de conclusão por aula em tabela própria com índice único. Percentual, progresso dos módulos e `CompletedAt` são projetados no servidor a partir desses eventos; valores legados enviados pelo cliente deixam de ser fonte de verdade. Testes de regressão de projeção foram adicionados. Falta validação dinâmica da migração/rotas e revisão do proprietário; o botão atual representa autodeclaração do aluno, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
+- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** Integrado em `Homologa` pelo PR #44; CI aprovada no HEAD `e813ce6`. A API valida curso/matrícula/aula publicada, grava conclusão no servidor e projeta percentuais a partir dos eventos. Permanecem pendentes os testes dinâmicos de rotas com sessão real e a revisão manual dos fluxos; o botão de conclusão ainda é autodeclaração, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
 
 - **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 foi integrado à `Homologa` pelo PR #43. Implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. CI #655 passou. Falta inspeção manual das interações e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 
@@ -69,6 +69,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Precisa de correção
 
+- **EDITOR-003 · P1 · Corrigir conexão de nós por toque no celular.** O usuário consegue mover cards, mas não consegue soltar a conexão na porta de entrada de outro card. A implementação anterior dependia de `pointerdown` na saída e `pointerup` na entrada; o pointer capture implícito em touch pode manter o evento preso ao elemento de origem. Substituir por interação acessível de duas etapas (tocar/clicar na saída e depois na entrada), preservar cancelamento/troca de origem e validar em celular real. [FE-014](./FRONTEND/etapas/fe-014-mobile-connection-gestures.md).
 
 - **VERSION-001 · P1 · Versionar alterações de status de publicação.** `CoursesController.PublishToggle` altera status/data/autor sem incrementar `Course.Version` nem gravar `CourseVersion`, ao contrário das atualizações normais e publicação de rascunho. Definir a semântica de arquivar/retornar a publicar e registrar snapshot de forma atômica. Evidência em [achados](./SECURITY/audit-findings.md#version-001--status-fora-do-historico-de-versoes).
 
