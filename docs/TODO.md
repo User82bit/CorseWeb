@@ -1,6 +1,6 @@
 # CorseWeb — Kanban do projeto
 
-Última atualização: 2026-11-17.
+Última atualização: 2026-11-18.
 
 Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
@@ -48,7 +48,11 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Revisão
 
-- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** Integrado em `Homologa` pelo PR #44; CI aprovada no HEAD `e813ce6`. A API valida curso/matrícula/aula publicada, grava conclusão no servidor e projeta percentuais a partir dos eventos. Permanecem pendentes os testes dinâmicos de rotas com sessão real e a revisão manual dos fluxos; o botão de conclusão ainda é autodeclaração, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
+- **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** Integrado em `Homologa` pelo PR #44; CI aprovada. A API valida curso/matrícula/aula publicada, grava conclusão no servidor e projeta percentuais a partir dos eventos. Permanecem pendentes os testes dinâmicos de rotas com sessão real e a revisão manual dos fluxos; o botão de conclusão ainda é autodeclaração, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
+
+- **VERSION-001 · P1 · Versionar alterações de status de publicação.** Implementação em revisão na PR #46: transições efetivas atualizam status, versão, autor/data e changelog, criando snapshot com o mesmo número de versão. A solicitação repetida do mesmo estado não gera versão duplicada; `rascunho` em `Course` continua sendo normalizado para `arquivado`. CI #733 aprovada no HEAD `dde047f`; testes SQLite verificam persistência e idempotência. Falta teste HTTP integrado com sessão real e revisão do proprietário. [VERSION-001](./BACKEND/etapas/version-001-course-status-history.md).
+
+- **EDITOR-003 · P1 · Validar conexão de nós por toque no celular.** Correção integrada à `Homologa` pelo PR #45 e CI aprovada. A ligação agora usa toque/clique na saída e depois na entrada. Falta validação em dispositivo real e aceite do proprietário. [FE-014](./FRONTEND/etapas/fe-014-mobile-connection-gestures.md).
 
 - **EDITOR-002 · P1 · Revisar containers aninháveis e hierarquia visual.** FE-013 foi integrado à `Homologa` pelo PR #43. Implementa `parentId` sem duplicar nós, container como único pai permitido, quatro níveis, reparenting por arrasto/inspetor, duplicação de subtree, exclusão em cascata, prévia/aluno recursivos e validação frontend/backend. CI #655 passou. Falta inspeção manual das interações e aceite do proprietário. [FE-013](./FRONTEND/etapas/fe-013-nested-containers.md).
 
@@ -69,9 +73,6 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Precisa de correção
 
-- **EDITOR-003 · P1 · Corrigir conexão de nós por toque no celular.** O usuário consegue mover cards, mas não consegue soltar a conexão na porta de entrada de outro card. A implementação anterior dependia de `pointerdown` na saída e `pointerup` na entrada; o pointer capture implícito em touch pode manter o evento preso ao elemento de origem. Substituir por interação acessível de duas etapas (tocar/clicar na saída e depois na entrada), preservar cancelamento/troca de origem e validar em celular real. [FE-014](./FRONTEND/etapas/fe-014-mobile-connection-gestures.md).
-
-- **VERSION-001 · P1 · Versionar alterações de status de publicação.** `CoursesController.PublishToggle` altera status/data/autor sem incrementar `Course.Version` nem gravar `CourseVersion`, ao contrário das atualizações normais e publicação de rascunho. Definir a semântica de arquivar/retornar a publicar e registrar snapshot de forma atômica. Evidência em [achados](./SECURITY/audit-findings.md#version-001--status-fora-do-historico-de-versoes).
 
 ## Fluxo de contribuição
 

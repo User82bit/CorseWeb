@@ -226,6 +226,78 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseLessonCompletions.CountAsync() == 0,
         "Deleting an enrollment must cascade-delete its completion records.");
+
+    // Publication status changes must increment the course version and persist
+    // a snapshot with exactly the same status/version in the same unit of work.
+    var versionedCourse = new Course
+    {
+        Id = "versioned-course",
+        Slug = "versioned-course",
+        Title = "Curso de versão",
+        Description = "Descrição suficientemente longa para validar o curso.",
+        Category = "Tecnologia",
+        Status = "publicado",
+        Language = "pt-BR",
+        ModulesJson = "[]",
+        AuthorId = "course-author",
+        AuthorName = "Autor",
+        CreatedBy = "course-author",
+        UpdatedBy = "course-author",
+        Version = 1
+    };
+    db.Courses.Add(versionedCourse);
+    db.CourseVersions.Add(new CourseVersion
+    {
+        CourseId = versionedCourse.Id,
+        Version = 1,
+        SnapshotJson = System.Text.Json.JsonSerializer.Serialize(CourseMapper.ToDto(versionedCourse)),
+        CreatedBy = "course-author"
+    });
+    await db.SaveChangesAsync();
+
+    var transitionAt = DateTime.UtcNow;
+    var changedToArchived = CourseVersioning.ApplyStatusTransition(
+        versionedCourse, "arquivado", "course-admin", transitionAt);
+    Assert(changedToArchived, "A real status change must be reported as changed.");
+    Assert(versionedCourse.Status == "arquivado", "Publishing status must be updated.");
+    Assert(versionedCourse.Version == 2, "A status change must increment the course version exactly once.");
+    Assert(versionedCourse.UpdatedBy == "course-admin", "A status change must record the acting user.");
+    Assert(versionedCourse.UpdatedAt == transitionAt, "A status change must use the transition timestamp.");
+
+    var archivedSnapshot = CourseVersioning.CreateSnapshot(versionedCourse, "course-admin");
+    db.CourseVersions.Add(archivedSnapshot);
+    await db.SaveChangesAsync();
+    Assert(archivedSnapshot.Version == 2, "The status snapshot must use the incremented version number.");
+    Assert(archivedSnapshot.CreatedAt == transitionAt, "The snapshot and course transition must share one timestamp.");
+
+    db.ChangeTracker.Clear();
+    var persistedCourse = await db.Courses.SingleAsync(item => item.Id == "versioned-course");
+    var persistedArchivedSnapshot = await db.CourseVersions.SingleAsync(item =>
+        item.CourseId == "versioned-course" && item.Version == 2);
+    using (var snapshotDocument = System.Text.Json.JsonDocument.Parse(persistedArchivedSnapshot.SnapshotJson))
+    {
+        var snapshotRoot = snapshotDocument.RootElement;
+        Assert(snapshotRoot.GetProperty("Status").GetString() == "arquivado",
+            "The persisted snapshot must capture the new publication status.");
+        Assert(snapshotRoot.GetProperty("Version").GetInt32() == 2,
+            "The persisted snapshot must capture the new version number.");
+    }
+    Assert(persistedCourse.Status == "arquivado" && persistedCourse.Version == 2,
+        "The persisted course and snapshot must describe the same status transition.");
+
+    var repeatedArchive = CourseVersioning.ApplyStatusTransition(persistedCourse, "rascunho", "course-admin");
+    Assert(!repeatedArchive, "Requesting the already archived state via draft alias must be idempotent.");
+    Assert(persistedCourse.Version == 2, "An idempotent status request must not increment the version.");
+    Assert(await db.CourseVersions.CountAsync(item => item.CourseId == "versioned-course") == 2,
+        "An idempotent status request must not create a duplicate snapshot.");
+
+    var republished = CourseVersioning.ApplyStatusTransition(persistedCourse, "publicado", "course-author");
+    Assert(republished && persistedCourse.Version == 3 && persistedCourse.Status == "publicado",
+        "Re-publishing must create the next version transition.");
+    db.CourseVersions.Add(CourseVersioning.CreateSnapshot(persistedCourse, "course-author"));
+    await db.SaveChangesAsync();
+    Assert(await db.CourseVersions.CountAsync(item => item.CourseId == "versioned-course") == 3,
+        "Each effective status transition must have one history snapshot.");
 }
 
 Console.WriteLine($"Passed {testCount} server progress and SQLite migration assertions.");

@@ -26,7 +26,9 @@ Os nomes JSON são camelCase. O contrato de curso aceita módulos como JSON estr
 | `PUT` | `/api/courses/{slug}` | Proprietário ou admin | Atualiza metadados e/ou `modules`; incrementa versão e grava snapshot |
 | `DELETE` | `/api/courses/{slug}` | Proprietário ou admin | Exclui curso e versões associadas |
 | `GET` | `/api/courses/{slug}/versions` | Público para publicado; proprietário/admin para não publicado | Lista metadados das versões (não devolve o snapshot completo) |
-| `POST` | `/api/courses/{slug}/publish` | Proprietário ou admin | Altera status entre publicado/arquivado/rascunho (rascunho é convertido em arquivado para `Course`) |
+| `POST` | `/api/courses/{slug}/publish` | Proprietário ou admin | Altera status entre publicado/arquivado/rascunho; transições efetivas incrementam a versão e gravam snapshot no histórico |
+
+A rota de publicação aceita `status` opcional. Sem corpo/status, alterna entre `publicado` e `arquivado`. Para a entidade `Course`, `rascunho` é normalizado para `arquivado`, pois rascunhos editáveis são mantidos em `CourseDraft`. Uma transição efetiva incrementa `version`, atualiza `updatedAt`/`updatedBy`, define `changelog` e cria um `CourseVersion` cujo snapshot captura o mesmo estado. Curso e snapshot são persistidos juntos. Solicitar novamente o status já vigente, inclusive pelo alias `rascunho`, é uma operação sem alteração e não cria versão duplicada.
 
 ## 3. Rascunhos — `/api/drafts`
 

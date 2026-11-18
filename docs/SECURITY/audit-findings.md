@@ -1,13 +1,13 @@
 # Achados da auditoria — segurança e integridade
 
-Atualizado em 2026-11-17. Esta página registra comportamentos observados no código da branch `Homologa`; não substitui teste de invasão, revisão jurídica ou validação operacional.
+Atualizado em 2026-11-18. Esta página registra comportamentos observados no código da branch `Homologa`; não substitui teste de invasão, revisão jurídica ou validação operacional.
 
 ## Resumo por prioridade
 
 | ID | Prioridade | Estado Kanban | Tema |
 |---|---|---|---|
 | PROG-001 | P0 | Revisão | Percentual/progresso migrados para eventos de conclusão validados pelo servidor; falta validação dinâmica e de aceite |
-| VERSION-001 | P1 | Precisa de correção | Alteração de status não cria versão nem snapshot |
+| VERSION-001 | P1 | Revisão | Transições de status criam versão e snapshot; falta validação completa do fluxo e aceite |
 | DB-001 | P1 | Revisão | Migração da coluna de senha depende de compatibilidade manual SQLite |
 | AUTH-001 | P1 | Revisão | Rever sessão por cookie, CSRF e configuração por ambiente |
 | MEDIA-001 | P1 | Revisão | Upload confere assinatura inicial, mas precisa validar/reprocessar imagem |
@@ -34,9 +34,18 @@ Atualizado em 2026-11-17. Esta página registra comportamentos observados no có
 
 ## VERSION-001 — status fora do histórico de versões
 
-**Evidência:** `CourseMapper.ApplyUpdate` incrementa `Course.Version`; `CoursesController.Update` grava snapshot. A publicação de rascunho também incrementa versão e cria `CourseVersion`. Porém `CoursesController.PublishToggle` altera `Status`, `UpdatedAt` e `UpdatedBy` sem incrementar `Version` nem criar snapshot.
+**Evidência original:** `CourseMapper.ApplyUpdate` incrementava `Course.Version` e `CoursesController.Update` gravava snapshot. Porém `CoursesController.PublishToggle` alterava `Status`, `UpdatedAt` e `UpdatedBy` sem atualizar versão nem histórico.
 
-**Correção recomendada:** decidir se mudanças de status fazem parte do histórico. Se fizerem, centralizar a transição num serviço que atualize status, versão e snapshot atomicamente. Padronizar também a semântica do valor `rascunho`, que no endpoint de curso publicado é convertido para `arquivado`.
+**Remediação implementada na branch de tarefa:** 
+
+1. `CourseVersioning.ApplyStatusTransition` normaliza o status solicitado e aplica somente transições efetivas.
+2. Cada mudança efetiva incrementa `Course.Version`, registra `UpdatedAt`, `UpdatedBy` e um changelog de transição.
+3. `CourseVersioning.CreateSnapshot` serializa o DTO após a mudança e usa a mesma versão, autor e timestamp.
+4. O controller adiciona o curso atualizado e seu snapshot ao mesmo `SaveChangesAsync`, que o EF Core executa numa transação relacional.
+5. Repetir uma solicitação para o estado já vigente é idempotente: não altera timestamp/versão e não adiciona snapshot.
+6. O alias `rascunho` segue a semântica existente de `Course`: normaliza para `arquivado`, pois rascunhos editáveis são entidades `CourseDraft` separadas.
+
+**Validação:** foram adicionados testes ao harness SQLite para validar a transição, conteúdo do snapshot persistido, alinhamento da versão, metadados de auditoria, republicação e idempotência. A integração HTTP com sessão real e aceite do fluxo completo ainda precisam de revisão.
 
 ## DB-001 — criação e migração do schema
 

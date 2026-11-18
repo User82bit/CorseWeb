@@ -15,7 +15,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 | ID no Kanban | Escopo | Arquivos principais |
 |---|---|---|
 | PROG-001 | Revisar eventos de conclusão e projeção de progresso server-side | `Controllers/EnrollmentsController.cs`, `Helpers/EnrollmentProgressProjector.cs`, `Models/CourseLessonCompletion.cs`, migration e testes de contrato |
-| VERSION-001 | Registrar mudança de status no histórico de versões | `Controllers/CoursesController.cs`, `Models/CourseVersion.cs` |
+| VERSION-001 | Registrar mudança de status no histórico de versões | `Controllers/CoursesController.cs`, `Helpers/CourseVersioning.cs`, `Models/CourseVersion.cs`, harness SQLite |
 | AUTH-001 | Testar login, cookie, role, Google, sessão e postura CSRF/HTTPS | `Controllers/AuthController.cs`, `Program.cs`, `Helpers/AdminHelper.cs` |
 | DB-001 | Alinhar migrações, model snapshot e coluna `PasswordHash` | `Program.cs`, `Migrations/`, `Models/AppUser.cs` |
 | MEDIA-001 | Reforçar validação e ciclo de vida do upload de capas | `Controllers/CourseMediaController.cs` |
@@ -26,7 +26,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 
 - Não há runtime da CorseLight no servidor. O backend não deve executar texto de autor como código.
 - PROG-001 remove percentual/status do corpo de escrita e calcula o progresso a partir de eventos server-side. Falta teste dinâmico de endpoints/migration; a conclusão é autodeclarada até haver avaliação server-side de quiz/exercício.
-- A mudança de status pelo endpoint de publicação não grava uma nova versão/snapshot.
+- VERSION-001 acrescenta versionamento e snapshot para transições efetivas do status de publicação; pedidos idempotentes não criam histórico duplicado.
 - Migração de `PasswordHash` possui tratamento específico de SQLite no startup; precisa virar uma migração versionada.
 - O upload de capa limita tamanho e verifica assinatura de formato, mas ainda precisa de validação de imagem completa/reprocessamento.
 - O workflow compila o backend e executa um harness de testes de contrato do projetor de progresso; ainda não existe suíte de integração HTTP/EF Core nem E2E.

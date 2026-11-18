@@ -162,9 +162,13 @@ public class CoursesController : ControllerBase
             var contentError = CourseContentValidator.ValidateJson(c.ModulesJson);
             if (contentError != null) return BadRequest(new { error = contentError });
         }
-        c.Status = target == "rascunho" ? "arquivado" : target; // Course não guarda rascunho — arquivado é o equivalente
-        c.UpdatedAt = DateTime.UtcNow;
-        c.UpdatedBy = CurrentUserId!;
+        var changed = CourseVersioning.ApplyStatusTransition(c, target, CurrentUserId!);
+        if (!changed)
+            return Ok(CourseMapper.ToDto(c));
+
+        // EF Core persists the course update and its immutable version snapshot
+        // in one SaveChanges transaction.
+        _db.CourseVersions.Add(CourseVersioning.CreateSnapshot(c, CurrentUserId!));
         await _db.SaveChangesAsync();
         return Ok(CourseMapper.ToDto(c));
     }
