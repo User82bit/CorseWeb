@@ -729,7 +729,7 @@ public static class ApiIntegrationTestSuite
                 .Content.ReadAsStringAsync()))
         {
             assert(verification.RootElement.GetProperty("verificationCode").GetString() == certificateCode
-                && verification.RootElement.GetProperty("courseTitle").GetString() == "Curso de integração",
+                && verification.RootElement.GetProperty("courseTitle").GetString() == "Curso de integração atualizado",
                 "Anyone must be able to verify an issued certificate using its public code.");
         }
         var unknownCertificate = await emptyClient.GetAsync(
