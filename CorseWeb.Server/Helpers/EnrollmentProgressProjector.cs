@@ -29,7 +29,8 @@ public static class EnrollmentProgressProjector
     public static EnrollmentDto ToDto(
         CourseEnrollment enrollment,
         Course? course,
-        IReadOnlyCollection<CourseLessonCompletion> completionRecords)
+        IReadOnlyCollection<CourseLessonCompletion> completionRecords,
+        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null)
     {
         var modules = ReadPublishedModules(course?.ModulesJson);
         var validLessonIds = modules
@@ -85,7 +86,21 @@ public static class EnrollmentProgressProjector
             return new ModuleProgressPayload(module.ModuleId, moduleCompletedAt, modulePercent, lessonProgress);
         }).ToArray();
 
+        var attemptPayload = (quizAttempts ?? Array.Empty<CourseQuizAttempt>())
+            .Where(attempt => string.Equals(attempt.EnrollmentId, enrollment.Id, StringComparison.Ordinal))
+            .OrderBy(attempt => attempt.CompletedAt)
+            .Select(attempt => new QuizAttemptPayload(
+                attempt.LessonId,
+                attempt.QuizNodeId,
+                attempt.SelectedOptionIndex,
+                attempt.IsCorrect,
+                attempt.Passed,
+                attempt.Score,
+                attempt.CompletedAt))
+            .ToArray();
+
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(modulesProgress, JsonOptions));
+        using var quizDocument = JsonDocument.Parse(JsonSerializer.Serialize(attemptPayload, JsonOptions));
         var currentLessonId = enrollment.CurrentLessonId is { } current
             && validLessonIds.Contains(current)
                 ? current
@@ -98,7 +113,8 @@ public static class EnrollmentProgressProjector
             overallPercent,
             currentLessonId,
             enrollment.LastAccessedAt,
-            document.RootElement.Clone());
+            document.RootElement.Clone(),
+            quizDocument.RootElement.Clone());
     }
 
     private static IReadOnlyList<PublishedModule> ReadPublishedModules(string? modulesJson)
