@@ -300,4 +300,6 @@ await using (var db = new AppDbContext(options))
         "Each effective status transition must have one history snapshot.");
 }
 
-Console.WriteLine($"Passed {testCount} server progress and SQLite migration assertions.");
+await ApiIntegrationTestSuite.RunAsync(Assert);
+
+Console.WriteLine($"Passed {testCount} server contract, SQLite migration and HTTP integration assertions.");
