@@ -291,6 +291,17 @@ public static class ApiIntegrationTestSuite
         assert(adminDraft.StatusCode == HttpStatusCode.OK,
             "An administrator must be able to inspect another user's draft.");
 
+        using (var invalidQuizDocument = JsonDocument.Parse(
+            coursePayload.Replace("\"correctIndex\": 0", "\"correctIndex\": 9", StringComparison.Ordinal)))
+        {
+            var invalidQuizUpdate = await anonymous.PutAsJsonAsync($"/api/courses/{courseSlug}", new
+            {
+                modules = invalidQuizDocument.RootElement.GetProperty("modules").Clone()
+            });
+            assert(invalidQuizUpdate.StatusCode == HttpStatusCode.BadRequest,
+                "A published course must reject a Quiz whose answer key points outside its option list.");
+        }
+
         var updateCourse = await anonymous.PutAsJsonAsync($"/api/courses/{courseSlug}", new
         {
             title = "Curso de integração atualizado",
@@ -418,6 +429,17 @@ public static class ApiIntegrationTestSuite
                 .Select(node => node.GetProperty("id").GetString()).ToArray();
             assert(nodeIds.Contains("nested-passed-node") && !nodeIds.Contains("nested-failed-node"),
                 "The nested Quiz result must unlock only its own selected output.");
+        var refreshedCourseCatalog = await studentClient.GetAsync("/api/courses");
+        using (var refreshedCatalog = JsonDocument.Parse(await refreshedCourseCatalog.Content.ReadAsStringAsync()))
+        {
+            var catalogCourse = refreshedCatalog.RootElement.EnumerateArray()
+                .Single(item => item.GetProperty("slug").GetString() == courseSlug);
+            var catalogLesson = catalogCourse.GetProperty("modules")[0].GetProperty("lessons")[0];
+            var catalogNodeIds = catalogLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(catalogNodeIds.Contains("nested-passed-node") && !catalogNodeIds.Contains("failed-node"),
+                "The course catalog refresh endpoint must return the student's current unlocked branch.");
+        }
         }
 
         var repeatedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
@@ -470,6 +492,10 @@ public static class ApiIntegrationTestSuite
                 .Select(node => node.GetProperty("id").GetString()).ToArray();
             assert(nodeIds.Contains("failed-node") && !nodeIds.Contains("passed-node"),
                 "A failed result must unlock only the failed branch for that student's enrollment.");
+        var failurePathCompletion = await quizFailureClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
+        assert(failurePathCompletion.StatusCode == HttpStatusCode.OK,
+            "A failed outcome may complete the lesson after its selected failure path is unlocked.");
         }
 
 
@@ -548,6 +574,8 @@ public static class ApiIntegrationTestSuite
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             assert(await db.CourseLessonCompletions.CountAsync() == 0,
                 "Cancelling an enrollment must cascade-delete its server completion records.");
+            assert(await db.CourseQuizAttempts.CountAsync() == 0,
+                "Cancelling both enrollments must cascade-delete their stored Quiz results.");
         }
 
         using var unauthorizedMediaClient = factory.CreateClient();
