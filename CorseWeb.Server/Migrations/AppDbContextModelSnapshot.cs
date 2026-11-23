@@ -395,6 +395,57 @@ namespace CorseWeb.Server.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseExerciseAttempt", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnrollmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExerciseNodeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LessonId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Passed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SubmittedAnswer")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId", "LessonId", "ExerciseNodeId")
+                        .IsUnique();
+
+                    b.ToTable("CourseExerciseAttempts");
+                });
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseExerciseAttempt", b =>
+                {
+                    b.HasOne("CorseWeb.Server.Models.CourseEnrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CorseWeb.Server.Models.CourseVersion", b =>
                 {
                     b.Property<string>("Id")
