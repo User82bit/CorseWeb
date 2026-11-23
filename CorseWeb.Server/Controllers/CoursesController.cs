@@ -47,6 +47,7 @@ public class CoursesController : ControllerBase
 
         var list = await q.OrderByDescending(c => c.UpdatedAt).Take(200).ToListAsync();
         var attemptsByCourse = new Dictionary<string, IReadOnlyCollection<CourseQuizAttempt>>(StringComparer.Ordinal);
+        var exerciseAttemptsByCourse = new Dictionary<string, IReadOnlyCollection<CourseExerciseAttempt>>(StringComparer.Ordinal);
         if (!IsAdmin && CurrentUserId is { } userId && list.Count > 0)
         {
             var listedCourseIds = list.Select(course => course.Id).ToArray();
@@ -65,6 +66,16 @@ public class CoursesController : ControllerBase
                         group => group.Key,
                         group => (IReadOnlyCollection<CourseQuizAttempt>)group.ToArray(),
                         StringComparer.Ordinal);
+
+                var exerciseAttempts = await _db.CourseExerciseAttempts
+                    .Where(attempt => enrollmentIds.Contains(attempt.EnrollmentId))
+                    .ToListAsync();
+                exerciseAttemptsByCourse = exerciseAttempts
+                    .GroupBy(attempt => enrollmentMap[attempt.EnrollmentId], StringComparer.Ordinal)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => (IReadOnlyCollection<CourseExerciseAttempt>)group.ToArray(),
+                        StringComparer.Ordinal);
             }
         }
 
@@ -73,7 +84,8 @@ public class CoursesController : ControllerBase
             if (IsAdmin || course.AuthorId == CurrentUserId)
                 return CourseMapper.ToDto(course);
             attemptsByCourse.TryGetValue(course.Id, out var attempts);
-            return CourseMapper.ToStudentDto(course, attempts ?? []);
+            exerciseAttemptsByCourse.TryGetValue(course.Id, out var exerciseAttempts);
+            return CourseMapper.ToStudentDto(course, attempts ?? [], exerciseAttempts ?? []);
         }));
     }
 
@@ -88,6 +100,7 @@ public class CoursesController : ControllerBase
             return Ok(CourseMapper.ToDto(c));
 
         IReadOnlyCollection<CourseQuizAttempt> attempts = [];
+        IReadOnlyCollection<CourseExerciseAttempt> exerciseAttempts = [];
         if (CurrentUserId is { } userId)
         {
             var enrollmentId = await _db.Enrollments
@@ -99,10 +112,13 @@ public class CoursesController : ControllerBase
                 attempts = await _db.CourseQuizAttempts
                     .Where(attempt => attempt.EnrollmentId == enrollmentId)
                     .ToListAsync();
+                exerciseAttempts = await _db.CourseExerciseAttempts
+                    .Where(attempt => attempt.EnrollmentId == enrollmentId)
+                    .ToListAsync();
             }
         }
 
-        return Ok(CourseMapper.ToStudentDto(c, attempts));
+        return Ok(CourseMapper.ToStudentDto(c, attempts, exerciseAttempts));
     }
 
     [Authorize]
