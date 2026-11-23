@@ -13,6 +13,7 @@ import {
 } from "../../store/enrollmentStore";
 import type { Course } from "../../types/course";
 import { getLessonPresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
+import { sortNodesByLessonFlow } from "./lessonFlow";
 import { LessonContentTree } from "./LessonContentRenderer";
 import "./AppLessonPage.scss";
 
@@ -227,11 +228,9 @@ function AppLessonPage() {
   }
 
   const completionPercent = Math.round(enrollment.overallPercent);
-  // Posições do editor determinam apenas a ordem de leitura nesta etapa.
-  // Geometria, conexões, portas e scripts internos não são renderizados na área do aluno.
-  const studentNodes = [...(lesson.nodes ?? [])]
-    .filter(isStudentVisibleNode)
-    .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.y - b.y || a.x - b.x);
+  // The graph defines reading order; canvas geometry remains authoring-only.
+  const studentNodes = sortNodesByLessonFlow(lesson.nodes ?? [], lesson.connections ?? [])
+    .filter(isStudentVisibleNode);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -285,7 +284,7 @@ function AppLessonPage() {
               <p>{t.learning.noLessonContentDescription}</p>
             </div>
           ) : (
-            <LessonContentTree nodes={lesson.nodes ?? []} />
+            <LessonContentTree nodes={lesson.nodes ?? []} connections={lesson.connections ?? []} />
           )}
 
           <section className="student-lesson__completion">
