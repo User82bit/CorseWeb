@@ -719,8 +719,8 @@ public static class ApiIntegrationTestSuite
             assert(certificateCode.Length == 32 && certificateCode.All(Uri.IsHexDigit),
                 "The certificate must contain a 128-bit hexadecimal verification code.");
             assert(certificate.GetProperty("studentName").GetString() == "Student"
-                && certificate.GetProperty("courseTitle").GetString() == "Curso de integração"
-                && certificate.GetProperty("courseVersion").GetInt32() == 1,
+                && certificate.GetProperty("courseTitle").GetString() == "Curso de integração atualizado"
+                && certificate.GetProperty("courseVersion").GetInt32() == 4,
                 "The certificate must snapshot the authenticated learner and published course identity.");
         }
 
