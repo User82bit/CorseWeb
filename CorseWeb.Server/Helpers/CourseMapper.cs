@@ -142,18 +142,23 @@ public static class CourseMapper
     // Public student responses must never disclose author-only quiz answers or exercise solutions.
     public static CourseListDto ToStudentDto(
         Course c,
-        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null)
+        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null,
+        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null)
     {
         var dto = ToDto(c);
         return dto with
         {
-            Modules = ParseStudentModules(c.ModulesJson, quizAttempts ?? Array.Empty<CourseQuizAttempt>())
+            Modules = ParseStudentModules(
+                c.ModulesJson,
+                quizAttempts ?? Array.Empty<CourseQuizAttempt>(),
+                exerciseAttempts ?? Array.Empty<CourseExerciseAttempt>())
         };
     }
 
     private static JsonElement ParseStudentModules(
         string? modulesJson,
-        IReadOnlyCollection<CourseQuizAttempt> quizAttempts)
+        IReadOnlyCollection<CourseQuizAttempt> quizAttempts,
+        IReadOnlyCollection<CourseExerciseAttempt> exerciseAttempts)
     {
         try
         {
@@ -170,14 +175,22 @@ public static class CourseMapper
                             && lessonIdValue.TryGetValue<string>(out var parsedLessonId)
                                 ? parsedLessonId
                                 : null;
-                        var quizResults = string.IsNullOrWhiteSpace(lessonId)
+                        var activityResults = string.IsNullOrWhiteSpace(lessonId)
                             ? new Dictionary<string, bool>(StringComparer.Ordinal)
                             : quizAttempts
                                 .Where(attempt => string.Equals(attempt.LessonId, lessonId, StringComparison.Ordinal))
                                 .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
                                 .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
 
-                        StudentLessonFlowProjector.Apply(lessonObject, quizResults);
+                        foreach (var attempt in exerciseAttempts
+                                     .Where(attempt => string.Equals(attempt.LessonId, lessonId, StringComparison.Ordinal))
+                                     .GroupBy(attempt => attempt.ExerciseNodeId, StringComparer.Ordinal)
+                                     .Select(group => group.OrderByDescending(item => item.CompletedAt).First()))
+                        {
+                            activityResults[attempt.ExerciseNodeId] = attempt.Passed;
+                        }
+
+                        StudentLessonFlowProjector.Apply(lessonObject, activityResults);
                         if (lessonObject["nodes"] is not JsonArray nodes) continue;
                         foreach (var node in nodes)
                         {

@@ -66,7 +66,7 @@ A suíte HTTP com `WebApplicationFactory` e SQLite cobre:
 
 ## Limitações conhecidas
 
-Esta etapa não implementa Quiz com várias perguntas, seleção múltipla, nota mínima configurável, retentativas, limite de tempo, banco de questões ou feedback avançado. O resultado 100/0 é deliberadamente simples e não comprova domínio do conteúdo. Exercício ainda não executa nem verifica código; certificado continua sendo um card visual. A prévia do editor mostra o grafo completo para autoria e não simula as decisões do aluno.
+Esta etapa não implementa Quiz com várias perguntas, seleção múltipla, nota mínima configurável, retentativas, limite de tempo, banco de questões ou feedback avançado. O resultado 100/0 é deliberadamente simples e não comprova domínio do conteúdo. A avaliação do card Exercise por comparação textual está documentada separadamente em FLOW-002; não existe execução ou compilação de código. Certificado continua sendo um card visual. A prévia do editor mostra o grafo completo para autoria e não simula as decisões do aluno.
 
 ## Aceite manual pendente
 

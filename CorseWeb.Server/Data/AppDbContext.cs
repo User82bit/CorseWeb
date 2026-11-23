@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CorseWeb.Server.Models;
+using CorseWeb.Server.Helpers;
 
 namespace CorseWeb.Server.Data;
 
@@ -14,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<CourseEnrollment> Enrollments => Set<CourseEnrollment>();
     public DbSet<CourseLessonCompletion> CourseLessonCompletions => Set<CourseLessonCompletion>();
     public DbSet<CourseQuizAttempt> CourseQuizAttempts => Set<CourseQuizAttempt>();
+    public DbSet<CourseExerciseAttempt> CourseExerciseAttempts => Set<CourseExerciseAttempt>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -49,6 +51,17 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+        });
+
+        b.Entity<CourseExerciseAttempt>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.EnrollmentId, x.LessonId, x.ExerciseNodeId }).IsUnique();
+            e.Property(x => x.SubmittedAnswer).HasMaxLength(CourseExerciseEvaluator.MaxAnswerLength);
+            e.HasOne<CourseEnrollment>()
+                .WithMany()
+                .HasForeignKey(x => x.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CourseQuizAttempt>(e =>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import type { CanvasConnection, CanvasNode } from "../../types/course";
 import { sortNodesByLessonFlow } from "./lessonFlow";
-import type { QuizAttemptResult } from "../../store/enrollmentStore";
+import type { ExerciseAttemptResult, QuizAttemptResult } from "../../store/enrollmentStore";
 import { getNodePresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import "./AppLessonPage.scss";
 
@@ -23,6 +23,10 @@ type CanvasNodeContentProps = {
   onQuizSubmit?: (nodeId: string, selectedOptionIndex: number) => void | Promise<void>;
   isSubmittingQuiz?: boolean;
   quizError?: string | null;
+  exerciseAttempt?: ExerciseAttemptResult;
+  onExerciseSubmit?: (nodeId: string, answer: string) => void | Promise<void>;
+  isSubmittingExercise?: boolean;
+  exerciseError?: string | null;
   locale?: string;
 };
 
@@ -32,9 +36,14 @@ export function CanvasNodeContent({
   onQuizSubmit,
   isSubmittingQuiz = false,
   quizError,
+  exerciseAttempt,
+  onExerciseSubmit,
+  isSubmittingExercise = false,
+  exerciseError,
   locale = "pt-BR",
 }: CanvasNodeContentProps) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
+  const [exerciseAnswer, setExerciseAnswer] = useState(String(node.props?.starterCode ?? ""));
   const props = node.props ?? {};
   const text = (value: unknown) => String(value ?? "");
 
@@ -143,8 +152,105 @@ export function CanvasNodeContent({
         </section>
       );
     }
-    case "exercise":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />Exercício</span><p>{text(props.instruction)}</p><pre className="student-lesson__code"><code>{text(props.starterCode)}</code></pre></section>;
+    case "exercise": {
+      const copy = locale.startsWith("en")
+        ? {
+            title: "Exercise",
+            answer: "Your answer / code",
+            submit: "Submit for evaluation",
+            submitting: "Evaluating…",
+            passed: "Approved",
+            failed: "Not approved",
+            recorded: "Result recorded",
+            unavailable: "Interactive submission is available in the student course.",
+            empty: "Enter your answer before submitting.",
+            retry: "The answer could not be evaluated. Try again.",
+            comparison: "This first version compares the submitted text with the reference solution. It does not run or compile code.",
+          }
+        : locale.startsWith("es")
+          ? {
+              title: "Ejercicio",
+              answer: "Tu respuesta / código",
+              submit: "Enviar para corregir",
+              submitting: "Evaluando…",
+              passed: "Aprobado",
+              failed: "No aprobado",
+              recorded: "Resultado guardado",
+              unavailable: "El envío interactivo está disponible en el curso del estudiante.",
+              empty: "Escribe tu respuesta antes de enviarla.",
+              retry: "No se pudo evaluar la respuesta. Inténtalo de nuevo.",
+              comparison: "Esta primera versión compara el texto enviado con la solución de referencia. No ejecuta ni compila código.",
+            }
+          : {
+              title: "Exercício",
+              answer: "Sua resposta / código",
+              submit: "Enviar para correção",
+              submitting: "Corrigindo…",
+              passed: "Aprovado",
+              failed: "Reprovado",
+              recorded: "Resultado registrado",
+              unavailable: "O envio interativo está disponível na área do aluno.",
+              empty: "Digite sua resposta antes de enviar.",
+              retry: "Não foi possível corrigir a resposta. Tente novamente.",
+              comparison: "Esta primeira versão compara o texto enviado com a solução de referência. Ela não executa nem compila código.",
+            };
+
+      if (exerciseAttempt) {
+        return (
+          <section className="student-lesson__activity" aria-live="polite">
+            <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />{copy.title}</span>
+            <p>{text(props.instruction)}</p>
+            <div className={exerciseAttempt.passed ? "student-lesson__quiz-result student-lesson__quiz-result--passed" : "student-lesson__quiz-result student-lesson__quiz-result--failed"}>
+              <strong>{exerciseAttempt.passed ? copy.passed : copy.failed}</strong>
+              <span>{copy.recorded} · {exerciseAttempt.score}%</span>
+            </div>
+          </section>
+        );
+      }
+
+      if (typeof onExerciseSubmit !== "function") {
+        return (
+          <section className="student-lesson__activity">
+            <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />{copy.title}</span>
+            <p>{text(props.instruction)}</p>
+            {text(props.starterCode).trim() && <pre className="student-lesson__code"><code>{text(props.starterCode)}</code></pre>}
+            <p className="student-lesson__activity-note">{copy.unavailable}</p>
+          </section>
+        );
+      }
+
+      return (
+        <section className="student-lesson__activity">
+          <span className="student-lesson__activity-label"><SvgIcon name="check" size="0.9rem" />{copy.title}</span>
+          <p>{text(props.instruction)}</p>
+          <form className="student-lesson__exercise-form" onSubmit={(event) => {
+            event.preventDefault();
+            if (exerciseAnswer.trim() && !isSubmittingExercise)
+              void onExerciseSubmit(node.id, exerciseAnswer);
+          }}>
+            <label className="student-lesson__exercise-label" htmlFor={`exercise-answer-${node.id}`}>{copy.answer}</label>
+            <textarea
+              id={`exercise-answer-${node.id}`}
+              className="student-lesson__exercise-input"
+              value={exerciseAnswer}
+              onChange={(event) => setExerciseAnswer(event.target.value)}
+              rows={8}
+              spellCheck={false}
+              maxLength={20000}
+              disabled={isSubmittingExercise}
+              autoCapitalize="off"
+              autoCorrect="off"
+            />
+            <p className="student-lesson__activity-note">{copy.comparison}</p>
+            {exerciseError && <p role="alert" className="student-lesson__quiz-error">{exerciseError || copy.retry}</p>}
+            {!exerciseAnswer.trim() && <p className="student-lesson__exercise-hint">{copy.empty}</p>}
+            <button type="submit" className="student-lesson__quiz-submit" disabled={!exerciseAnswer.trim() || isSubmittingExercise}>
+              {isSubmittingExercise ? copy.submitting : copy.submit}
+            </button>
+          </form>
+        </section>
+      );
+    }
     case "callout":
       return <aside className="student-lesson__callout student-lesson__callout--info">{typeof props.title === "string" && props.title && <strong>{text(props.title)}</strong>}<p>{text(props.content)}</p></aside>;
     case "divider":
@@ -165,6 +271,11 @@ export function LessonContentTree({
   onQuizSubmit,
   submittingQuizNodeId = null,
   quizError = null,
+  exerciseAttempts = [],
+  onExerciseSubmit,
+  submittingExerciseNodeId = null,
+  exerciseError = null,
+  exerciseErrorNodeId = null,
   locale = "pt-BR",
 }: {
   nodes: CanvasNode[];
@@ -173,6 +284,11 @@ export function LessonContentTree({
   onQuizSubmit?: (nodeId: string, selectedOptionIndex: number) => void | Promise<void>;
   submittingQuizNodeId?: string | null;
   quizError?: string | null;
+  exerciseAttempts?: ExerciseAttemptResult[];
+  onExerciseSubmit?: (nodeId: string, answer: string) => void | Promise<void>;
+  submittingExerciseNodeId?: string | null;
+  exerciseError?: string | null;
+  exerciseErrorNodeId?: string | null;
   locale?: string;
 }) {
   const orderedNodes = sortNodesByLessonFlow(nodes, connections);
@@ -180,6 +296,7 @@ export function LessonContentTree({
   const visibleById = new Map(visibleNodes.map((node) => [node.id, node]));
   const sourceById = new Map(nodes.map((node) => [node.id, node]));
   const attemptsByQuizNode = new Map(quizAttempts.map((attempt) => [attempt.quizNodeId, attempt]));
+  const attemptsByExerciseNode = new Map(exerciseAttempts.map((attempt) => [attempt.exerciseNodeId, attempt]));
 
   const renderChildren = (parentId: string | null, path: Set<string>, depth: number) => {
     if (depth >= 4) return null;
@@ -222,6 +339,10 @@ export function LessonContentTree({
               onQuizSubmit={onQuizSubmit}
               isSubmittingQuiz={submittingQuizNodeId === node.id}
               quizError={quizError}
+              exerciseAttempt={attemptsByExerciseNode.get(node.id)}
+              onExerciseSubmit={onExerciseSubmit}
+              isSubmittingExercise={submittingExerciseNodeId === node.id}
+              exerciseError={exerciseErrorNodeId === node.id ? exerciseError : null}
               locale={locale}
             />
           )}

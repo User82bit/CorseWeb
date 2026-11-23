@@ -184,7 +184,24 @@ public static class CourseQuizEvaluator
     public static IReadOnlyList<string> GetPublishedQuizNodeIds(
         string? modulesJson,
         string lessonId,
-        IReadOnlyDictionary<string, bool>? quizResults = null)
+        IReadOnlyDictionary<string, bool>? activityResults = null)
+    {
+        return GetPublishedActivityNodeIds(modulesJson, lessonId, "quiz", activityResults);
+    }
+
+    public static IReadOnlyList<string> GetPublishedExerciseNodeIds(
+        string? modulesJson,
+        string lessonId,
+        IReadOnlyDictionary<string, bool>? activityResults = null)
+    {
+        return GetPublishedActivityNodeIds(modulesJson, lessonId, "exercise", activityResults);
+    }
+
+    private static IReadOnlyList<string> GetPublishedActivityNodeIds(
+        string? modulesJson,
+        string lessonId,
+        string activityType,
+        IReadOnlyDictionary<string, bool>? activityResults)
     {
         if (string.IsNullOrWhiteSpace(modulesJson) || string.IsNullOrWhiteSpace(lessonId))
             return [];
@@ -215,11 +232,11 @@ public static class CourseQuizEvaluator
                     if (projectedLesson == null) return [];
                     StudentLessonFlowProjector.Apply(
                         projectedLesson,
-                        quizResults ?? new Dictionary<string, bool>(StringComparer.Ordinal));
+                        activityResults ?? new Dictionary<string, bool>(StringComparer.Ordinal));
 
                     if (projectedLesson["nodes"] is not JsonArray nodes) return [];
                     return nodes.OfType<JsonObject>()
-                        .Where(node => string.Equals(ReadString(node, "type"), "quiz", StringComparison.Ordinal))
+                        .Where(node => string.Equals(ReadString(node, "type"), activityType, StringComparison.Ordinal))
                         .Select(node => ReadString(node, "id"))
                         .Where(id => !string.IsNullOrWhiteSpace(id))
                         .Select(id => id!)

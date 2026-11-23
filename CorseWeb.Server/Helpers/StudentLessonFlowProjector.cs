@@ -3,8 +3,8 @@ using System.Text.Json.Nodes;
 namespace CorseWeb.Server.Helpers;
 
 /// <summary>
-/// Removes content that belongs to a Quiz branch the current student has not
-/// unlocked. Quiz outcomes are loaded from persisted server attempts.
+/// Removes content that belongs to a Quiz or Exercise branch the current student
+/// has not unlocked. Outcomes are loaded from persisted server attempts.
 /// </summary>
 public static class StudentLessonFlowProjector
 {
@@ -12,7 +12,7 @@ public static class StudentLessonFlowProjector
 
     public static void Apply(
         JsonObject lesson,
-        IReadOnlyDictionary<string, bool> quizResults)
+        IReadOnlyDictionary<string, bool> activityResults)
     {
         if (lesson["nodes"] is not JsonArray nodes
             || lesson["connections"] is not JsonArray connections)
@@ -45,17 +45,18 @@ public static class StudentLessonFlowProjector
             .ToDictionary(group => group.Key, group => group.Select(item => item.Node).ToArray(), StringComparer.Ordinal);
 
         var hidden = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var quiz in nodeById.Values.Where(node =>
-            string.Equals(ReadString(node, "type"), "quiz", StringComparison.Ordinal)))
+        foreach (var activity in nodeById.Values.Where(node =>
+            string.Equals(ReadString(node, "type"), "quiz", StringComparison.Ordinal)
+            || string.Equals(ReadString(node, "type"), "exercise", StringComparison.Ordinal)))
         {
-            var quizId = ReadString(quiz, "id");
-            if (string.IsNullOrWhiteSpace(quizId)) continue;
+            var activityId = ReadString(activity, "id");
+            if (string.IsNullOrWhiteSpace(activityId)) continue;
 
             var successStarts = edges
-                .Where(edge => edge.SourceNode == quizId && edge.SourcePort == "success")
+                .Where(edge => edge.SourceNode == activityId && edge.SourcePort == "success")
                 .Select(edge => edge.TargetNode);
             var failedStarts = edges
-                .Where(edge => edge.SourceNode == quizId && edge.SourcePort == "failed")
+                .Where(edge => edge.SourceNode == activityId && edge.SourcePort == "failed")
                 .Select(edge => edge.TargetNode);
 
             var successNodes = CollectReachable(successStarts, nodeById, outgoing, childrenByParent);
@@ -63,11 +64,11 @@ public static class StudentLessonFlowProjector
 
             if (successNodes.Count == 0 && failedNodes.Count == 0) continue;
 
-            // A malformed cycle must never hide the Quiz card that owns the decision.
-            successNodes.Remove(quizId);
-            failedNodes.Remove(quizId);
+            // A malformed cycle must never hide the activity card that owns the decision.
+            successNodes.Remove(activityId);
+            failedNodes.Remove(activityId);
 
-            if (!quizResults.TryGetValue(quizId, out var passed))
+            if (!activityResults.TryGetValue(activityId, out var passed))
             {
                 hidden.UnionWith(successNodes);
                 hidden.UnionWith(failedNodes);

@@ -25,6 +25,15 @@ export type QuizAttemptResult = {
   completedAt: string;
 };
 
+export type ExerciseAttemptResult = {
+  lessonId: string;
+  exerciseNodeId: string;
+  isCorrect: boolean;
+  passed: boolean;
+  score: number;
+  completedAt: string;
+};
+
 export type CourseEnrollment = {
   courseId: string;
   enrolledAt: string;
@@ -34,6 +43,7 @@ export type CourseEnrollment = {
   lastAccessedAt: string;
   modulesProgress: EnrollmentModuleProgress[];
   quizAttempts: QuizAttemptResult[];
+  exerciseAttempts: ExerciseAttemptResult[];
 };
 
 export type EnrollmentProgressUpdate = {
@@ -66,6 +76,19 @@ function normalizeEnrollment(raw: unknown): CourseEnrollment {
           };
         }).filter((attempt) => attempt.lessonId && attempt.quizNodeId)
       : [],
+    exerciseAttempts: Array.isArray(value.exerciseAttempts)
+      ? value.exerciseAttempts.map((attempt) => {
+          const item = attempt as Partial<ExerciseAttemptResult>;
+          return {
+            lessonId: String(item.lessonId ?? ""),
+            exerciseNodeId: String(item.exerciseNodeId ?? ""),
+            isCorrect: item.isCorrect === true,
+            passed: item.passed === true,
+            score: Math.min(100, Math.max(0, Number(item.score ?? 0))),
+            completedAt: String(item.completedAt ?? ""),
+          };
+        }).filter((attempt) => attempt.lessonId && attempt.exerciseNodeId)
+      : [],
   };
 }
 
@@ -93,6 +116,23 @@ export async function updateEnrollmentProgress(
       body: JSON.stringify({
         currentLessonId: progress.currentLessonId,
       }),
+    },
+  );
+  return normalizeEnrollment(result);
+}
+
+/** Submits a code/text response; the backend compares it with the private reference answer. */
+export async function submitEnrollmentExerciseAttempt(
+  courseSlug: string,
+  lessonId: string,
+  exerciseNodeId: string,
+  answer: string,
+): Promise<CourseEnrollment> {
+  const result = await apiJson<unknown>(
+    `/api/enrollments/${encodeURIComponent(courseSlug)}/lessons/${encodeURIComponent(lessonId)}/exercises/${encodeURIComponent(exerciseNodeId)}/attempt`,
+    {
+      method: "POST",
+      body: JSON.stringify({ answer }),
     },
   );
   return normalizeEnrollment(result);
