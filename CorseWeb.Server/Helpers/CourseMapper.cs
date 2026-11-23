@@ -140,13 +140,20 @@ public static class CourseMapper
 
 
     // Public student responses must never disclose author-only quiz answers or exercise solutions.
-    public static CourseListDto ToStudentDto(Course c)
+    public static CourseListDto ToStudentDto(
+        Course c,
+        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null)
     {
         var dto = ToDto(c);
-        return dto with { Modules = ParseStudentModules(c.ModulesJson) };
+        return dto with
+        {
+            Modules = ParseStudentModules(c.ModulesJson, quizAttempts ?? Array.Empty<CourseQuizAttempt>())
+        };
     }
 
-    private static JsonElement ParseStudentModules(string? modulesJson)
+    private static JsonElement ParseStudentModules(
+        string? modulesJson,
+        IReadOnlyCollection<CourseQuizAttempt> quizAttempts)
     {
         try
         {
@@ -158,7 +165,17 @@ public static class CourseMapper
                     if (module?["lessons"] is not JsonArray lessons) continue;
                     foreach (var lesson in lessons)
                     {
-                        if (lesson?["nodes"] is not JsonArray nodes) continue;
+                        if (lesson is not JsonObject lessonObject) continue;
+                        var lessonId = lessonObject["id"]?.GetValue<string>();
+                        var quizResults = string.IsNullOrWhiteSpace(lessonId)
+                            ? new Dictionary<string, bool>(StringComparer.Ordinal)
+                            : quizAttempts
+                                .Where(attempt => string.Equals(attempt.LessonId, lessonId, StringComparison.Ordinal))
+                                .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
+                                .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+
+                        StudentLessonFlowProjector.Apply(lessonObject, quizResults);
+                        if (lessonObject["nodes"] is not JsonArray nodes) continue;
                         foreach (var node in nodes)
                         {
                             if (node?["props"] is not JsonObject props) continue;
