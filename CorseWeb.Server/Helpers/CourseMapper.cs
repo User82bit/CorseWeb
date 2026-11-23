@@ -166,7 +166,10 @@ public static class CourseMapper
                     foreach (var lesson in lessons)
                     {
                         if (lesson is not JsonObject lessonObject) continue;
-                        var lessonId = lessonObject["id"]?.GetValue<string>();
+                        var lessonId = lessonObject["id"] is JsonValue lessonIdValue
+                            && lessonIdValue.TryGetValue<string>(out var parsedLessonId)
+                                ? parsedLessonId
+                                : null;
                         var quizResults = string.IsNullOrWhiteSpace(lessonId)
                             ? new Dictionary<string, bool>(StringComparer.Ordinal)
                             : quizAttempts
@@ -192,7 +195,7 @@ public static class CourseMapper
             using var document = JsonDocument.Parse(root?.ToJsonString(JsonOpts) ?? "[]");
             return document.RootElement.Clone();
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
         {
             return JsonDocument.Parse("[]").RootElement.Clone();
         }
