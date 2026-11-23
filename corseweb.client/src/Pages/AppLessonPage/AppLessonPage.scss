@@ -826,3 +826,165 @@
 }
 
 
+
+
+.student-lesson__certificate {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.student-lesson__certificate-paper {
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.8rem, 2vw, 1.35rem);
+  min-width: 0;
+  padding: clamp(1.25rem, 5vw, 3rem);
+  border: 1px solid #c7a96b;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(199, 169, 107, 0.08), transparent 34%), var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.student-lesson__certificate-mark {
+  color: #92713b;
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.28em;
+}
+
+.student-lesson__certificate-eyebrow {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.12em;
+  line-height: var(--leading-relaxed);
+  text-transform: uppercase;
+}
+
+.student-lesson__certificate-paper h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.student-lesson__certificate-intro {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.student-lesson__certificate-recipient-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.student-lesson__certificate-recipient {
+  width: min(100%, 54rem);
+  margin: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #c7a96b;
+  color: var(--color-text);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.65rem, 5vw, 2.8rem);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.student-lesson__certificate-course {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  font-weight: var(--font-semibold);
+  overflow-wrap: anywhere;
+}
+
+.student-lesson__certificate-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: 0.5rem;
+  text-align: left;
+
+  span { display: grid; gap: 0.25rem; min-width: 0; }
+  small { color: var(--color-text-muted); font-size: var(--text-xs); }
+  strong { color: var(--color-text); font-size: var(--text-sm); overflow-wrap: anywhere; }
+}
+
+.student-lesson__certificate-verification {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+
+  span { color: var(--color-text-muted); font-size: var(--text-xs); }
+  code { color: var(--color-text); font-size: var(--text-xs); letter-spacing: 0.08em; overflow-wrap: anywhere; }
+  a { color: var(--color-brand); font-size: var(--text-xs); font-weight: var(--font-semibold); }
+}
+
+.student-lesson__certificate-disclaimer {
+  max-width: 82ch;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: var(--leading-relaxed);
+}
+
+.student-lesson__certificate-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  body * { visibility: hidden !important; }
+
+  .student-lesson__certificate,
+  .student-lesson__certificate * { visibility: visible !important; }
+
+  .student-lesson__certificate {
+    position: fixed !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .student-lesson__certificate-paper {
+    display: grid !important;
+    align-content: center !important;
+    min-height: 180mm !important;
+    padding: 16mm !important;
+    border: 2px solid #b99a5c !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .student-lesson__certificate-paper h2,
+  .student-lesson__certificate-recipient,
+  .student-lesson__certificate-course,
+  .student-lesson__certificate-meta strong,
+  .student-lesson__certificate-verification code { color: #171717 !important; }
+
+  .student-lesson__certificate-actions { display: none !important; }
+}
