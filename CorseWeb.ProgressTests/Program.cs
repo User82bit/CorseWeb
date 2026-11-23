@@ -75,6 +75,54 @@ Assert(
     !EnrollmentProgressProjector.IsPublishedLesson(course.ModulesJson, "lesson-does-not-exist"),
     "An unknown lesson must not be eligible for completion.");
 
+var exerciseDefinition = new CourseExerciseEvaluator.ExerciseDefinition(
+    "Escreva o comando esperado.",
+    "print('mensagem')",
+    "print(\"CorseWeb funciona!\")");
+Assert(
+    CourseExerciseEvaluator.IsCorrect(exerciseDefinition, "  print(\"CorseWeb funciona!\")  \r\n"),
+    "Exercise evaluation must normalize line endings and leading/trailing whitespace.");
+Assert(
+    !CourseExerciseEvaluator.IsCorrect(exerciseDefinition, "print('resposta diferente')"),
+    "Exercise evaluation must reject a different submitted text.");
+var validExerciseModules = """
+[
+  {
+    "isPublished": true,
+    "lessons": [
+      {
+        "id": "exercise-lesson",
+        "isPublished": true,
+        "nodes": [
+          {
+            "id": "exercise-card",
+            "type": "exercise",
+            "props": {
+              "instruction": "Complete o comando.",
+              "starterCode": "print('mensagem')",
+              "solution": "print('CorseWeb')"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+""";
+Assert(
+    CourseExerciseEvaluator.ValidatePublishedExercises(validExerciseModules) == null,
+    "A published Exercise with instruction and reference solution must validate.");
+var invalidExerciseModules = validExerciseModules.Replace(
+    "\"solution\": \"print('CorseWeb')\"",
+    "\"solution\": \"\"",
+    StringComparison.Ordinal);
+Assert(
+    CourseExerciseEvaluator.ValidatePublishedExercises(invalidExerciseModules) != null,
+    "A published Exercise without a reference solution must be rejected.");
+Assert(
+    CourseExerciseEvaluator.FindPublishedExercise(validExerciseModules, "exercise-lesson", "exercise-card") != null,
+    "A valid published Exercise must be discoverable by its lesson and card identifiers.");
+
 var completion = new CourseLessonCompletion
 {
     Id = "completion-1",
@@ -175,6 +223,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         appliedMigrations.Contains("20261123130000_AddCourseQuizAttempts"),
         "The Quiz-attempt migration must be discoverable and applied.");
+    Assert(
+        appliedMigrations.Contains("20261123140000_AddCourseExerciseAttempts"),
+        "The Exercise-attempt migration must be discoverable and applied.");
 
     var persistedEnrollment = new CourseEnrollment
     {
@@ -216,6 +267,52 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseQuizAttempts.CountAsync() == 1,
         "A Quiz result must persist in the migrated SQLite schema.");
+
+    var persistedExerciseAttempt = new CourseExerciseAttempt
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        ExerciseNodeId = "sqlite-exercise",
+        SubmittedAnswer = "print(\"CorseWeb\")",
+        IsCorrect = true,
+        Passed = true,
+        Score = 100,
+        CompletedAt = DateTime.UtcNow
+    };
+    db.CourseExerciseAttempts.Add(persistedExerciseAttempt);
+    await db.SaveChangesAsync();
+    Assert(
+        await db.CourseExerciseAttempts.CountAsync() == 1,
+        "An Exercise response must persist in the migrated SQLite schema.");
+
+    db.CourseExerciseAttempts.Add(new CourseExerciseAttempt
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        ExerciseNodeId = "sqlite-exercise",
+        SubmittedAnswer = "print(\"Outra resposta\")",
+        IsCorrect = false,
+        Passed = false,
+        Score = 0,
+        CompletedAt = DateTime.UtcNow
+    });
+    var duplicateExerciseAttemptRejected = false;
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException)
+    {
+        duplicateExerciseAttemptRejected = true;
+        foreach (var entry in db.ChangeTracker.Entries<CourseExerciseAttempt>()
+                     .Where(entry => entry.State == EntityState.Added))
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+    Assert(
+        duplicateExerciseAttemptRejected,
+        "SQLite must reject more than one Exercise attempt for the same enrollment/lesson/card.");
 
     db.CourseQuizAttempts.Add(new CourseQuizAttempt
     {
@@ -279,6 +376,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseQuizAttempts.CountAsync() == 0,
         "Deleting an enrollment must cascade-delete its Quiz attempt records.");
+    Assert(
+        await db.CourseExerciseAttempts.CountAsync() == 0,
+        "Deleting an enrollment must cascade-delete its Exercise attempt records.");
 
     // Publication status changes must increment the course version and persist
     // a snapshot with exactly the same status/version in the same unit of work.
