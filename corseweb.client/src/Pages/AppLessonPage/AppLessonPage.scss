@@ -720,6 +720,48 @@
   font-size: var(--text-sm);
 }
 
+.student-lesson__exercise-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.student-lesson__exercise-label {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.student-lesson__exercise-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 12rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 0.9rem/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  tab-size: 4;
+  resize: vertical;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: wait;
+  }
+}
+
+.student-lesson__exercise-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
 .student-lesson__content-item .student-lesson__code {
   max-width: 100%;
   margin: 0;
