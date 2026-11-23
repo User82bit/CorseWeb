@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CorseWeb.Server.Models;
+using CorseWeb.Server.Helpers;
 
 namespace CorseWeb.Server.Data;
 
