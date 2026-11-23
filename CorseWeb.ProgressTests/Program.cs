@@ -226,6 +226,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         appliedMigrations.Contains("20261123140000_AddCourseExerciseAttempts"),
         "The Exercise-attempt migration must be discoverable and applied.");
+    Assert(
+        appliedMigrations.Contains("20261123150000_AddCourseCertificates"),
+        "The course-certificate migration must be discoverable and applied.");
 
     var persistedEnrollment = new CourseEnrollment
     {
@@ -284,6 +287,65 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseExerciseAttempts.CountAsync() == 1,
         "An Exercise response must persist in the migrated SQLite schema.");
+
+    var persistedCertificate = new CourseCertificate
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        CourseId = persistedEnrollment.CourseId,
+        VerificationCode = "ABCDEF0123456789ABCDEF0123456789",
+        StudentName = "Learner Example",
+        CourseTitle = "SQLite certificate test",
+        AuthorName = "Course author",
+        CourseVersion = 3,
+        CourseCompletedAt = DateTime.UtcNow.AddMinutes(-2),
+        IssuedAt = DateTime.UtcNow
+    };
+    db.CourseCertificates.Add(persistedCertificate);
+    await db.SaveChangesAsync();
+    Assert(
+        await db.CourseCertificates.CountAsync() == 1,
+        "An issued certificate snapshot must persist in the migrated SQLite schema.");
+    var certificateProjection = EnrollmentProgressProjector.ToDto(
+        persistedEnrollment,
+        new Course { Id = persistedEnrollment.CourseId, ModulesJson = """[{"id":"m","lessons":[{"id":"sqlite-lesson","isPublished":true}]}]""" },
+        [persistedCompletion],
+        [persistedQuizAttempt],
+        [persistedExerciseAttempt],
+        persistedCertificate);
+    Assert(
+        certificateProjection.Certificate?.VerificationCode == persistedCertificate.VerificationCode
+            && certificateProjection.Certificate.StudentName == "Learner Example",
+        "Enrollment responses must project the immutable certificate details.");
+
+    db.CourseCertificates.Add(new CourseCertificate
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        CourseId = persistedEnrollment.CourseId,
+        VerificationCode = "1234567890ABCDEF1234567890ABCDEF",
+        StudentName = "Learner Example",
+        CourseTitle = "Duplicate certificate",
+        AuthorName = "Course author",
+        CourseVersion = 3,
+        CourseCompletedAt = DateTime.UtcNow,
+        IssuedAt = DateTime.UtcNow
+    });
+    var duplicateCertificateRejected = false;
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException)
+    {
+        duplicateCertificateRejected = true;
+        foreach (var entry in db.ChangeTracker.Entries<CourseCertificate>()
+                     .Where(entry => entry.State == EntityState.Added))
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+    Assert(
+        duplicateCertificateRejected,
+        "SQLite must enforce one certificate per enrollment.");
 
     db.CourseExerciseAttempts.Add(new CourseExerciseAttempt
     {
@@ -379,6 +441,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseExerciseAttempts.CountAsync() == 0,
         "Deleting an enrollment must cascade-delete its Exercise attempt records.");
+    Assert(
+        await db.CourseCertificates.CountAsync() == 1,
+        "An issued certificate snapshot must survive later enrollment deletion.");
 
     // Publication status changes must increment the course version and persist
     // a snapshot with exactly the same status/version in the same unit of work.

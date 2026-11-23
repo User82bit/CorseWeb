@@ -45,11 +45,15 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 
-- **FLOW-002 · P1 · Executar o card Exercício no grafo pedagógico.** Em implementação nesta branch: o aluno envia texto/código, o servidor compara com a solução de referência privada, persiste resultado e libera somente as portas `success` ou `failed`. Inclui uma tentativa por matrícula/aula/card, proteção contra envio em ramo bloqueado, integração com conclusão da aula e portas de resultado no editor. Não executa/compila código. CI, revisão de contrato e teste manual ainda pendentes. [FLOW-002](./BACKEND/etapas/flow-002-exercise-branching.md).
+
 
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
 ### Revisão
+
+- **FLOW-002 · P1 · Executar o card Exercício no grafo pedagógico.** Integrado à `Homologa` pela PR #50. O servidor compara o texto/código com a solução privada, persiste o resultado, protege ramos bloqueados e exige resposta para atividades alcançáveis antes de concluir a aula. CI #850 passou com 138 asserções de contrato/SQLite/API e builds frontend/backend. Falta validação manual e aceite. [FLOW-002](./BACKEND/etapas/flow-002-exercise-branching.md).
+
+- **CERT-001 · P1 · Emitir e verificar certificados de conclusão.** Em implementação na branch `feature/cert-001-course-completion`: emissão única após o servidor confirmar todas as aulas publicadas concluídas, snapshot imutável, código público de validação e impressão A4/PDF pelo navegador. O certificado não é prova independente de competência; testes e CI em andamento.
 
 - **FLOW-001 · P1 · Executar Quiz com ramificação server-side.** Integrado à `Homologa` pela PR #49. O Quiz de uma pergunta/escolha única é corrigido no backend; a tentativa é persistida por matrícula/aula/card; somente o ramo correspondente é projetado para o aluno, inclusive em Quizzes encadeados. CI #811 aprovou 109 asserções de contrato/SQLite/API e os builds frontend/backend. Ainda falta teste manual desktop/celular e aceite. [FLOW-001](./BACKEND/etapas/flow-001-quiz-branching.md).
 

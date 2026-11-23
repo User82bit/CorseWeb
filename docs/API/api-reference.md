@@ -56,7 +56,8 @@ Todos os endpoints exigem sessão.
 | `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/complete` | Registra de forma idempotente a ação de conclusão de uma aula publicada; exige resultado para todos os Quizzes e Exercícios alcançáveis no caminho selecionado |
 | `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/quizzes/{quizNodeId}/attempt` | Avalia e registra a resposta de um Quiz alcançável da matrícula |
 | `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/exercises/{exerciseNodeId}/attempt` | Compara e registra a resposta textual/código de um Exercício alcançável da matrícula |
-| `DELETE` | `/api/enrollments/{courseId}` | Cancela matrícula e remove os eventos de conclusão associados |
+| `POST` | `/api/enrollments/{courseId}/certificate` | Emite de forma idempotente um certificado de conclusão quando todas as aulas publicadas foram concluídas |
+| `DELETE` | `/api/enrollments/{courseId}` | Cancela matrícula e remove os eventos de conclusão associados; certificados já emitidos são preservados |
 
 O corpo de `PUT .../progress` aceita apenas `currentLessonId`. Percentuais, estados de aulas/módulos e datas de conclusão não são aceitos como autoridade do navegador. No `POST .../complete`, o backend exige sessão e matrícula do usuário atual, curso publicado e aula com `isPublished: true` dentro daquele curso. A data é criada pelo servidor; um índice único por matrícula/aula torna a ação idempotente.
 
@@ -70,7 +71,11 @@ A projeção pública de `GET /api/courses` e `GET /api/courses/{slug}` usa os r
 
 O servidor calcula `overallPercent`, `modulesProgress` e `completedAt` a partir das aulas publicadas e dos eventos existentes em `CourseLessonCompletions`. Aulas não publicadas ou IDs de outro curso não entram no cálculo. Valores legados gravados pelo contrato antigo do cliente são ignorados; matrículas antigas voltam a mostrar 0% até que novos eventos válidos sejam registrados.
 
-**Limites funcionais atuais:** Quiz possui uma pergunta e escolha única; Exercise usa comparação textual com solução de referência após normalização básica, sem executar/compilar código. Ambos permitem uma tentativa por matrícula/aula/card e score 100/0. Não há tentativas múltiplas, nota mínima configurável, banco de questões, execução em sandbox ou certificado funcional. O botão de conclusão ainda é uma autodeclaração de que o aluno terminou a aula; esse percentual não comprova domínio do conteúdo nem deve, sozinho, liberar benefícios de alto valor.
+O endpoint de emissão exige sessão e matrícula do usuário atual. A emissão só é permitida quando `completedAt` foi derivado pelo servidor — isto é, todas as aulas atualmente publicadas têm evento de conclusão. A emissão é única por matrícula e idempotente: chamadas repetidas retornam o mesmo certificado. A resposta da matrícula contém um snapshot de nome do aluno, título/autor/versão do curso, data de conclusão, data de emissão e um código aleatório de 128 bits (32 caracteres hexadecimais). O registro é intencionalmente preservado mesmo após cancelar a matrícula ou remover o curso.
+
+`GET /api/certificates/{verificationCode}` é público e retorna apenas os dados do snapshot necessários para conferência; código malformado ou inexistente retorna `404`. A página do aluno apresenta o certificado no card `certificate` e usa a impressão do navegador para imprimir ou salvar em PDF (A4 paisagem); o servidor não gera um arquivo PDF.
+
+**Limites funcionais atuais:** Quiz possui uma pergunta e escolha única; Exercise usa comparação textual com solução de referência após normalização básica, sem executar/compilar código. Ambos permitem uma tentativa por matrícula/aula/card e score 100/0. Não há tentativas múltiplas, nota mínima configurável, banco de questões ou execução em sandbox. O certificado atesta apenas a conclusão registrada das aulas; como a conclusão da aula continua sendo uma ação explícita do aluno após as atividades alcançáveis, o documento não comprova domínio, competência prática ou habilitação profissional.
 
 ## 5. Mídia — `/api/course-media`
 
@@ -91,6 +96,7 @@ A URL devolvida é relativa ao site, em `/uploads/course-covers/{arquivo}`. A pa
 | `CourseEnrollment` | Usuário, curso, percentual, aula atual e `ModulesProgressJson` |
 | `CourseQuizAttempt` | Matrícula, aula, Quiz, índice escolhido, correção, aprovação, score e timestamp; único por matrícula/aula/card |
 | `CourseExerciseAttempt` | Matrícula, aula, Exercise, resposta enviada, correção, aprovação, score e timestamp; único por matrícula/aula/card |
+| `CourseCertificate` | Snapshot imutável de matrícula/curso, aluno, autor, versão, conclusão, emissão e código público único de verificação |
 
 Os módulos e aulas não são tabelas independentes no schema atual; ficam serializados em JSON. A evolução de nós/conexões mantém esse contrato JSON. CorseLight ainda não possui coleção de scripts persistida nem endpoints próprios.
 
