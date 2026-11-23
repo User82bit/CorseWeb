@@ -9,6 +9,7 @@ import {
   completeEnrollmentLesson,
   submitEnrollmentQuizAttempt,
   submitEnrollmentExerciseAttempt,
+  issueEnrollmentCertificate,
   updateEnrollmentProgress,
   type CourseEnrollment,
   type EnrollmentProgressUpdate,
@@ -40,6 +41,8 @@ function AppLessonPage() {
   const [submittingExerciseNodeId, setSubmittingExerciseNodeId] = useState<string | null>(null);
   const [exerciseSubmitError, setExerciseSubmitError] = useState<string | null>(null);
   const [exerciseErrorNodeId, setExerciseErrorNodeId] = useState<string | null>(null);
+  const [issuingCertificate, setIssuingCertificate] = useState(false);
+  const [certificateIssueError, setCertificateIssueError] = useState<string | null>(null);
   const lastTrackedLesson = useRef<string | null>(null);
   const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
   const pendingCompletionLesson = useRef<string | null>(null);
@@ -232,6 +235,26 @@ function AppLessonPage() {
     }
   };
 
+  const handleIssueCertificate = async () => {
+    if (!course || !enrollment || enrollment.certificate || issuingCertificate) return;
+    setIssuingCertificate(true);
+    setCertificateIssueError(null);
+    try {
+      const updatedEnrollment = await issueEnrollmentCertificate(course.slug);
+      setEnrollment(updatedEnrollment);
+    } catch {
+      setCertificateIssueError(
+        locale.startsWith("en")
+          ? "The certificate could not be issued. Confirm that every published lesson is complete and try again."
+          : locale.startsWith("es")
+            ? "No se pudo emitir el certificado. Confirma que todas las lecciones publicadas estén completas e inténtalo de nuevo."
+            : "Não foi possível emitir o certificado. Confirme se todas as aulas publicadas foram concluídas e tente novamente.",
+      );
+    } finally {
+      setIssuingCertificate(false);
+    }
+  };
+
   const handleRetryProgress = async () => {
     if (!course || !enrollment || saving) return;
 
@@ -398,6 +421,11 @@ function AppLessonPage() {
               submittingExerciseNodeId={submittingExerciseNodeId}
               exerciseError={exerciseSubmitError}
               exerciseErrorNodeId={exerciseErrorNodeId}
+              courseCompletedAt={enrollment.completedAt}
+              certificate={enrollment.certificate}
+              onCertificateIssue={handleIssueCertificate}
+              isIssuingCertificate={issuingCertificate}
+              certificateIssueError={certificateIssueError}
               locale={locale}
             />
           )}

@@ -24,6 +24,7 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 | EDITOR-004 | Ordenar prévia e aula pelo grafo de conexões | `AppLessonPage/lessonFlow.ts`, `LessonContentRenderer.tsx`, `LessonEditorPage.tsx` |
 | FLOW-001 | Renderizar e enviar respostas de Quiz, mostrando somente o ramo liberado | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `enrollmentStore.ts` e API de matrículas |
 | FLOW-002 | Enviar solução de Exercise, exibir resultado e liberar o ramo | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `LessonEditorPage.tsx` e `enrollmentStore.ts` |
+| CERT-001 | Emitir, consultar e imprimir certificado de conclusão no card Certificate | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `enrollmentStore.ts` e API de matrículas/certificados |
 | STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
 | STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
 | E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | suíte de testes ainda a criar |
@@ -37,6 +38,7 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 - FE-013 foi integrada em `Homologa` pelo PR #43: containers aninháveis com `parentId`, quatro níveis, reparenting, duplicação/exclusão de subtree, preview/aluno recursivos e validação frontend/backend. O CI #655 passou; falta inspeção manual e aceite.
 - FLOW-001 conecta o card Quiz ao endpoint de avaliação: o aluno escolhe uma opção, recebe o resultado persistido e vê apenas a saída escolhida; Quizzes seguintes só aparecem quando o caminho anterior os alcança.
 - FLOW-002 conecta o card Exercise ao endpoint de resposta: o campo de código/texto começa com `starterCode`, o servidor compara com a solução de referência e o aluno recebe aprovado/reprovado; somente o ramo escolhido permanece visível. A prévia do editor continua mostrando o grafo completo para autoria, sem simular decisões. O Exercise ainda não executa/compila código e a CorseLight não é executada.
+- CERT-001 conecta o card Certificate à emissão e verificação: após todas as aulas publicadas serem concluídas, o aluno solicita uma via única persistida no servidor, consulta o código público e imprime/salva em PDF no navegador. A prévia do editor permanece estática. O certificado registra conclusão, não competência profissional.
 - EDITOR-003: conexão mobile integrada em `Homologa` pelo PR #45; gesto de selecionar saída e depois entrada. Falta validação em dispositivo real e aceite.
 - EDITOR-004: prévia e aula agora recebem `connections[]` e linearizam os nós a partir do `start`, percorrendo ramos na ordem das portas; fallback para nós desconectados/legados. PR em rascunho; CI e revisão manual pendentes. Critérios em [`fe-015-connection-reading-order.md`](./etapas/fe-015-connection-reading-order.md).
 - PROG-001 altera a página da aula para solicitar conclusão ao servidor; o cliente não calcula mais percentuais nem envia status de módulos/aulas.

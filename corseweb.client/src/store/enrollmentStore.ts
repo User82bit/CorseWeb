@@ -34,6 +34,16 @@ export type ExerciseAttemptResult = {
   completedAt: string;
 };
 
+export type CourseCertificate = {
+  verificationCode: string;
+  studentName: string;
+  courseTitle: string;
+  authorName: string;
+  courseVersion: number;
+  courseCompletedAt: string;
+  issuedAt: string;
+};
+
 export type CourseEnrollment = {
   courseId: string;
   enrolledAt: string;
@@ -44,6 +54,7 @@ export type CourseEnrollment = {
   modulesProgress: EnrollmentModuleProgress[];
   quizAttempts: QuizAttemptResult[];
   exerciseAttempts: ExerciseAttemptResult[];
+  certificate: CourseCertificate | null;
 };
 
 export type EnrollmentProgressUpdate = {
@@ -89,6 +100,23 @@ function normalizeEnrollment(raw: unknown): CourseEnrollment {
           };
         }).filter((attempt) => attempt.lessonId && attempt.exerciseNodeId)
       : [],
+    certificate: value.certificate && typeof value.certificate === "object"
+      ? (() => {
+          const item = value.certificate as Partial<CourseCertificate>;
+          const certificate = {
+            verificationCode: String(item.verificationCode ?? ""),
+            studentName: String(item.studentName ?? ""),
+            courseTitle: String(item.courseTitle ?? ""),
+            authorName: String(item.authorName ?? ""),
+            courseVersion: Math.max(1, Number(item.courseVersion ?? 1)),
+            courseCompletedAt: String(item.courseCompletedAt ?? ""),
+            issuedAt: String(item.issuedAt ?? ""),
+          };
+          return certificate.verificationCode && certificate.studentName && certificate.courseTitle
+            ? certificate
+            : null;
+        })()
+      : null,
   };
 }
 
@@ -151,6 +179,15 @@ export async function submitEnrollmentQuizAttempt(
       method: "POST",
       body: JSON.stringify({ selectedOptionIndex }),
     },
+  );
+  return normalizeEnrollment(result);
+}
+
+/** Issues the immutable course-completion certificate after the server confirms eligibility. */
+export async function issueEnrollmentCertificate(courseSlug: string): Promise<CourseEnrollment> {
+  const result = await apiJson<unknown>(
+    `/api/enrollments/${encodeURIComponent(courseSlug)}/certificate`,
+    { method: "POST" },
   );
   return normalizeEnrollment(result);
 }

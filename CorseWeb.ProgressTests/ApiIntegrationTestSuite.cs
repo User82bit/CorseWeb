@@ -306,6 +306,11 @@ public static class ApiIntegrationTestSuite
         assert(unauthenticatedExerciseAttempt.StatusCode == HttpStatusCode.Unauthorized,
             "Exercise attempts must require an authenticated session.");
 
+        var unauthenticatedCertificateIssue = await emptyClient.PostAsync(
+            "/api/enrollments/course/certificate", null);
+        assert(unauthenticatedCertificateIssue.StatusCode == HttpStatusCode.Unauthorized,
+            "Certificate issuance must require an authenticated enrollment owner.");
+
 
 
         const string draftPayload = """
@@ -687,6 +692,11 @@ public static class ApiIntegrationTestSuite
         assert(invalidCompletion.StatusCode == HttpStatusCode.NotFound,
             "An unpublished lesson must not be completed through the API.");
 
+        var certificateBeforeCompletion = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/certificate", null);
+        assert(certificateBeforeCompletion.StatusCode == HttpStatusCode.Conflict,
+            "A certificate must not be issued while any published lesson remains incomplete.");
+
         var completeLesson = await studentClient.PostAsync(
             $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
         assert(completeLesson.StatusCode == HttpStatusCode.OK,
@@ -695,6 +705,57 @@ public static class ApiIntegrationTestSuite
         {
             assert(completed.RootElement.GetProperty("overallPercent").GetInt32() == 100,
                 "The server must calculate completion percentage from its completion records.");
+        }
+
+        var issueCertificate = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/certificate", null);
+        assert(issueCertificate.StatusCode == HttpStatusCode.OK,
+            "A student who completed every published lesson must be able to issue a certificate.");
+        string certificateCode;
+        using (var issued = JsonDocument.Parse(await issueCertificate.Content.ReadAsStringAsync()))
+        {
+            var certificate = issued.RootElement.GetProperty("certificate");
+            certificateCode = certificate.GetProperty("verificationCode").GetString()!;
+            assert(certificateCode.Length == 32 && certificateCode.All(Uri.IsHexDigit),
+                "The certificate must contain a 128-bit hexadecimal verification code.");
+            assert(certificate.GetProperty("studentName").GetString() == "Student"
+                && certificate.GetProperty("courseTitle").GetString() == "Curso de integração atualizado"
+                && certificate.GetProperty("courseVersion").GetInt32() == 4,
+                "The certificate must snapshot the authenticated learner and published course identity.");
+        }
+
+        using (var verification = JsonDocument.Parse(
+            await (await emptyClient.GetAsync($"/api/certificates/{certificateCode}"))
+                .Content.ReadAsStringAsync()))
+        {
+            assert(verification.RootElement.GetProperty("verificationCode").GetString() == certificateCode
+                && verification.RootElement.GetProperty("courseTitle").GetString() == "Curso de integração atualizado",
+                "Anyone must be able to verify an issued certificate using its public code.");
+        }
+        var unknownCertificate = await emptyClient.GetAsync(
+            "/api/certificates/FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        assert(unknownCertificate.StatusCode == HttpStatusCode.NotFound,
+            "Unknown certificate verification codes must not reveal another certificate.");
+
+        var duplicateCertificateIssue = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/certificate", null);
+        assert(duplicateCertificateIssue.StatusCode == HttpStatusCode.OK,
+            "Issuing a certificate more than once must return the original record.");
+        using (var duplicateCertificate = JsonDocument.Parse(
+            await duplicateCertificateIssue.Content.ReadAsStringAsync()))
+        {
+            assert(duplicateCertificate.RootElement.GetProperty("certificate")
+                .GetProperty("verificationCode").GetString() == certificateCode,
+                "Repeated issuance must not generate a different certificate code.");
+        }
+
+        var enrollmentsWithCertificate = await studentClient.GetAsync("/api/enrollments");
+        using (var enrollmentList = JsonDocument.Parse(
+            await enrollmentsWithCertificate.Content.ReadAsStringAsync()))
+        {
+            assert(enrollmentList.RootElement[0].GetProperty("certificate")
+                .GetProperty("verificationCode").GetString() == certificateCode,
+                "The student's enrollment list must expose its issued certificate.");
         }
 
         var duplicateCompletion = await studentClient.PostAsync(
@@ -737,6 +798,8 @@ public static class ApiIntegrationTestSuite
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            assert(await db.CourseCertificates.CountAsync() == 1,
+                "An issued certificate must remain verifiable after its enrollment is cancelled.");
             assert(await db.CourseLessonCompletions.CountAsync() == 0,
                 "Cancelling an enrollment must cascade-delete its server completion records.");
             assert(await db.CourseQuizAttempts.CountAsync() == 0,
@@ -744,6 +807,10 @@ public static class ApiIntegrationTestSuite
             assert(await db.CourseExerciseAttempts.CountAsync() == 0,
                 "Cancelling enrollments must cascade-delete their stored Exercise responses.");
         }
+        var verificationAfterUnenroll = await emptyClient.GetAsync(
+            $"/api/certificates/{certificateCode}");
+        assert(verificationAfterUnenroll.StatusCode == HttpStatusCode.OK,
+            "Public verification of an issued certificate must continue after enrollment cancellation.");
 
         using var unauthorizedMediaClient = factory.CreateClient();
         var unauthorizedUpload = await unauthorizedMediaClient.PostAsync(

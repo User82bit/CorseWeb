@@ -2,7 +2,7 @@ import { useState } from "react";
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
 import type { CanvasConnection, CanvasNode } from "../../types/course";
 import { sortNodesByLessonFlow } from "./lessonFlow";
-import type { ExerciseAttemptResult, QuizAttemptResult } from "../../store/enrollmentStore";
+import type { CourseCertificate, ExerciseAttemptResult, QuizAttemptResult } from "../../store/enrollmentStore";
 import { getNodePresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import "./AppLessonPage.scss";
 
@@ -27,6 +27,11 @@ type CanvasNodeContentProps = {
   onExerciseSubmit?: (nodeId: string, answer: string) => void | Promise<void>;
   isSubmittingExercise?: boolean;
   exerciseError?: string | null;
+  courseCompletedAt?: string | null;
+  certificate?: CourseCertificate | null;
+  onCertificateIssue?: () => void | Promise<void>;
+  isIssuingCertificate?: boolean;
+  certificateIssueError?: string | null;
   locale?: string;
 };
 
@@ -40,6 +45,11 @@ export function CanvasNodeContent({
   onExerciseSubmit,
   isSubmittingExercise = false,
   exerciseError,
+  courseCompletedAt = null,
+  certificate = null,
+  onCertificateIssue,
+  isIssuingCertificate = false,
+  certificateIssueError,
   locale = "pt-BR",
 }: CanvasNodeContentProps) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
@@ -51,8 +61,109 @@ export function CanvasNodeContent({
     case "start":
     case "container":
       return null;
-    case "certificate":
-      return <section className="student-lesson__activity"><span className="student-lesson__activity-label">Certificado</span><h3>{text(props.title || "Certificado")}</h3><p>{text(props.content)}</p></section>;
+    case "certificate": {
+      const copy = locale.startsWith("en")
+        ? {
+            label: "Course completion certificate", title: "Certificate of completion",
+            intro: "This document records that the learner completed the published lessons in this course.",
+            student: "Awarded to", author: "Course author", completed: "Completed on", issued: "Issued on",
+            version: "Course version", code: "Verification code", verify: "Verify certificate",
+            print: "Print / Save as PDF", pending: "Complete every published lesson in this course to issue your certificate.",
+            issue: "Issue certificate", issuing: "Issuing…",
+            disclaimer: "This is a record of course completion. It is not a professional license or independent assessment of practical competence.",
+            preview: "The certificate will be available here after all published lessons have been completed.",
+          }
+        : locale.startsWith("es")
+          ? {
+              label: "Certificado de finalización del curso", title: "Certificado de finalización",
+              intro: "Este documento registra que el estudiante completó las lecciones publicadas de este curso.",
+              student: "Otorgado a", author: "Autor del curso", completed: "Completado el", issued: "Emitido el",
+              version: "Versión del curso", code: "Código de verificación", verify: "Verificar certificado",
+              print: "Imprimir / Guardar como PDF", pending: "Completa todas las lecciones publicadas de este curso para emitir tu certificado.",
+              issue: "Emitir certificado", issuing: "Emitiendo…",
+              disclaimer: "Este documento acredita la finalización del curso. No es una licencia profesional ni una evaluación independiente de competencia práctica.",
+              preview: "El certificado estará disponible aquí después de completar todas las lecciones publicadas.",
+            }
+          : {
+              label: "Certificado de conclusão do curso", title: "Certificado de conclusão",
+              intro: "Este documento registra que o aluno concluiu as aulas publicadas deste curso.",
+              student: "Concedido a", author: "Autor do curso", completed: "Concluído em", issued: "Emitido em",
+              version: "Versão do curso", code: "Código de verificação", verify: "Verificar certificado",
+              print: "Imprimir / Salvar como PDF", pending: "Conclua todas as aulas publicadas deste curso para emitir seu certificado.",
+              issue: "Emitir certificado", issuing: "Emitindo…",
+              disclaimer: "Este documento registra a conclusão do curso. Não é uma licença profissional nem uma avaliação independente de competência prática.",
+              preview: "O certificado ficará disponível aqui depois que todas as aulas publicadas forem concluídas.",
+            };
+      const formatDate = (value: string) => {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime())
+          ? value
+          : new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(date);
+      };
+
+      if (typeof onCertificateIssue !== "function") {
+        return (
+          <section className="student-lesson__activity">
+            <span className="student-lesson__activity-label">{copy.label}</span>
+            <h3>{text(props.title || copy.title)}</h3>
+            {typeof props.content === "string" && props.content.trim() && <p>{props.content}</p>}
+            <p className="student-lesson__activity-note">{copy.preview}</p>
+          </section>
+        );
+      }
+
+      if (!certificate) {
+        return (
+          <section className="student-lesson__activity" aria-live="polite">
+            <span className="student-lesson__activity-label">{copy.label}</span>
+            <h3>{text(props.title || copy.title)}</h3>
+            {typeof props.content === "string" && props.content.trim() && <p>{props.content}</p>}
+            <p className="student-lesson__activity-note">{courseCompletedAt ? copy.intro : copy.pending}</p>
+            {certificateIssueError && <p className="student-lesson__quiz-error" role="alert">{certificateIssueError}</p>}
+            {courseCompletedAt && (
+              <button
+                type="button"
+                className="student-lesson__quiz-submit"
+                onClick={() => void onCertificateIssue()}
+                disabled={isIssuingCertificate}
+              >
+                {isIssuingCertificate ? copy.issuing : copy.issue}
+              </button>
+            )}
+          </section>
+        );
+      }
+
+      const verificationUrl = `/api/certificates/${encodeURIComponent(certificate.verificationCode)}`;
+      return (
+        <section className="student-lesson__certificate" aria-label={copy.label}>
+          <div className="student-lesson__certificate-paper">
+            <span className="student-lesson__certificate-mark" aria-hidden="true">CORSEWEB</span>
+            <p className="student-lesson__certificate-eyebrow">{copy.label}</p>
+            <h2>{copy.title}</h2>
+            <p className="student-lesson__certificate-intro">{copy.intro}</p>
+            <p className="student-lesson__certificate-recipient-label">{copy.student}</p>
+            <p className="student-lesson__certificate-recipient">{certificate.studentName}</p>
+            <p className="student-lesson__certificate-course">{certificate.courseTitle}</p>
+            <div className="student-lesson__certificate-meta">
+              <span><small>{copy.author}</small><strong>{certificate.authorName}</strong></span>
+              <span><small>{copy.completed}</small><strong>{formatDate(certificate.courseCompletedAt)}</strong></span>
+              <span><small>{copy.issued}</small><strong>{formatDate(certificate.issuedAt)}</strong></span>
+              <span><small>{copy.version}</small><strong>{certificate.courseVersion}</strong></span>
+            </div>
+            <div className="student-lesson__certificate-verification">
+              <span>{copy.code}</span>
+              <code>{certificate.verificationCode}</code>
+              <a href={verificationUrl} target="_blank" rel="noreferrer">{copy.verify}</a>
+            </div>
+            <p className="student-lesson__certificate-disclaimer">{copy.disclaimer}</p>
+          </div>
+          <div className="student-lesson__certificate-actions">
+            <button type="button" className="student-lesson__quiz-submit" onClick={() => window.print()}>{copy.print}</button>
+          </div>
+        </section>
+      );
+    }
     case "heading": {
       const level = Number(props.level ?? 2);
       const Tag = level === 1 ? "h2" : level === 3 ? "h4" : "h3";
@@ -276,6 +387,11 @@ export function LessonContentTree({
   submittingExerciseNodeId = null,
   exerciseError = null,
   exerciseErrorNodeId = null,
+  courseCompletedAt = null,
+  certificate = null,
+  onCertificateIssue,
+  isIssuingCertificate = false,
+  certificateIssueError = null,
   locale = "pt-BR",
 }: {
   nodes: CanvasNode[];
@@ -289,6 +405,11 @@ export function LessonContentTree({
   submittingExerciseNodeId?: string | null;
   exerciseError?: string | null;
   exerciseErrorNodeId?: string | null;
+  courseCompletedAt?: string | null;
+  certificate?: CourseCertificate | null;
+  onCertificateIssue?: () => void | Promise<void>;
+  isIssuingCertificate?: boolean;
+  certificateIssueError?: string | null;
   locale?: string;
 }) {
   const orderedNodes = sortNodesByLessonFlow(nodes, connections);
@@ -343,6 +464,11 @@ export function LessonContentTree({
               onExerciseSubmit={onExerciseSubmit}
               isSubmittingExercise={submittingExerciseNodeId === node.id}
               exerciseError={exerciseErrorNodeId === node.id ? exerciseError : null}
+              courseCompletedAt={courseCompletedAt}
+              certificate={certificate}
+              onCertificateIssue={onCertificateIssue}
+              isIssuingCertificate={isIssuingCertificate}
+              certificateIssueError={certificateIssueError}
               locale={locale}
             />
           )}

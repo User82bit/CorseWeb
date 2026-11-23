@@ -395,6 +395,62 @@ namespace CorseWeb.Server.Migrations
                         .IsRequired();
                 });
 
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseCertificate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CourseCompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CourseId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CourseTitle")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CourseVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EnrollmentId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StudentName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VerificationCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId")
+                        .IsUnique();
+
+                    b.HasIndex("VerificationCode")
+                        .IsUnique();
+
+                    b.ToTable("CourseCertificates");
+                });
+
             modelBuilder.Entity("CorseWeb.Server.Models.CourseExerciseAttempt", b =>
                 {
                     b.Property<string>("Id")

@@ -23,6 +23,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 | API-TEST-001 | Criar testes de integração HTTP/EF Core para endpoints e regras | `CorseWeb.ProgressTests/ApiIntegrationTestSuite.cs`, `WebApplicationFactory`, SQLite em memória e harness de contrato |
 | FLOW-001 | Avaliar Quiz no servidor e liberar ramo pelo resultado | `Controllers/EnrollmentsController.cs`, `Helpers/CourseQuizEvaluator.cs`, `Helpers/StudentLessonFlowProjector.cs`, `Models/CourseQuizAttempt.cs`, migração e testes HTTP |
 | FLOW-002 | Corrigir Exercise por comparação textual e liberar ramo | `Controllers/EnrollmentsController.cs`, `Helpers/CourseExerciseEvaluator.cs`, `Models/CourseExerciseAttempt.cs`, migração e testes HTTP/SQLite |
+| CERT-001 | Emitir, persistir e verificar certificado de conclusão | `Controllers/EnrollmentsController.cs`, `Controllers/CertificatesController.cs`, `Models/CourseCertificate.cs`, migração e testes HTTP/SQLite |
 
 ## Limites atuais importantes
 
@@ -33,6 +34,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 - O upload de capa limita tamanho e verifica assinatura de formato, mas ainda precisa de validação de imagem completa/reprocessamento.
 - FLOW-001 (PR #49, integrado) introduz `CourseQuizAttempts`: uma resposta por matrícula/aula/card, correção e score 100/0 no servidor. A rota de aluno só retorna os nós alcançáveis após o resultado; tentativas em ramos bloqueados são rejeitadas. Limite: uma pergunta e uma escolha por card.
 - FLOW-002 adiciona `CourseExerciseAttempts`: uma resposta por matrícula/aula/card, guardada no servidor e comparada com `props.solution` após normalização de finais de linha e espaços de extremidade. Resultado correto/errado usa score 100/0 e libera `success`/`failed`; o código do aluno nunca é executado nem compilado. Exercícios exigem instrução e solução de referência para publicação.
+- CERT-001 adiciona `CourseCertificates`, endpoint de emissão idempotente após conclusão de todas as aulas publicadas e consulta pública por código aleatório de 128 bits. O certificado é um snapshot imutável dos dados de emissão e permanece verificável após cancelamento da matrícula. É comprovante de conclusão registrada, não avaliação independente de competência; o PDF é obtido pela impressão do navegador.
 - O workflow compila o backend e executa o harness de contrato do projetor, migrações SQLite e suíte HTTP integrada com `WebApplicationFactory`. A cobertura inicial inclui autenticação local/cookies, roles, propriedade de curso/rascunho, publicação/versões, matrícula/progresso, isolamento, upload inválido e os dois caminhos de Quiz (incluindo Quiz aninhado) e submissões Exercise corretas/incorretas, encadeamento, acesso bloqueado, migração e exclusão em cascata. Ainda faltam Google OAuth real, CSRF/expiração, concorrência, fluxos adicionais de migração e suíte E2E.
 
 Consulte o [Kanban central](../TODO.md), a [referência de API](../API/api-reference.md) e os [achados da auditoria](../SECURITY/audit-findings.md).

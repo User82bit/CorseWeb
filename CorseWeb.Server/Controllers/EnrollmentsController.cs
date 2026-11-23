@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,11 @@ public class EnrollmentsController : ControllerBase
             : await _db.CourseExerciseAttempts
                 .Where(attempt => enrollmentIds.Contains(attempt.EnrollmentId))
                 .ToListAsync();
+        var certificates = enrollmentIds.Length == 0
+            ? new List<CourseCertificate>()
+            : await _db.CourseCertificates
+                .Where(certificate => enrollmentIds.Contains(certificate.EnrollmentId))
+                .ToListAsync();
 
         var completionsByEnrollment = completions
             .GroupBy(completion => completion.EnrollmentId)
@@ -63,6 +69,9 @@ public class EnrollmentsController : ControllerBase
         var exerciseAttemptsByEnrollment = exerciseAttempts
             .GroupBy(attempt => attempt.EnrollmentId)
             .ToDictionary(group => group.Key, group => (IReadOnlyCollection<CourseExerciseAttempt>)group.ToArray());
+        var certificatesByEnrollment = certificates
+            .GroupBy(certificate => certificate.EnrollmentId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.IssuedAt).First(), StringComparer.Ordinal);
 
         return Ok(enrollments.Select(enrollment =>
         {
@@ -70,12 +79,14 @@ public class EnrollmentsController : ControllerBase
             completionsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentCompletions);
             quizAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentQuizAttempts);
             exerciseAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentExerciseAttempts);
+            certificatesByEnrollment.TryGetValue(enrollment.Id, out var enrollmentCertificate);
             return EnrollmentProgressProjector.ToDto(
                 enrollment,
                 course,
                 enrollmentCompletions ?? [],
                 enrollmentQuizAttempts ?? [],
-                enrollmentExerciseAttempts ?? []);
+                enrollmentExerciseAttempts ?? [],
+                enrollmentCertificate);
         }));
     }
 
@@ -419,6 +430,71 @@ public class EnrollmentsController : ControllerBase
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
     }
 
+
+    /// <summary>
+    /// Issues one immutable course-completion certificate after every currently
+    /// published lesson has a server-recorded completion event.
+    /// </summary>
+    [HttpPost("{courseId}/certificate")]
+    public async Task<IActionResult> IssueCertificate(string courseId)
+    {
+        var course = await FindCourseAsync(courseId);
+        if (course == null) return NotFound(new { error = "Curso não encontrado" });
+
+        var enrollment = await _db.Enrollments
+            .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
+        if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
+
+        // An issued certificate remains available even if the course is archived later.
+        var existing = await _db.CourseCertificates
+            .FirstOrDefaultAsync(item => item.EnrollmentId == enrollment.Id);
+        if (existing != null)
+            return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
+
+        if (course.Status != "publicado")
+            return NotFound(new { error = "Curso publicado não encontrado" });
+
+        var completions = await _db.CourseLessonCompletions
+            .Where(record => record.EnrollmentId == enrollment.Id)
+            .ToListAsync();
+        var progress = EnrollmentProgressProjector.ToDto(enrollment, course, completions);
+        if (progress.CompletedAt is not DateTime courseCompletedAt)
+            return Conflict(new { error = "Conclua todas as aulas publicadas antes de emitir o certificado." });
+
+        var student = await _db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(user => user.Id == UserId);
+        if (student == null) return Unauthorized();
+
+        var certificate = new CourseCertificate
+        {
+            EnrollmentId = enrollment.Id,
+            CourseId = course.Id,
+            VerificationCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)),
+            StudentName = string.IsNullOrWhiteSpace(student.Name) ? student.Email : student.Name.Trim(),
+            CourseTitle = course.Title,
+            AuthorName = course.AuthorName,
+            CourseVersion = course.Version,
+            CourseCompletedAt = courseCompletedAt,
+            IssuedAt = DateTime.UtcNow
+        };
+
+        _db.CourseCertificates.Add(certificate);
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent requests for the same enrollment converge on one certificate.
+            _db.Entry(certificate).State = EntityState.Detached;
+            var wasIssued = await _db.CourseCertificates.AnyAsync(item =>
+                item.EnrollmentId == enrollment.Id);
+            if (!wasIssued) throw;
+        }
+
+        return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
+    }
+
     [HttpDelete("{courseId}")]
     public async Task<IActionResult> Unenroll(string courseId)
     {
@@ -452,8 +528,10 @@ public class EnrollmentsController : ControllerBase
         var exerciseAttempts = await _db.CourseExerciseAttempts
             .Where(attempt => attempt.EnrollmentId == enrollment.Id)
             .ToListAsync();
+        var certificate = await _db.CourseCertificates
+            .FirstOrDefaultAsync(item => item.EnrollmentId == enrollment.Id);
 
         return EnrollmentProgressProjector.ToDto(
-            enrollment, course, completions, quizAttempts, exerciseAttempts);
+            enrollment, course, completions, quizAttempts, exerciseAttempts, certificate);
     }
 }
