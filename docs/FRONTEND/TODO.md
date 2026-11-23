@@ -23,6 +23,7 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 | EDITOR-003 | Corrigir conexão de nós por toque e clique em celular | `LessonEditorPage.tsx`, `LessonEditorPage.scss` |
 | EDITOR-004 | Ordenar prévia e aula pelo grafo de conexões | `AppLessonPage/lessonFlow.ts`, `LessonContentRenderer.tsx`, `LessonEditorPage.tsx` |
 | FLOW-001 | Renderizar e enviar respostas de Quiz, mostrando somente o ramo liberado | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `enrollmentStore.ts` e API de matrículas |
+| FLOW-002 | Enviar solução de Exercise, exibir resultado e liberar o ramo | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `LessonEditorPage.tsx` e `enrollmentStore.ts` |
 | STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
 | STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
 | E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | suíte de testes ainda a criar |
@@ -34,7 +35,8 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 - FE-012/PRs #39–#40 separa o renderizador de leitura do canvas e oculta scripts internos CL da experiência do aluno.
 - FE-012 nesta branch adiciona navegação mobile por painéis, preview de celular/tablet/desktop, contrato de apresentação schema 2 e filtro de dados de autoria nas respostas públicas. A validação visual real e CI ainda são necessárias.
 - FE-013 foi integrada em `Homologa` pelo PR #43: containers aninháveis com `parentId`, quatro níveis, reparenting, duplicação/exclusão de subtree, preview/aluno recursivos e validação frontend/backend. O CI #655 passou; falta inspeção manual e aceite.
-- FLOW-001 conecta o card Quiz ao endpoint de avaliação: o aluno escolhe uma opção, recebe o resultado persistido e vê apenas a saída escolhida; Quizzes seguintes só aparecem quando o caminho anterior os alcança. A prévia do editor continua mostrando o grafo completo para autoria, não simula a execução. O card Exercício continua sem execução/correção, e a CorseLight não é executada.
+- FLOW-001 conecta o card Quiz ao endpoint de avaliação: o aluno escolhe uma opção, recebe o resultado persistido e vê apenas a saída escolhida; Quizzes seguintes só aparecem quando o caminho anterior os alcança.
+- FLOW-002 conecta o card Exercise ao endpoint de resposta: o campo de código/texto começa com `starterCode`, o servidor compara com a solução de referência e o aluno recebe aprovado/reprovado; somente o ramo escolhido permanece visível. A prévia do editor continua mostrando o grafo completo para autoria, sem simular decisões. O Exercise ainda não executa/compila código e a CorseLight não é executada.
 - EDITOR-003: conexão mobile integrada em `Homologa` pelo PR #45; gesto de selecionar saída e depois entrada. Falta validação em dispositivo real e aceite.
 - EDITOR-004: prévia e aula agora recebem `connections[]` e linearizam os nós a partir do `start`, percorrendo ramos na ordem das portas; fallback para nós desconectados/legados. PR em rascunho; CI e revisão manual pendentes. Critérios em [`fe-015-connection-reading-order.md`](./etapas/fe-015-connection-reading-order.md).
 - PROG-001 altera a página da aula para solicitar conclusão ao servidor; o cliente não calcula mais percentuais nem envia status de módulos/aulas.
