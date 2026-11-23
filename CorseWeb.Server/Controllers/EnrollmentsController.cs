@@ -151,18 +151,18 @@ public class EnrollmentsController : ControllerBase
             .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
         if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
 
-        var requiredQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(course.ModulesJson, lessonId);
-        if (requiredQuizIds.Count > 0)
-        {
-            var answeredQuizIds = await _db.CourseQuizAttempts
-                .Where(attempt => attempt.EnrollmentId == enrollment.Id
-                    && attempt.LessonId == lessonId
-                    && requiredQuizIds.Contains(attempt.QuizNodeId))
-                .Select(attempt => attempt.QuizNodeId)
-                .ToListAsync();
-            if (requiredQuizIds.Except(answeredQuizIds, StringComparer.Ordinal).Any())
-                return Conflict(new { error = "Responda a todos os quizzes desta aula antes de concluí-la." });
-        }
+        var lessonQuizAttempts = await _db.CourseQuizAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
+            .ToListAsync();
+        var quizResults = lessonQuizAttempts
+            .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+        var requiredQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
+            course.ModulesJson, lessonId, quizResults);
+        var answeredQuizIds = lessonQuizAttempts.Select(attempt => attempt.QuizNodeId)
+            .ToHashSet(StringComparer.Ordinal);
+        if (requiredQuizIds.Except(answeredQuizIds, StringComparer.Ordinal).Any())
+            return Conflict(new { error = "Responda a todos os quizzes disponíveis neste caminho antes de concluir a aula." });
 
         var completionExists = await _db.CourseLessonCompletions.AnyAsync(record =>
             record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
@@ -214,20 +214,28 @@ public class EnrollmentsController : ControllerBase
         if (course == null || course.Status != "publicado")
             return NotFound(new { error = "Curso publicado não encontrado" });
 
+        var enrollment = await _db.Enrollments
+            .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
+        if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
+
+        var priorAttempts = await _db.CourseQuizAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
+            .ToListAsync();
+        var priorResults = priorAttempts
+            .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+        var availableQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
+            course.ModulesJson, lessonId, priorResults);
+        if (!availableQuizIds.Contains(quizNodeId, StringComparer.Ordinal))
+            return NotFound(new { error = "Este Quiz ainda não está disponível no caminho atual." });
+
         var definition = CourseQuizEvaluator.FindPublishedQuiz(course.ModulesJson, lessonId, quizNodeId);
         if (definition == null)
             return NotFound(new { error = "Quiz publicado não encontrado nesta aula" });
         if (dto.SelectedOptionIndex < 0 || dto.SelectedOptionIndex >= definition.Options.Count)
             return BadRequest(new { error = "A opção selecionada é inválida" });
 
-        var enrollment = await _db.Enrollments
-            .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
-        if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
-
-        var existing = await _db.CourseQuizAttempts.FirstOrDefaultAsync(attempt =>
-            attempt.EnrollmentId == enrollment.Id
-            && attempt.LessonId == lessonId
-            && attempt.QuizNodeId == quizNodeId);
+        var existing = priorAttempts.FirstOrDefault(attempt => attempt.QuizNodeId == quizNodeId);
         if (existing != null)
         {
             if (existing.SelectedOptionIndex != dto.SelectedOptionIndex)
