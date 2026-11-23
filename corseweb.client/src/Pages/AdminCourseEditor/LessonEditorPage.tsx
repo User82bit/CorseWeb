@@ -155,7 +155,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     correctAnswer: "Índice da resposta certa (começa em 0)",
     instruction: "Instrução",
     starterCode: "Código inicial",
-    solution: "Solução",
+    solution: "Solução de referência (texto exato)",
     ordered: "Lista numerada",
     width: "Largura (px)",
     height: "Altura (px)",
@@ -234,7 +234,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     correctAnswer: "Correct answer index (starts at 0)",
     instruction: "Instructions",
     starterCode: "Starter code",
-    solution: "Solution",
+    solution: "Reference solution (exact text)",
     ordered: "Numbered list",
     width: "Width (px)",
     height: "Height (px)",
@@ -313,7 +313,7 @@ const COPY: Record<"pt-BR" | "en" | "es", {
     correctAnswer: "Índice de la respuesta correcta (empieza en 0)",
     instruction: "Instrucción",
     starterCode: "Código inicial",
-    solution: "Solución",
+    solution: "Solución de referencia (texto exacto)",
     ordered: "Lista numerada",
     width: "Ancho (px)",
     height: "Alto (px)",
@@ -444,7 +444,7 @@ function defaultProps(type: CanvasNodeType): Record<string, unknown> {
 
 function defaultPorts(type: CanvasNodeType): Pick<CanvasNode, "inputs" | "outputs"> {
   const inputs = type === "start" ? [] : [{ id: "enter", label: "Entrada" }];
-  const outputs = type === "certificate" ? [] : type === "quiz"
+  const outputs = type === "certificate" ? [] : type === "quiz" || type === "exercise"
     ? [{ id: "success", label: "Aprovado" }, { id: "failed", label: "Reprovado" }]
     : [{ id: "complete", label: type === "start" ? "Iniciar" : "Concluído" }];
   return { inputs, outputs };
