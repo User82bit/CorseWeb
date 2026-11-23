@@ -50,7 +50,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 - **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** Integrado em `Homologa` pelo PR #44; CI aprovada. A API valida curso/matrícula/aula publicada, grava conclusão no servidor e projeta percentuais a partir dos eventos. Permanecem pendentes os testes dinâmicos de rotas com sessão real e a revisão manual dos fluxos; o botão de conclusão ainda é autodeclaração, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
 
-- **VERSION-001 · P1 · Versionar alterações de status de publicação.** Implementação em revisão na PR #46: transições efetivas atualizam status, versão, autor/data e changelog, criando snapshot com o mesmo número de versão. A solicitação repetida do mesmo estado não gera versão duplicada; `rascunho` em `Course` continua sendo normalizado para `arquivado`. CI #733 aprovada no HEAD `dde047f`; testes SQLite verificam persistência e idempotência. Falta teste HTTP integrado com sessão real e revisão do proprietário. [VERSION-001](./BACKEND/etapas/version-001-course-status-history.md).
+- **VERSION-001 · P1 · Versionar alterações de status de publicação.** Integrado em `Homologa` pela PR #46; transições efetivas atualizam status, versão, autor/data e changelog e gravam snapshot correspondente. Testes SQLite cobrem persistência e idempotência. Ainda falta teste HTTP integrado com sessão real e revisão manual do fluxo. [VERSION-001](./BACKEND/etapas/version-001-course-status-history.md).
 
 - **EDITOR-003 · P1 · Validar conexão de nós por toque no celular.** Correção integrada à `Homologa` pelo PR #45 e CI aprovada. A ligação agora usa toque/clique na saída e depois na entrada. Falta validação em dispositivo real e aceite do proprietário. [FE-014](./FRONTEND/etapas/fe-014-mobile-connection-gestures.md).
 
@@ -72,6 +72,8 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **FE-006 · P0 · Corrigir resolução do LanguageProvider em Windows/Vite.** PR integrado e inicialização local confirmada pelo proprietário. Histórico: [PR #5](https://github.com/User82bit/CorseWeb/pull/5).
 
 ### Precisa de correção
+
+- **EDITOR-004 · P1 · Usar as conexões do grafo como ordem de leitura.** A prévia e a aula exibiam os cards por `order`/posição, ignorando `connections[]`. Implementação na PR em rascunho: linearização a partir de `start`, DFS na ordem das portas de saída, fallback para nós desconectados/legados e testes de ramificações, ciclos e caminhos duplicados. A exibição dos ramos é sequencial e não equivale à execução pedagógica do grafo. Falta CI e revisão manual. [FE-015](./FRONTEND/etapas/fe-015-connection-reading-order.md).
 
 
 ## Fluxo de contribuição

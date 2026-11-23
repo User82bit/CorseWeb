@@ -21,6 +21,7 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 | EDITOR-001 | Validar workspace, autoria de grafo e experiência responsiva | `src/Pages/AdminCourseEditor/LessonEditorPage.tsx`, `.scss`, `src/types/course.ts` |
 | EDITOR-002 | Revisar containers aninháveis e hierarquia visual | `nodeHierarchy.ts`, editor, LessonContentRenderer, validação da API |
 | EDITOR-003 | Corrigir conexão de nós por toque e clique em celular | `LessonEditorPage.tsx`, `LessonEditorPage.scss` |
+| EDITOR-004 | Ordenar prévia e aula pelo grafo de conexões | `AppLessonPage/lessonFlow.ts`, `LessonContentRenderer.tsx`, `LessonEditorPage.tsx` |
 | STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
 | STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
 | E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | suíte de testes ainda a criar |
@@ -33,7 +34,8 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 - FE-012 nesta branch adiciona navegação mobile por painéis, preview de celular/tablet/desktop, contrato de apresentação schema 2 e filtro de dados de autoria nas respostas públicas. A validação visual real e CI ainda são necessárias.
 - FE-013 foi integrada em `Homologa` pelo PR #43: containers aninháveis com `parentId`, quatro níveis, reparenting, duplicação/exclusão de subtree, preview/aluno recursivos e validação frontend/backend. O CI #655 passou; falta inspeção manual e aceite.
 - O grafo ainda não controla progressão; quiz/exercício não possuem avaliação automática no fluxo atual e a CorseLight não é executada.
-- EDITOR-003: corrigida a conexão mobile para o gesto de selecionar a saída e depois tocar na entrada; aguarda CI e validação em navegador/dispositivo real. Critérios em [`fe-014-mobile-connection-gestures.md`](./etapas/fe-014-mobile-connection-gestures.md).
+- EDITOR-003: conexão mobile integrada em `Homologa` pelo PR #45; gesto de selecionar saída e depois entrada. Falta validação em dispositivo real e aceite.
+- EDITOR-004: prévia e aula agora recebem `connections[]` e linearizam os nós a partir do `start`, percorrendo ramos na ordem das portas; fallback para nós desconectados/legados. PR em rascunho; CI e revisão manual pendentes. Critérios em [`fe-015-connection-reading-order.md`](./etapas/fe-015-connection-reading-order.md).
 - PROG-001 altera a página da aula para solicitar conclusão ao servidor; o cliente não calcula mais percentuais nem envia status de módulos/aulas.
 - Os critérios detalhados e pendências ficam em [`etapas/fe-011-lesson-editor-workspace.md`](./etapas/fe-011-lesson-editor-workspace.md).
 

@@ -1760,7 +1760,7 @@ function LessonEditorPage() {
                       <h1>{activeLesson.title}</h1>
                       {activeLesson.description && <p>{activeLesson.description}</p>}
                     </header>
-                    <LessonContentTree nodes={nodes} />
+                    <LessonContentTree nodes={nodes} connections={activeLesson.connections ?? []} />
                   </>
                 )}
               </article>

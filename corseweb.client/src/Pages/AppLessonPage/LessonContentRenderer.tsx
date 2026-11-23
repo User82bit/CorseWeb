@@ -1,5 +1,6 @@
 import SvgIcon from "../../UIComplement/SvgIcon/SvgIcon";
-import type { CanvasNode } from "../../types/course";
+import type { CanvasConnection, CanvasNode } from "../../types/course";
+import { sortNodesByLessonFlow } from "./lessonFlow";
 import { getNodePresentationStyle, isStudentVisibleNode } from "./lessonPresentation";
 import "./AppLessonPage.scss";
 
@@ -76,14 +77,15 @@ export function CanvasNodeContent({ node }: { node: CanvasNode }) {
   }
 }
 
-function compareReadingOrder(a: CanvasNode, b: CanvasNode): number {
-  const orderA = typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
-  const orderB = typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
-  return orderA - orderB || a.y - b.y || a.x - b.x;
-}
-
-export function LessonContentTree({ nodes }: { nodes: CanvasNode[] }) {
-  const visibleNodes = nodes.filter(isStudentVisibleNode);
+export function LessonContentTree({
+  nodes,
+  connections = [],
+}: {
+  nodes: CanvasNode[];
+  connections?: CanvasConnection[];
+}) {
+  const orderedNodes = sortNodesByLessonFlow(nodes, connections);
+  const visibleNodes = orderedNodes.filter(isStudentVisibleNode);
   const visibleById = new Map(visibleNodes.map((node) => [node.id, node]));
   const sourceById = new Map(nodes.map((node) => [node.id, node]));
 
@@ -96,7 +98,7 @@ export function LessonContentTree({ nodes }: { nodes: CanvasNode[] }) {
         const parent = visibleById.get(node.parentId) ?? sourceById.get(node.parentId);
         return !parent || !isStudentVisibleNode(parent) || parent.type !== "container";
       })
-      .sort(compareReadingOrder);
+;
 
     return children.map((node) => {
       if (path.has(node.id)) return null;

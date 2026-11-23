@@ -55,6 +55,10 @@ jobs:
         working-directory: corseweb.client
         run: npm run test:hierarchy
 
+      - name: Test lesson graph reading order
+        working-directory: corseweb.client
+        run: npm run test:flow
+
       - name: Build frontend
         working-directory: corseweb.client
         run: npm run build

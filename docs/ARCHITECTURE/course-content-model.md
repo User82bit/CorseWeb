@@ -29,7 +29,7 @@ Cada nó possui:
 | `props` | Conteúdo e propriedades específicas do tipo |
 | `inputs[]` | Portas de entrada |
 | `outputs[]` | Portas de saída |
-| `order` | Ordem explícita no fluxo de leitura; fallback legado usa y/x |
+| `order` | Ordem de fallback para nós sem caminho conectado e conteúdo legado; conexões válidas definem a sequência principal |
 | `layout` | Largura, alinhamento e espaçamentos na página publicada |
 | `style` | Cores, família/tamanho/peso da fonte, alinhamento, borda e padding |
 | `parentId` | ID do nó container pai; ausente/nulo significa nível principal |
@@ -44,7 +44,7 @@ O container é o único tipo que pode receber filhos. A aula mantém uma lista p
 
 A hierarquia tem no máximo quatro níveis, incluindo o nível principal. Containers podem conter outros containers; todos os outros tipos são folhas. O editor oferece adição dentro do container selecionado, arrasto para reparenting, seleção do pai no inspetor, duplicação do subtree e exclusão em cascata. Ao mover/duplicar um container, seus descendentes acompanham o movimento e recebem novos IDs ao duplicar.
 
-A ordem de leitura é `order` entre irmãos do mesmo pai. As conexões continuam independentes da contenção: não atravessam automaticamente a hierarquia nem determinam a sequência de leitura. Remover um container remove todos os descendentes e conexões que referenciem qualquer nó removido.
+A ordem principal de leitura é derivada de `connections[]`. A partir do nó `start`, o renderizador percorre o grafo em profundidade; em nós com múltiplas saídas, respeita a ordem declarada em `outputs[]` (no Quiz: `success`/Aprovado antes de `failed`/Reprovado). Nós desconectados ou de conteúdo legado são acrescentados depois, usando `order` e, como último fallback, `y/x`. Dentro de containers, os filhos seguem a mesma sequência de grafo entre irmãos. As conexões continuam independentes da contenção: não reparentam elementos nem alteram `parentId`. Remover um container remove todos os descendentes e conexões que referenciem qualquer nó removido.
 
 O frontend e o backend validam IDs únicos, pais existentes do tipo container, ausência de ciclos, profundidade máxima, limites internos do container, dimensões e portas de conexão. O backend é a autoridade final na criação/atualização de cursos e rascunhos e antes de publicar.
 
@@ -110,7 +110,7 @@ O backend mantém o conteúdo de módulos como JSON em `Course.ModulesJson`/`Cou
 
 A página não usa as coordenadas do canvas para posicionar elementos dentro do fluxo, não mostra portas/conexões e não executa scripts. Containers são representados como seções agrupadoras e seus filhos são renderizados recursivamente. Preview do editor e página do aluno compartilham o renderizador e o filtro de nós visíveis.
 
-**Importante:** a ordenação espacial é uma convenção de leitura atual. As ligações do grafo não determinam a progressão do aluno. O quiz mostra pergunta e opções, mas não aceita uma resposta nem calcula o resultado no fluxo atual. O exercício mostra instrução e código inicial, sem executar ou verificar a solução.
+**Importante:** a linearização das conexões define somente a ordem de apresentação do conteúdo. Ela não executa ramificações nem determina progressão, bloqueio/liberação de nós ou avaliação do aluno. Quando há saídas alternativas, a prévia e a página do aluno exibem sequencialmente os ramos na ordem das portas (Aprovado antes de Reprovado). O quiz mostra pergunta e opções, mas não aceita uma resposta nem calcula o resultado no fluxo atual. O exercício mostra instrução e código inicial, sem executar ou verificar a solução.
 
 ## 6. Progresso e conclusão de aulas
 
