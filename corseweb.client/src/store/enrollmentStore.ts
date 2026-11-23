@@ -15,6 +15,16 @@ export type EnrollmentModuleProgress = {
   lessons: EnrollmentLessonProgress[];
 };
 
+export type QuizAttemptResult = {
+  lessonId: string;
+  quizNodeId: string;
+  selectedOptionIndex: number;
+  isCorrect: boolean;
+  passed: boolean;
+  score: number;
+  completedAt: string;
+};
+
 export type CourseEnrollment = {
   courseId: string;
   enrolledAt: string;
@@ -23,6 +33,7 @@ export type CourseEnrollment = {
   currentLessonId: string | null;
   lastAccessedAt: string;
   modulesProgress: EnrollmentModuleProgress[];
+  quizAttempts: QuizAttemptResult[];
 };
 
 export type EnrollmentProgressUpdate = {
@@ -40,6 +51,20 @@ function normalizeEnrollment(raw: unknown): CourseEnrollment {
     lastAccessedAt: String(value.lastAccessedAt ?? value.enrolledAt ?? ""),
     modulesProgress: Array.isArray(value.modulesProgress)
       ? value.modulesProgress as EnrollmentModuleProgress[]
+      : [],
+    quizAttempts: Array.isArray(value.quizAttempts)
+      ? value.quizAttempts.map((attempt) => {
+          const item = attempt as Partial<QuizAttemptResult>;
+          return {
+            lessonId: String(item.lessonId ?? ""),
+            quizNodeId: String(item.quizNodeId ?? ""),
+            selectedOptionIndex: Number(item.selectedOptionIndex ?? -1),
+            isCorrect: item.isCorrect === true,
+            passed: item.passed === true,
+            score: Math.min(100, Math.max(0, Number(item.score ?? 0))),
+            completedAt: String(item.completedAt ?? ""),
+          };
+        }).filter((attempt) => attempt.lessonId && attempt.quizNodeId)
       : [],
   };
 }
@@ -77,6 +102,23 @@ export async function updateEnrollmentProgress(
  * Records the student's completion action for one lesson.
  * The API validates publication and calculates all progress values.
  */
+/** Submits one answer; the backend evaluates and persists the result. */
+export async function submitEnrollmentQuizAttempt(
+  courseSlug: string,
+  lessonId: string,
+  quizNodeId: string,
+  selectedOptionIndex: number,
+): Promise<CourseEnrollment> {
+  const result = await apiJson<unknown>(
+    `/api/enrollments/${encodeURIComponent(courseSlug)}/lessons/${encodeURIComponent(lessonId)}/quizzes/${encodeURIComponent(quizNodeId)}/attempt`,
+    {
+      method: "POST",
+      body: JSON.stringify({ selectedOptionIndex }),
+    },
+  );
+  return normalizeEnrollment(result);
+}
+
 export async function completeEnrollmentLesson(
   courseSlug: string,
   lessonId: string,
