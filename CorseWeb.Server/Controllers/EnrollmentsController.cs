@@ -251,11 +251,11 @@ public class EnrollmentsController : ControllerBase
         var activityResults = priorAttempts
             .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
-        foreach (var attempt in priorExerciseAttempts
+        foreach (var priorExerciseAttempt in priorExerciseAttempts
                      .GroupBy(item => item.ExerciseNodeId, StringComparer.Ordinal)
                      .Select(group => group.OrderByDescending(item => item.CompletedAt).First()))
         {
-            activityResults[attempt.ExerciseNodeId] = attempt.Passed;
+            activityResults[priorExerciseAttempt.ExerciseNodeId] = priorExerciseAttempt.Passed;
         }
         var availableQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
             course.ModulesJson, lessonId, activityResults);
@@ -347,11 +347,11 @@ public class EnrollmentsController : ControllerBase
         var activityResults = priorQuizAttempts
             .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
-        foreach (var attempt in priorExerciseAttempts
+        foreach (var priorExerciseAttempt in priorExerciseAttempts
                      .GroupBy(item => item.ExerciseNodeId, StringComparer.Ordinal)
                      .Select(group => group.OrderByDescending(item => item.CompletedAt).First()))
         {
-            activityResults[attempt.ExerciseNodeId] = attempt.Passed;
+            activityResults[priorExerciseAttempt.ExerciseNodeId] = priorExerciseAttempt.Passed;
         }
 
         var reachableExerciseIds = CourseQuizEvaluator.GetPublishedExerciseNodeIds(
