@@ -62,10 +62,16 @@ public record QuizAttemptPayload(
 
 public record QuizAttemptRequestDto(int SelectedOptionIndex);
 
+public record ExerciseAttemptPayload(
+    string LessonId, string ExerciseNodeId, bool IsCorrect, bool Passed,
+    int Score, DateTime CompletedAt);
+
+public record ExerciseAttemptRequestDto(string Answer);
+
 public record EnrollmentDto(
     string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent,
     string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress,
-    JsonElement QuizAttempts
+    JsonElement QuizAttempts, JsonElement ExerciseAttempts
 );
 
 // Only the current lesson is client-updatable. Completion and percentages are server-derived.
