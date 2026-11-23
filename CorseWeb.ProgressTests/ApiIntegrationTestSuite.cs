@@ -2,7 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using CorseWeb.Server.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -136,10 +139,6 @@ public static class ApiIntegrationTestSuite
         assert(publicCourse.StatusCode == HttpStatusCode.OK,
             "A published course must be readable by a public student session.");
 
-        var unauthenticatedCreate = await anonymous.PostAsync(
-            "/api/courses",
-            new StringContent(coursePayload, Encoding.UTF8, "application/json"));
-        // The owner client already has a cookie; use a fresh client for anonymous access.
         using var emptyClient = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
@@ -304,6 +303,22 @@ public static class ApiIntegrationTestSuite
         var outsiderUnenroll = await outsiderClient.DeleteAsync($"/api/enrollments/{courseId}");
         assert(outsiderUnenroll.StatusCode == HttpStatusCode.NotFound,
             "A different student must not remove another user's enrollment.");
+
+        var ownUnenroll = await studentClient.DeleteAsync($"/api/enrollments/{courseId}");
+        assert(ownUnenroll.StatusCode == HttpStatusCode.OK,
+            "A student must be able to cancel their own enrollment.");
+        var enrollmentAfterDelete = await studentClient.GetAsync("/api/enrollments");
+        using (var emptyEnrollments = JsonDocument.Parse(await enrollmentAfterDelete.Content.ReadAsStringAsync()))
+        {
+            assert(emptyEnrollments.RootElement.GetArrayLength() == 0,
+                "A cancelled enrollment must no longer appear in the student's list.");
+        }
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            assert(await db.CourseLessonCompletions.CountAsync() == 0,
+                "Cancelling an enrollment must cascade-delete its server completion records.");
+        }
 
         using var unauthorizedMediaClient = factory.CreateClient();
         var unauthorizedUpload = await unauthorizedMediaClient.PostAsync(
