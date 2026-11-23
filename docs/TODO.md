@@ -36,14 +36,16 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 - **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Separar `scripts[]` de `modules[]`; parser/AST próprio; validação de sintaxe, tipos, eventos, funções permitidas, permissões, limites e testes unitários. Não usar JavaScript/C# scripting, `eval` ou reflexão. Dependência: revisão/aceite de CL-001.
 
-- **FLOW-001 · P1 · Executar o grafo de fluxo pedagógico.** Interpretar conexões no servidor; definir semântica de `success`/`failed`; controlar liberação de nós/aulas e tentativas; integrar Quiz, Exercício e certificados reais. O editor atual apenas desenha/persiste conexões.
+
 - **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
 - **DATA-001 · P2 · Definir importação/exportação de cursos.** Especificar schema versionado, validação de entrada, tratamento de mídia, nós/conexões e scripts CL sem aceitar código executável não confiável.
 - **OPS-001 · P2 · Definir operação de produção.** Escolher banco/provider, backup/restore, gestão de secrets, HTTPS/proxy, armazenamento de uploads, logs e processo de migração; validar antes de publicar dados reais.
 
 ### Iniciada
 
-- **API-TEST-001 · P1 · Criar testes de integração do backend.** Em implementação: `WebApplicationFactory` com sessão por cookie e SQLite em memória; cobre registro/login, roles, propriedade de curso/rascunho, atualização, arquivamento/republicação e versões, matrícula, progresso server-side, isolamento de aluno, cascade delete e validação básica de upload. Primeira suíte HTTP integrada está na PR #48; faltam fluxo Google com token real, CSRF/expiração, concorrência, casos de migração/upgrade e ampliar endpoints restantes. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
+- **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
+
+- **FLOW-001 · P1 · Executar o grafo de fluxo pedagógico.** Primeira fatia em implementação pela PR desta etapa: Quiz de uma pergunta/escolha única, correção no servidor, resultado persistido por matrícula/aula/card e liberação exclusiva da saída `success` ou `failed`. O backend remove do JSON do aluno os ramos indisponíveis, impede tentativa em Quiz ainda bloqueado e exige resposta aos Quizzes alcançáveis antes de concluir a aula. Exercício, certificados, múltiplas perguntas e reexecução/retentativa ainda não fazem parte do escopo implementado. [FLOW-001](./BACKEND/etapas/flow-001-quiz-branching.md).
 
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
