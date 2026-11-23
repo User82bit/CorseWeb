@@ -15,7 +15,7 @@ Esta revisão fecha sintaxe, valores, eventos, funções, efeitos, armazenamento
 1. **Interpretada por AST própria:** a fonte CL nunca é compilada ou executada como JavaScript, C#, Roslyn, PowerShell, SQL ou código nativo.
 2. **Allowlist fechada:** somente eventos, operadores e funções descritos neste documento são válidos. O runtime não resolve métodos arbitrários por nome, reflexão ou acesso dinâmico a serviços.
 3. **Servidor como autoridade:** o backend valida sessão, propriedade, matrícula, aula publicada, atividade alcançável, resposta e resultado. Um script não pode conceder permissões nem falsificar dados enviados pelo cliente.
-4. **Escopo por aluno e matrícula:** o estado e os efeitos são isolados por matrícula, aula e script. Um aluno nunca lê nem altera dados de outro.
+4. **Escopo por aluno e matrícula:** o estado persiste por matrícula e script ao longo do curso; os efeitos ficam limitados à matrícula, aula, evento e script. Um aluno nunca lê nem altera dados de outro.
 5. **Sem efeitos parciais dentro de um script:** se uma invocação falhar, descarta seus writes e efeitos; scripts seguintes ainda podem ser executados.
 6. **Saída declarativa:** o runtime devolve dados de efeito tipados. O script não recebe DOM, React, HTML, CSS, filesystem, rede ou acesso direto ao banco.
 7. **Sem execução em catálogo:** scripts só são avaliados em eventos autenticados de uma matrícula e curso publicados, nunca ao listar ou visualizar um catálogo público.
