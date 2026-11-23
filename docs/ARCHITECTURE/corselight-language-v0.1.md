@@ -1,16 +1,32 @@
-# CorseLight (CL) — especificação inicial da linguagem
+# CorseLight (CL) — especificação técnica v0.1
 
 - **Nome:** CorseLight
 - **Identificador:** `CL`
-- **Versão da especificação:** `0.1`
-- **Estado:** proposta técnica em revisão; ainda não é um interpretador implementado.
-- **Objetivo:** permitir que autores adicionem lógica pequena e previsível aos cursos, interpretada pelo backend do CorseWeb. CL não substitui os cards pedagógicos nem é JavaScript/C#.
+- **Versão da linguagem:** `0.1`
+- **Versão deste documento:** `0.1-candidate.2`
+- **Estado:** proposta técnica consolidada, aguardando revisão e aceite do proprietário. Não existe parser, AST ou runtime implementado.
+- **Objetivo:** permitir lógica pequena, determinística e limitada nos cursos, interpretada pelo backend do CorseWeb.
+- **Fora do objetivo:** transformar CL em linguagem geral, executar código arbitrário ou permitir que scripts controlem autenticação, autorização, navegação de segurança ou conclusão por conta própria.
 
-## 1. Separação entre conteúdo e scripts
+Esta revisão fecha sintaxe, valores, eventos, funções, efeitos, armazenamento, isolamento e limites necessários para iniciar CL-002. A aprovação deste documento não significa que a linguagem já possa ser executada.
 
-Os cards `heading`, `paragraph`, `list`, `image`, `video`, `code`, `quiz`, `exercise`, `callout`, `divider`, `embed` e `certificate` descrevem conteúdo que pode ser apresentado ao aluno. Um script CL é lógica interna do curso: **não deve ser renderizado como card, texto ou código na área do aluno**.
+## 1. Princípios obrigatórios
 
-No formato lógico de exportação, scripts ficam na coleção raiz `scripts`, separada da coleção `modules` e das aulas:
+1. **Interpretada por AST própria:** a fonte CL nunca é compilada ou executada como JavaScript, C#, Roslyn, PowerShell, SQL ou código nativo.
+2. **Allowlist fechada:** somente eventos, operadores e funções descritos neste documento são válidos. O runtime não resolve métodos arbitrários por nome, reflexão ou acesso dinâmico a serviços.
+3. **Servidor como autoridade:** o backend valida sessão, propriedade, matrícula, aula publicada, atividade alcançável, resposta e resultado. Um script não pode conceder permissões nem falsificar dados enviados pelo cliente.
+4. **Escopo por aluno e matrícula:** o estado persiste por matrícula e script ao longo do curso; os efeitos ficam limitados à matrícula, aula, evento e script. Um aluno nunca lê nem altera dados de outro.
+5. **Sem efeitos parciais dentro de um script:** se uma invocação falhar, descarta seus writes e efeitos; scripts seguintes ainda podem ser executados.
+6. **Saída declarativa:** o runtime devolve dados de efeito tipados. O script não recebe DOM, React, HTML, CSS, filesystem, rede ou acesso direto ao banco.
+7. **Sem execução em catálogo:** scripts só são avaliados em eventos autenticados de uma matrícula e curso publicados, nunca ao listar ou visualizar um catálogo público.
+
+## 2. Separação entre conteúdo e scripts
+
+Cards pedagógicos descrevem conteúdo. Script CL é lógica interna e não é um card:
+
+`heading`, `paragraph`, `list`, `image`, `video`, `code`, `quiz`, `exercise`, `callout`, `divider`, `embed` e `certificate`.
+
+O formato lógico de curso terá uma coleção raiz `scripts[]`, irmã de `modules[]`:
 
 ```json
 {
@@ -18,10 +34,9 @@ No formato lógico de exportação, scripts ficam na coleção raiz `scripts`, s
   "scripts": [
     {
       "id": "script-feedback-01",
-      "name": "Feedback da atividade",
+      "name": "Feedback de envio",
       "language": "CL",
       "languageVersion": "0.1",
-      "trigger": "activity.submit",
       "enabled": true,
       "source": "on activity.submit { activity.feedback(\"Resposta registrada.\", \"info\"); }"
     }
@@ -29,120 +44,323 @@ No formato lógico de exportação, scripts ficam na coleção raiz `scripts`, s
 }
 ```
 
-Esse é o contrato-alvo da linguagem. No backend atual, o conteúdo persistido está concentrado em `ModulesJson`; uma coleção persistente `ScriptsJson`, DTOs correspondentes e o runtime ainda precisam ser implementados. Não considerar scripts CL executáveis só porque foram salvos ou importados.
+Contrato de dados:
 
-## 2. Sintaxe da versão 0.1
+- `id` é obrigatório, único dentro do curso e estável entre atualizações do script.
+- `name` é um rótulo de autoria; não é identificador nem chamada de função.
+- `language` deve ser exatamente `CL`; `languageVersion` deve ser uma versão suportada.
+- `enabled` controla execução, não validação. Scripts desabilitados também precisam ser sintaticamente válidos antes da publicação.
+- `source` contém um ou mais blocos `on event { ... }`. Não há campo `trigger` separado: os eventos são derivados da própria fonte para evitar divergência entre metadados e código.
+- Não persistir scripts dentro de `modules[]`, `nodes[]` ou propriedades de cards.
+- A evolução do backend deve acrescentar persistência própria `ScriptsJson` em `Course` e `CourseDraft`, DTOs de autoria, mapeamento de criação/atualização/publicação e snapshots de versão. Curso antigo sem scripts equivale a `scripts: []`.
+- O DTO de autor/proprietário/admin pode receber `scripts[]`; o DTO público/do aluno nunca inclui fonte, AST, diagnostics privados ou estado de scripts.
+- Alterações em scripts fazem parte da versão e do snapshot imutável de `CourseVersion`, assim como módulos e aulas.
 
-Um arquivo CL contém um ou mais blocos de evento. Instruções usam chamadas nomeadas e terminam com ponto e vírgula. A condição aceita literais e expressões booleanas; `if/else` é o único controle de fluxo nesta versão.
+O editor visual CL e o editor de código não fazem parte desta etapa de especificação; serão uma entrega separada. A API e o modelo persistido atuais ainda não aceitam `scripts[]`.
+
+## 3. Sintaxe e gramática
+
+Um programa contém um ou mais blocos de evento. Cada script pode declarar vários eventos, mas cada evento aparece no máximo uma vez no mesmo script.
 
 ```cl
 on activity.submit {
   if (activity.isCorrect()) {
-    activity.setScore(100);
     activity.feedback("Muito bem!", "success");
+    state.set("submissions", 1);
   } else {
-    activity.setScore(0);
-    activity.feedback("Tente novamente.", "warning");
-    activity.allowRetry(true);
+    activity.feedback("Confira sua resposta.", "warning");
   }
+}
+
+on lesson.finish {
+  state.set("lesson-finished", true);
 }
 ```
 
-### Eventos permitidos
+### Gramática normativa (EBNF simplificada)
 
-| Evento | Momento |
-|---|---|
-| `lesson.start` | Quando o aluno abre/inicia uma aula |
-| `lesson.finish` | Quando a conclusão da aula está sendo processada |
-| `activity.submit` | Quando uma resposta de atividade é enviada |
-| `activity.retry` | Quando o aluno solicita uma nova tentativa |
+```ebnf
+program       = event_block, { event_block } ;
+event_block   = "on", event_name, block ;
+event_name    = "lesson.start" | "lesson.finish" | "activity.submit" ;
+block         = "{", { statement }, "}" ;
+statement     = native_call, ";" | if_statement ;
+if_statement  = "if", "(", expression, ")", block, [ "else", block ] ;
+native_call   = native_name, "(", [ argument_list ], ")" ;
+native_name   = identifier, { ".", identifier } ;
+argument_list = expression, { ",", expression } ;
+expression    = or_expression ;
+```
 
-Eventos não listados são rejeitados pelo validador. Um script pode declarar apenas eventos que o backend realmente envia.
+A precedência das expressões, da maior para a menor, é:
 
-### Tipos de valor
+1. chamada nativa e parênteses;
+2. operador unário `!`;
+3. comparação `<`, `<=`, `>`, `>=`;
+4. igualdade `==`, `!=`;
+5. AND `&&`;
+6. OR `||`.
 
-A versão 0.1 trabalha com `string`, `number` finito, `boolean` e `null`. Chaves de estado são strings curtas. Arrays, objetos livres, funções definidas pelo autor e coerção implícita de tipos não fazem parte desta versão.
+Os operadores binários são avaliados da esquerda para a direita dentro do mesmo nível. `&&` e `||` usam curto-circuito. Não há atribuição, variáveis locais, declaração de função, indexação, acesso a propriedades, ternário, concatenação, operadores aritméticos ou loops na v0.1.
 
-## 3. Funções permitidas
+### Identificadores e literais
 
-As chamadas abaixo formam a lista inicial de funções nativas. O backend deve usar um registro explícito de funções permitidas; não deve resolver nomes arbitrários por reflexão.
+- Identificadores: `[A-Za-z_][A-Za-z0-9_]*`. Nomes de evento e nomes de função são case-sensitive.
+- Strings usam aspas duplas e escapes JSON: `\\`, `\"`, `\n`, `\r`, `\t` e `\uXXXX`. Strings são Unicode e comparadas por igualdade ordinal, sensível a maiúsculas.
+- Números usam formato decimal invariável (ponto como separador), opcionalmente com sinal e expoente. Devem resultar em número finito; NaN e infinito são inválidos.
+- Booleanos: `true` e `false`. Nulo: `null`.
+- Comentários de linha `// ...` são permitidos. Comentários de bloco não fazem parte da v0.1.
+- Separadores decimais regionais, aspas simples e escapes não listados são inválidos.
 
-### Contexto — somente leitura
+### Tipos e coerção
 
-| Função | Retorno | Regra |
+CL possui somente `string`, `number`, `boolean` e `null`. Não há coerção implícita.
+
+- Condições de `if`, `&&`, `||` e `!` exigem boolean.
+- `<`, `<=`, `>` e `>=` exigem dois números.
+- `==` e `!=` comparam valores primitivos do mesmo tipo; `null` só é igual a `null`.
+- Quando uma função retorna valor dinâmico (por exemplo, `state.get`), o runtime verifica o tipo antes da operação. Tipo incompatível gera erro daquela invocação, sem coerção silenciosa.
+- `if` avalia somente o bloco selecionado; blocos não selecionados não executam chamadas nem produzem efeitos.
+
+## 4. Eventos suportados na v0.1
+
+| Evento | Momento exato | Frequência e requisitos |
 |---|---|---|
-| `context.get(key)` | valor primitivo ou `null` | Só aceita `course.id`, `lesson.id`, `activity.id`, `event.name` e `student.locale`. Não expõe e-mail, credenciais, tokens ou identificadores privados do aluno. |
+| `lesson.start` | Após o servidor autenticar o aluno, confirmar matrícula e validar a aula publicada/acessível, quando a matrícula entra naquela aula pela primeira vez | Uma vez por matrícula/aula. Recarregar a página não reexecuta |
+| `lesson.finish` | Durante `POST .../lessons/{lessonId}/complete`, depois das verificações de acesso e de todas as atividades alcançáveis respondidas, antes de persistir a conclusão | Uma vez por matrícula/aula |
+| `activity.submit` | Depois que o backend aceita e avalia uma resposta de Quiz/Exercise alcançável, com resposta e `isCorrect` já calculados no servidor | Uma vez por envio aceito. Na implementação atual há uma tentativa por matrícula/aula/card |
 
-### Estado privado do script
+Semântica adicional:
 
-| Função | Retorno | Regra |
+- O evento é disparado pelo fluxo autenticado do backend, não por um nome de evento enviado livremente pelo navegador.
+- Para `lesson.start`, a transição de aula atual e a invocação de scripts precisam ser idempotentes mesmo quando `PUT .../progress` é repetido.
+- Para `lesson.finish`, a conclusão normal da aula continua sob autoridade do endpoint existente. Script não pode marcar outra aula como concluída, pular a validação de atividades nem alterar o percentual.
+- Para `activity.submit`, o resultado confiável é calculado antes da execução CL. `activity.isCorrect()` lê esse resultado. A lógica CL não pode substituir o gabarito ou o resultado base.
+- `activity.retry` está **fora da v0.1**: FLOW-001/FLOW-002 persistem uma tentativa única e não existe política de retentativa implementada. A introdução futura desse evento depende de uma especificação de tentativas, limites e persistência próprios.
+- O backend deve tratar a reexecução do mesmo evento como idempotente, usando identidade de evento gerada no servidor e registro persistido da invocação.
+
+## 5. Funções nativas permitidas
+
+O runtime deve usar um registro explícito de funções com validação de nome, quantidade e tipo dos argumentos. O nome de uma função não pode ser resolvido por reflexão.
+
+### 5.1 Contexto — somente leitura
+
+| Função | Assinatura | Disponibilidade |
 |---|---|---|
-| `state.get(key)` | valor primitivo ou `null` | Lê uma chave do estado pertencente ao aluno, inscrição, curso e script atuais. |
-| `state.set(key, value)` | `null` | Grava apenas tipos primitivos. O backend aplica limites de tamanho e quantidade de chaves. |
-| `state.reset(key)` | `null` | Remove a chave atual; não apaga estados de outros scripts nem de outros alunos. |
+| `context.get(key)` | `string -> string/number/boolean/null` | Qualquer evento |
 
-O runtime deve isolar o estado por aluno e inscrição. Um script nunca pode ler ou modificar o estado de outro aluno.
+Chaves permitidas, exclusivamente:
 
-### Atividades
+- `course.id`
+- `lesson.id`
+- `activity.id` (somente `activity.submit`)
+- `event.name`
+- `student.locale`
 
-| Função | Retorno | Regra |
+A chave deve ser literal conhecida no momento da validação. Qualquer outra chave é erro de validação. Não expor e-mail, nome civil, tokens, cookies, IP, identificadores privados do usuário, credenciais ou dados de outros alunos.
+
+### 5.2 Estado privado por script
+
+| Função | Assinatura | Retorno |
 |---|---|---|
-| `activity.getAnswer()` | valor primitivo ou `null` | Lê a resposta enviada para a atividade que disparou o evento. |
-| `activity.isCorrect()` | `boolean` | O servidor calcula o resultado a partir da configuração confiável da atividade; não confia em um booleano enviado pelo cliente. |
-| `activity.setScore(value)` | `null` | Define a pontuação da tentativa atual; aceita número finito entre 0 e 100. O backend valida a atividade e persiste o resultado. |
-| `activity.feedback(message, tone)` | `null` | Solicita que o cliente apresente texto simples com tom `info`, `success`, `warning` ou `error`. Não aceita HTML. |
-| `activity.allowRetry(enabled)` | `null` | Permite ou bloqueia nova tentativa para a resposta atual. O servidor continua sendo a autoridade sobre o limite de tentativas. |
+| `state.get(key)` | `string -> primitive/null` | valor armazenado ou `null` |
+| `state.set(key, value)` | `string, primitive -> null` | nenhum |
+| `state.reset(key)` | `string -> null` | nenhum |
 
-### Conteúdo dinâmico da aula
+Regras:
 
-| Função | Retorno | Regra |
+- Chaves são strings literais, de 1 a 64 bytes UTF-8.
+- O estado é isolado por matrícula e script; chaves iguais em scripts diferentes não colidem.
+- Valores são apenas string, number finito, boolean ou null. Objetos/arrays não são aceitos.
+- Uma string de estado pode ter até 4 KiB UTF-8. Cada script pode manter até 64 chaves e 64 KiB serializados por matrícula.
+- O runtime persiste o valor como JSON tipado; não usa uma string sem tipo que possa confundir `"1"`, `1` e `true`.
+- Ler chave inexistente retorna null; reset de chave inexistente é idempotente.
+
+### 5.3 Atividade
+
+| Função | Assinatura | Retorno | Disponibilidade |
+|---|---|---|---|
+| `activity.getAnswer()` | sem argumentos | string/number/boolean/null | `activity.submit` |
+| `activity.isCorrect()` | sem argumentos | boolean | `activity.submit` |
+| `activity.feedback(message, tone)` | `string, string -> null` | nenhum | `activity.submit`, `lesson.finish` |
+
+Regras:
+
+- `getAnswer()` retorna a resposta tipada enviada para a atividade que disparou o evento: índice escolhido (number) no Quiz ou texto (string) no Exercise. Não retorna gabarito, solução de referência nem dados de outras tentativas.
+- `isCorrect()` lê somente o resultado calculado pelo avaliador confiável do servidor. Não pode ser chamado em `lesson.start`/ `lesson.finish`.
+- `feedback` aceita texto simples até 1 KiB UTF-8 e tom `info`, `success`, `warning` ou `error`. A saída é tratada como texto, nunca HTML/Markdown interpretável.
+- `activity.setScore` e `activity.allowRetry` **não fazem parte da v0.1**. A pontuação atual de Quiz/Exercise e as portas `success`/`failed` são calculadas pelo backend, enquanto tentativas são únicas. Permitir override ou retentativa antes de definir precedência, nota de aprovação, tentativas máximas e persistência quebraria esse contrato.
+
+### 5.4 Apresentação do conteúdo
+
+| Função | Assinatura | Retorno |
 |---|---|---|
-| `content.show(nodeId)` | `null` | Solicita mostrar um nó de conteúdo da aula atual. |
-| `content.hide(nodeId)` | `null` | Solicita ocultar um nó de conteúdo da aula atual; não pode ocultar componentes de segurança ou navegação do sistema. |
-| `content.setText(nodeId, text)` | `null` | Altera somente o campo textual autorizado de um nó compatível. Não pode injetar HTML, CSS ou executar código. |
+| `content.show(nodeId)` | `string -> null` | nenhum |
+| `content.hide(nodeId)` | `string -> null` | nenhum |
+| `content.setText(nodeId, field, text)` | `string, string, string -> null` | nenhum |
 
-O backend valida que todo `nodeId` pertence à aula atual e a um tipo de conteúdo modificável. As chamadas `content.*` produzem efeitos estruturados que o cliente aplica à apresentação; o script não acessa DOM ou componentes React diretamente.
+Regras:
 
-## 4. Expressões e limites
+- `nodeId` e `field` devem ser strings literais na v0.1.
+- O nó-alvo precisa pertencer à mesma aula publicada do evento.
+- `show`/`hide` somente podem atuar em nós de conteúdo passivo: `heading`, `paragraph`, `list`, `image`, `video`, `code`, `callout`, `divider` e `embed`.
+- `show`/`hide` não podem atuar sobre `start`, `container`, `quiz`, `exercise`, `certificate`, navegação ou controles de segurança. Não alteram conexões, ordem do grafo, acesso à atividade ou elegibilidade de conclusão.
+- `setText` é limitado a: `heading.content`, `paragraph.content`, `callout.title` e `callout.content`. Campo incompatível com o tipo de nó é erro.
+- Texto dinâmico tem limite de 4 KiB UTF-8 por valor e é renderizado como texto escapado. Não altera o JSON publicado, não injeta HTML/CSS e vale somente para a matrícula/evento atual.
+- Os efeitos são aplicados depois da projeção de segurança do backend; não podem reexibir ramos bloqueados nem remover avisos obrigatórios do sistema.
 
-A v0.1 permite chamadas nativas, literais e os operadores `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||` e `!`, respeitando os tipos. O controle de fluxo é apenas `if/else`.
+## 6. Efeitos e persistência de execução
 
-Limites iniciais recomendados para o validador:
+Cada invocação produz um resultado declarativo com as listas abaixo; listas vazias são omitidas:
 
-- código-fonte com no máximo 16 KiB UTF-8;
-- até 1.000 nós de sintaxe (AST);
-- profundidade máxima de blocos/condições: 16;
-- até 256 chamadas nativas por disparo de evento;
-- tamanho máximo de texto emitido: 4 KiB por valor.
+```json
+{
+  "feedback": [{ "message": "Muito bem!", "tone": "success" }],
+  "nodeVisibility": [{ "nodeId": "extra-tip", "visible": true }],
+  "nodeText": [{ "nodeId": "lesson-summary", "field": "content", "value": "Resumo personalizado." }]
+}
+```
 
-Como não há laços, recursão nem funções definidas pelo autor, cada execução tem um número finito e limitado de instruções. Os limites devem ser constantes de configuração testadas, e não valores controláveis pelo script.
+- Os efeitos pertencem à matrícula/evento e são devolvidos no DTO do aluno daquela matrícula. Nunca modificam o conteúdo oficial do curso.
+- Para que os efeitos continuem iguais após refresh, a implementação deve persistir o resultado da invocação, não apenas devolvê-lo uma vez.
+- A execução deve ter uma identidade de evento gerada pelo backend. Uma chave única por matrícula/aula/evento/origem/script impede repetir efeitos no mesmo evento.
+- Os scripts habilitados são executados em ordem de sua posição em `scripts[]`; dentro de cada script, chamadas são avaliadas em ordem de fonte. A ordem é determinística e faz parte do contrato.
+- Cada script tem estado separado. Se uma invocação falhar, seus writes e efeitos são descartados; registra-se diagnóstico técnico no servidor e o próximo script é executado. Erro CL não deve converter uma resposta válida em falha de Quiz/Exercise nem impedir a conclusão que já passou nas regras de negócio.
+- Erro de infraestrutura/persistência do próprio evento continua sendo erro da API e não deve ser escondido como erro de script.
+- A implementação deve persistir estado e invocação em tabelas próprias (por exemplo, `CourseScriptStates` e `CourseScriptExecutions`), com unicidade por matrícula/script/chave e matrícula/aula/evento/origem/script, transações e isolamento entre matrículas.
+- A remoção da matrícula remove o estado e os resultados de execução correspondentes em cascata. O histórico de versão do curso não inclui estado de aluno.
 
-## 5. O que CL explicitamente não permite
+## 7. Limites obrigatórios
 
-- JavaScript, C#, Roslyn scripting, `eval` ou execução de código nativo;
-- `import`, carregamento dinâmico, definição de funções/classes ou recursão;
-- laços `for`/`while` ou qualquer mecanismo de repetição ilimitada;
+| Recurso | Limite v0.1 |
+|---|---:|
+| Scripts por curso | 100 |
+| Fonte por script | 16 KiB UTF-8 |
+| Nós de AST por script | 1.000 |
+| Profundidade de blocos/condições | 16 |
+| Invocações nativas por script/evento | 256 |
+| Scripts habilitados executados por evento | 16 |
+| Efeitos agregados por evento | 64 |
+| Payload total de efeitos por evento | 16 KiB UTF-8 |
+| Texto de feedback ou texto dinâmico | 1 KiB para feedback; 4 KiB para `content.setText` |
+| Estado por chave | 4 KiB serializado |
+| Chaves por script/matrícula | 64 |
+| Estado total por script/matrícula | 64 KiB |
+
+Os limites são constantes do servidor, testadas e não configuráveis pelo script ou pelo cliente. O contador de instruções aumenta a cada operação AST e chamada nativa; exceder qualquer limite aborta aquela invocação. Não há loop, recursão, função definida pelo autor, espera, timer, rede ou operação de I/O.
+
+## 8. Validação, publicação e diagnósticos
+
+### Validação estrutural
+
+- A coleção deve ser um array; `null` ou ausência é normalizado para `[]` em cursos legados.
+- `id` não vazio e único no curso; `name` limitado a 120 caracteres; `language` e `languageVersion` devem corresponder ao runtime disponível; `enabled` boolean; `source` string.
+- Cada script deve respeitar o limite de bytes e o limite de quantidade.
+- Eventos repetidos dentro do mesmo script são inválidos.
+- Chamada desconhecida, evento desconhecido, aridade incorreta, tipo conhecido incompatível, função em evento não permitido, ID de nó inexistente/incompatível ou limite ultrapassado impedem publicação.
+
+### Salvar e publicar
+
+- Rascunho pode armazenar fonte ainda inválida para permitir correção pelo autor, mas a API deve devolver diagnostics de validação; nunca executa o conteúdo enquanto inválido.
+- Toda publicação valida todos os scripts, inclusive os desabilitados, para não deixar código inválido latente que possa ser habilitado depois.
+- Curso criado diretamente como publicado e atualização de conteúdo publicado seguem a mesma validação.
+- O backend é a autoridade final. Validação apenas no frontend não é suficiente.
+- Apenas proprietário do curso e admin podem editar scripts. A sessão do aluno nunca pode enviar nem ativar fonte CL.
+
+### Diagnósticos
+
+Um diagnóstico deve ter pelo menos:
+
+```json
+{
+  "code": "CL_UNKNOWN_FUNCTION",
+  "message": "A função informada não existe na versão 0.1.",
+  "line": 3,
+  "column": 5,
+  "endLine": 3,
+  "endColumn": 24,
+  "severity": "error"
+}
+```
+
+- Linha/coluna começam em 1 e contam posições Unicode de modo consistente no editor.
+- Mensagens não devem incluir valores privados de contexto, respostas de outros alunos ou secrets.
+- Diagnósticos de sintaxe/semântica impedem publicação; diagnostics internos de runtime não devem ser devolvidos a outros alunos.
+- O backend registra código de erro e script/evento envolvidos sem registrar tokens, dados de autenticação ou conteúdo sensível desnecessário.
+
+## 9. O que CL explicitamente não permite
+
+- JavaScript, C#, Roslyn scripting, `eval`, execução de código nativo ou shell;
+- `import`, carregamento dinâmico, definição de funções/classes, reflexão ou resolução arbitrária de métodos;
+- loops, recursão, async/await, promises, timers ou execução concorrente controlada pelo script;
 - rede, filesystem, processos do sistema, variáveis de ambiente, relógio do sistema ou acesso direto ao banco;
-- SQL, reflexão, chamadas a métodos arbitrários ou acesso a serviços internos;
-- HTML/CSS/JavaScript cru, manipulação direta do DOM ou leitura de dados privados de outros alunos;
-- marcar uma aula como concluída, editar a estrutura publicada do curso ou contornar permissões/progresso.
+- SQL, chamadas a serviços internos, manipulação direta do DOM, React, HTML, CSS ou JavaScript;
+- acesso a e-mail, credenciais, tokens, cookies, IP ou dados privados de outros alunos;
+- marcar aulas como concluídas, alterar matrícula, liberar ramos de Quiz/Exercise, alterar gabaritos, pontuação-base, tentativas máximas ou permissões;
+- mudar a estrutura publicada do curso ou executar scripts em listagens/catálogos públicos.
 
-## 6. Contrato de execução no backend
+## 10. Sequência de execução no backend
 
-1. O backend carrega apenas scripts habilitados cuja versão de linguagem seja suportada e cujo autor tenha permissão para modificar o curso.
-2. Ao salvar/publicar, o código passa por análise léxica/sintática, validação de evento, função, tipos, IDs e limites. Erros impedem publicação/ativação.
-3. No evento, o runtime interpreta uma AST própria e invoca exclusivamente as funções do catálogo acima. Não compila a fonte como outra linguagem.
-4. Os efeitos são acumulados numa transação temporária. Se houver erro de execução, descartar efeitos parciais e registrar detalhes técnicos apenas no log do servidor.
-5. O resultado é um DTO de efeitos limitado e validado, nunca uma instrução executável enviada pelo servidor ao navegador.
-6. A resposta correta, notas, limites de tentativas e progresso são calculados/validados no servidor. A interface não recebe gabarito por executar CL.
-7. Scripts não devem rodar em listagens/catálogos de cursos; só em eventos autenticados e autorizados da aula/atividade correspondente.
+Para cada evento:
 
-## 7. Itens que seguem pendentes
+1. autenticar e autorizar a operação normal do aluno;
+2. validar curso publicado, matrícula, aula publicada e atividade alcançável quando aplicável;
+3. calcular o resultado confiável da atividade antes de `activity.submit`;
+4. selecionar scripts habilitados que declaram o evento, pela ordem original de `scripts[]`;
+5. verificar se aquela invocação já foi processada; se sim, reutilizar resultado persistido;
+6. executar cada script na AST, com contexto reduzido e registro nativo allowlisted;
+7. validar cada efeito, limite e estado antes de persistir;
+8. persistir estado e resultado de execução de forma atômica por script;
+9. persistir o evento principal de Quiz/Exercise ou conclusão conforme as regras existentes;
+10. devolver somente efeitos autorizados ao DTO daquela matrícula.
 
-- adicionar a coleção raiz `scripts` ao contrato frontend/API e persistência de cursos/rascunhos;
-- implementar validação e interpretador CL em C# com testes unitários para sintaxe, permissões, tipos e limites;
-- ligar os eventos às aulas e atividades e devolver efeitos no contrato da API;
-- criar editor/diagnóstico de scripts e impedir publicação de scripts inválidos;
-- validar migração, isolamento por aluno, tentativas concorrentes e compatibilidade de cursos existentes.
+O fluxo real deve garantir uma unidade transacional coerente entre o evento principal e os resultados CL. Se uma falha de banco impedir persistência, não retornar sucesso parcial. Se apenas um script falhar por erro de linguagem/limite, descartar seus efeitos, registrar o erro e continuar o evento principal conforme os passos acima.
 
-Até esses itens serem concluídos, CL v0.1 é uma especificação inicial e scripts não são executados.
+## 11. Testes obrigatórios para CL-002
+
+### Lexer/parser
+- todos os eventos permitidos e evento desconhecido;
+- strings/escapes, números finitos, boolean/null e comentários;
+- precedência e associatividade de todos os operadores;
+- blocos aninhados, `if/else` e várias instruções;
+- rejeição de loops, atribuição, declaração de função, propriedade/indexação, sintaxe incompleta e trailing tokens;
+- limites de fonte, AST e profundidade; diagnostics com linha/coluna.
+
+### Semântica e funções
+- nome de função, evento, aridade e tipos permitidos;
+- funções de atividade em evento indevido;
+- chave `context.get` fora da allowlist;
+- IDs e campos de nó inexistentes/incompatíveis;
+- ausência de coerção e erros de tipo dinâmico;
+- proibição de `setScore`, `allowRetry` e `activity.retry` na v0.1.
+
+### Runtime e persistência
+- execução determinística pela ordem do array e da fonte;
+- curto-circuito de condições;
+- isolamento de estado entre alunos, matrículas e scripts;
+- isolamento de falha: efeitos parciais de um script são descartados e os próximos continuam;
+- idempotência em refresh/repetição de evento e chamadas concorrentes;
+- persistência/replay dos efeitos após reload;
+- exclusão em cascata do estado ao cancelar matrícula;
+- scripts não aparecem em nenhum DTO público do aluno;
+- controles CL não reabrem ramos bloqueados nem alteram gabarito/conclusão;
+- limites de estado, instruções, scripts por evento e efeitos agregados.
+
+## 12. Dependências e fora de escopo
+
+**CL-001 (esta etapa):** revisar e aceitar este contrato de linguagem. Este documento é uma proposta e ainda requer aceite do proprietário.
+
+**CL-002 (etapa seguinte):** adicionar `ScriptsJson` em curso/rascunho, DTOs e snapshots; parser/AST; validador; registro de funções; persistência de estado/execução; integração dos três eventos; efeitos no DTO do aluno; migrações e testes.
+
+**Futuro, depois da v0.1:** editor/diagnóstico visual, retry policy, alteração de pontuação, múltiplas tentativas, loops controlados (se algum dia forem necessários), funções definidas pelo autor, funções de tempo/rede e recursos de integração externa. Nenhum desses itens deve entrar silenciosamente na implementação v0.1.
+
+## 13. Critérios de aceite da especificação
+
+- [ ] O proprietário aceita a gramática e os operadores.
+- [ ] O proprietário aceita o conjunto inicial de três eventos e os momentos de disparo.
+- [ ] O proprietário aceita que score override e retry fiquem fora da v0.1.
+- [ ] O proprietário aceita os efeitos permitidos e suas restrições.
+- [ ] O proprietário aceita os limites de fonte, AST, instruções, estado e efeitos.
+- [ ] O proprietário aceita a coleção raiz `scripts[]` e sua separação da resposta pública de aluno.
+
+Até que esses pontos sejam aceitos, CL-002 não deve tratar a especificação como contrato congelado e nenhum script pode ser executado.
