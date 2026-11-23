@@ -206,12 +206,6 @@ public static class ApiIntegrationTestSuite
                 "The public course response must never disclose the Quiz answer key.");
         }
 
-        var unauthenticatedQuizAttempt = await emptyClient.PostAsJsonAsync(
-            "/api/enrollments/course/lessons/lesson-one/quizzes/quiz-one/attempt",
-            new { selectedOptionIndex = 0 });
-        assert(unauthenticatedQuizAttempt.StatusCode == HttpStatusCode.Unauthorized,
-            "Quiz attempts must require an authenticated session.");
-
         using var emptyClient = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
@@ -222,6 +216,14 @@ public static class ApiIntegrationTestSuite
             new StringContent(coursePayload, Encoding.UTF8, "application/json"));
         assert(anonymousCreate.StatusCode == HttpStatusCode.Unauthorized,
             "Course creation must require authentication.");
+
+        var unauthenticatedQuizAttempt = await emptyClient.PostAsJsonAsync(
+            "/api/enrollments/course/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(unauthenticatedQuizAttempt.StatusCode == HttpStatusCode.Unauthorized,
+            "Quiz attempts must require an authenticated session.");
+
+
 
         const string draftPayload = """
         {
