@@ -245,11 +245,20 @@ public class EnrollmentsController : ControllerBase
         var priorAttempts = await _db.CourseQuizAttempts
             .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
             .ToListAsync();
-        var priorResults = priorAttempts
+        var priorExerciseAttempts = await _db.CourseExerciseAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
+            .ToListAsync();
+        var activityResults = priorAttempts
             .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+        foreach (var attempt in priorExerciseAttempts
+                     .GroupBy(item => item.ExerciseNodeId, StringComparer.Ordinal)
+                     .Select(group => group.OrderByDescending(item => item.CompletedAt).First()))
+        {
+            activityResults[attempt.ExerciseNodeId] = attempt.Passed;
+        }
         var availableQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
-            course.ModulesJson, lessonId, priorResults);
+            course.ModulesJson, lessonId, activityResults);
         if (!availableQuizIds.Contains(quizNodeId, StringComparer.Ordinal))
             return NotFound(new { error = "Este Quiz ainda não está disponível no caminho atual." });
 
