@@ -20,7 +20,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 | DB-001 | Alinhar migrações, model snapshot e coluna `PasswordHash` | `Program.cs`, `Migrations/`, `Models/AppUser.cs` |
 | MEDIA-001 | Reforçar validação e ciclo de vida do upload de capas | `Controllers/CourseMediaController.cs` |
 | CL-001 / CL-002 | Aprovar spec e implementar parser/runtime controlado | `docs/ARCHITECTURE/corselight-language-v0.1.md` e backend futuro |
-| API-TEST-001 | Criar testes de integração HTTP/EF Core para endpoints e regras | `CorseWeb.ProgressTests` contém apenas testes de contrato do projetor; falta infraestrutura HTTP/SQLite de integração |
+| API-TEST-001 | Criar testes de integração HTTP/EF Core para endpoints e regras | `CorseWeb.ProgressTests/ApiIntegrationTestSuite.cs`, `WebApplicationFactory`, SQLite em memória e harness de contrato |
 
 ## Limites atuais importantes
 
@@ -29,6 +29,6 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 - VERSION-001 acrescenta versionamento e snapshot para transições efetivas do status de publicação; pedidos idempotentes não criam histórico duplicado.
 - Migração de `PasswordHash` possui tratamento específico de SQLite no startup; precisa virar uma migração versionada.
 - O upload de capa limita tamanho e verifica assinatura de formato, mas ainda precisa de validação de imagem completa/reprocessamento.
-- O workflow compila o backend e executa um harness de testes de contrato do projetor de progresso; ainda não existe suíte de integração HTTP/EF Core nem E2E.
+- O workflow compila o backend e executa o harness de contrato do projetor, migrações SQLite e suíte HTTP integrada com `WebApplicationFactory`. A cobertura inicial inclui autenticação local/cookies, roles, propriedade de curso/rascunho, publicação/versões, matrícula/progresso, isolamento e upload inválido. Ainda faltam Google OAuth real, CSRF/expiração, concorrência, fluxos adicionais de migração e suíte E2E.
 
 Consulte o [Kanban central](../TODO.md), a [referência de API](../API/api-reference.md) e os [achados da auditoria](../SECURITY/audit-findings.md).
