@@ -134,6 +134,8 @@ public class CoursesController : ControllerBase
         if (contentError != null) return BadRequest(new { error = contentError });
         var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(dto.Modules?.GetRawText());
         if (quizError != null) return BadRequest(new { error = quizError });
+        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(dto.Modules?.GetRawText());
+        if (exerciseError != null) return BadRequest(new { error = exerciseError });
 
         var baseSlug = SlugHelper.Slugify(dto.Title);
         var existingSlugs = await _db.Courses.Select(c => c.Slug).ToListAsync();
@@ -169,6 +171,8 @@ public class CoursesController : ControllerBase
         if (contentError != null) return BadRequest(new { error = contentError });
         var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(dto.Modules?.GetRawText());
         if (quizError != null) return BadRequest(new { error = quizError });
+        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(dto.Modules?.GetRawText());
+        if (exerciseError != null) return BadRequest(new { error = exerciseError });
         CourseMapper.ApplyUpdate(c, dto, CurrentUserId!);
         _db.CourseVersions.Add(new CorseWeb.Server.Models.CourseVersion
         {
@@ -226,6 +230,8 @@ public class CoursesController : ControllerBase
             if (contentError != null) return BadRequest(new { error = contentError });
             var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(c.ModulesJson);
             if (quizError != null) return BadRequest(new { error = quizError });
+            var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(c.ModulesJson);
+            if (exerciseError != null) return BadRequest(new { error = exerciseError });
         }
         var changed = CourseVersioning.ApplyStatusTransition(c, target, CurrentUserId!);
         if (!changed)
