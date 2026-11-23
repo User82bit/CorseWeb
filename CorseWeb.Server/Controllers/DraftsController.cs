@@ -108,6 +108,8 @@ public class DraftsController : ControllerBase
         if (contentError != null) return BadRequest(new { error = contentError });
         var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(d.ModulesJson);
         if (quizError != null) return BadRequest(new { error = quizError });
+        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(d.ModulesJson);
+        if (exerciseError != null) return BadRequest(new { error = exerciseError });
 
         var user = await _db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
