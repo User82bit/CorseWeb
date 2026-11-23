@@ -64,7 +64,7 @@ public static class StudentLessonFlowProjector
 
             if (successNodes.Count == 0 && failedNodes.Count == 0) continue;
 
-            // A malformed cycle must never hide the Quiz card that owns the decision.
+            // A malformed cycle must never hide the activity card that owns the decision.
             successNodes.Remove(activityId);
             failedNodes.Remove(activityId);
 
