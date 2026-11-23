@@ -100,6 +100,87 @@ public static class CourseQuizEvaluator
         return null;
     }
 
+    public static string? ValidatePublishedQuizzes(string? modulesJson)
+    {
+        if (string.IsNullOrWhiteSpace(modulesJson)) return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(modulesJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return null;
+
+            foreach (var module in document.RootElement.EnumerateArray())
+            {
+                if (module.ValueKind != JsonValueKind.Object) continue;
+                if (TryGetProperty(module, "isPublished", out var modulePublished)
+                    && modulePublished.ValueKind != JsonValueKind.True)
+                {
+                    continue;
+                }
+                if (!TryGetProperty(module, "lessons", out var lessons)
+                    || lessons.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var lesson in lessons.EnumerateArray())
+                {
+                    if (lesson.ValueKind != JsonValueKind.Object
+                        || !TryGetProperty(lesson, "isPublished", out var lessonPublished)
+                        || lessonPublished.ValueKind != JsonValueKind.True
+                        || !TryGetProperty(lesson, "nodes", out var nodes)
+                        || nodes.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    foreach (var node in nodes.EnumerateArray())
+                    {
+                        if (node.ValueKind != JsonValueKind.Object || !HasString(node, "type", "quiz"))
+                            continue;
+
+                        var nodeId = TryGetProperty(node, "id", out var idElement)
+                            && idElement.ValueKind == JsonValueKind.String
+                                ? idElement.GetString()
+                                : "sem ID";
+                        if (!TryGetProperty(node, "props", out var props)
+                            || props.ValueKind != JsonValueKind.Object
+                            || !TryGetProperty(props, "question", out var question)
+                            || question.ValueKind != JsonValueKind.String
+                            || string.IsNullOrWhiteSpace(question.GetString())
+                            || !TryGetProperty(props, "options", out var options)
+                            || options.ValueKind != JsonValueKind.Array)
+                        {
+                            return $"O Quiz '{nodeId}' precisa de pergunta e opções válidas.";
+                        }
+
+                        var optionValues = options.EnumerateArray().ToArray();
+                        if (optionValues.Length < 2
+                            || optionValues.Any(option => option.ValueKind != JsonValueKind.String
+                                || string.IsNullOrWhiteSpace(option.GetString())))
+                        {
+                            return $"O Quiz '{nodeId}' precisa de pelo menos duas opções de texto não vazias.";
+                        }
+
+                        if (!TryGetProperty(props, "correctIndex", out var answer)
+                            || !answer.TryGetInt32(out var correctIndex)
+                            || correctIndex < 0
+                            || correctIndex >= optionValues.Length)
+                        {
+                            return $"O Quiz '{nodeId}' precisa apontar para uma opção correta existente.";
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (JsonException)
+        {
+            return "O conteúdo do curso contém uma definição de Quiz inválida.";
+        }
+    }
+
     public static IReadOnlyList<string> GetPublishedQuizNodeIds(
         string? modulesJson,
         string lessonId,
