@@ -31,7 +31,8 @@ public static class EnrollmentProgressProjector
         Course? course,
         IReadOnlyCollection<CourseLessonCompletion> completionRecords,
         IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null,
-        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null)
+        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null,
+        CourseCertificate? certificate = null)
     {
         var modules = ReadPublishedModules(course?.ModulesJson);
         var validLessonIds = modules
@@ -129,7 +130,15 @@ public static class EnrollmentProgressProjector
             enrollment.LastAccessedAt,
             document.RootElement.Clone(),
             quizDocument.RootElement.Clone(),
-            exerciseDocument.RootElement.Clone());
+            exerciseDocument.RootElement.Clone(),
+            certificate == null ? null : new CourseCertificatePayload(
+                certificate.VerificationCode,
+                certificate.StudentName,
+                certificate.CourseTitle,
+                certificate.AuthorName,
+                certificate.CourseVersion,
+                certificate.CourseCompletedAt,
+                certificate.IssuedAt));
     }
 
     private static IReadOnlyList<PublishedModule> ReadPublishedModules(string? modulesJson)

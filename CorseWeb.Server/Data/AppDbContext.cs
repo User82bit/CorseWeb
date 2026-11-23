@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<CourseLessonCompletion> CourseLessonCompletions => Set<CourseLessonCompletion>();
     public DbSet<CourseQuizAttempt> CourseQuizAttempts => Set<CourseQuizAttempt>();
     public DbSet<CourseExerciseAttempt> CourseExerciseAttempts => Set<CourseExerciseAttempt>();
+    public DbSet<CourseCertificate> CourseCertificates => Set<CourseCertificate>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -51,6 +52,20 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+        });
+
+        b.Entity<CourseCertificate>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EnrollmentId).HasMaxLength(36).IsRequired();
+            e.Property(x => x.CourseId).HasMaxLength(36).IsRequired();
+            e.Property(x => x.VerificationCode).HasMaxLength(32).IsRequired();
+            e.Property(x => x.StudentName).HasMaxLength(200).IsRequired();
+            e.Property(x => x.CourseTitle).HasMaxLength(240).IsRequired();
+            e.Property(x => x.AuthorName).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => x.EnrollmentId).IsUnique();
+            e.HasIndex(x => x.VerificationCode).IsUnique();
+            // Certificates are immutable snapshots and intentionally survive enrollment/course deletion.
         });
 
         b.Entity<CourseExerciseAttempt>(e =>
