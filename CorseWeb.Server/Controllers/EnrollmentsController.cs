@@ -151,6 +151,19 @@ public class EnrollmentsController : ControllerBase
             .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
         if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
 
+        var requiredQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(course.ModulesJson, lessonId);
+        if (requiredQuizIds.Count > 0)
+        {
+            var answeredQuizIds = await _db.CourseQuizAttempts
+                .Where(attempt => attempt.EnrollmentId == enrollment.Id
+                    && attempt.LessonId == lessonId
+                    && requiredQuizIds.Contains(attempt.QuizNodeId))
+                .Select(attempt => attempt.QuizNodeId)
+                .ToListAsync();
+            if (requiredQuizIds.Except(answeredQuizIds, StringComparer.Ordinal).Any())
+                return Conflict(new { error = "Responda a todos os quizzes desta aula antes de concluí-la." });
+        }
+
         var completionExists = await _db.CourseLessonCompletions.AnyAsync(record =>
             record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
 
