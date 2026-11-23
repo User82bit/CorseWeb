@@ -370,7 +370,7 @@ public static class ApiIntegrationTestSuite
         );
     }
 
-    private sealed class ApiTestApplicationFactory : WebApplicationFactory<Program>
+    private sealed class ApiTestApplicationFactory : WebApplicationFactory<CorseWeb.Server.ServerEntryPointMarker>
     {
         private readonly SqliteConnection _keeper;
 
