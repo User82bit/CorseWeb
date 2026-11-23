@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using CorseWeb.Server.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -87,6 +88,13 @@ public static class ApiIntegrationTestSuite
         });
         await RegisterAsync(quizFailureClient, "quiz-failure@corseweb.test", "Quiz failure student");
 
+        using var exerciseFailureClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
+        await RegisterAsync(exerciseFailureClient, "exercise-failure@corseweb.test", "Exercise failure student");
+
         const string coursePayload = """
         {
           "title": "Curso de integração",
@@ -165,6 +173,37 @@ public static class ApiIntegrationTestSuite
                       "outputs": [{ "id": "complete", "label": "Concluído" }]
                     },
                     {
+                      "id": "exercise-one",
+                      "type": "exercise",
+                      "x": 1980, "y": 0, "width": 384, "height": 216,
+                      "props": {
+                        "instruction": "Escreva o comando que exibe a mensagem informada.",
+                        "starterCode": "print('Sua mensagem')",
+                        "solution": "print(\"CorseWeb funciona!\")"
+                      },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [
+                        { "id": "success", "label": "Aprovado" },
+                        { "id": "failed", "label": "Reprovado" }
+                      ]
+                    },
+                    {
+                      "id": "exercise-passed-node",
+                      "type": "paragraph",
+                      "x": 2450, "y": 0, "width": 288, "height": 120,
+                      "props": { "content": "Exercício resolvido corretamente." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    },
+                    {
+                      "id": "exercise-failed-node",
+                      "type": "paragraph",
+                      "x": 2450, "y": 180, "width": 288, "height": 120,
+                      "props": { "content": "Exercício precisa de revisão." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    },
+                    {
                       "id": "nested-failed-node",
                       "type": "paragraph",
                       "x": 1550, "y": 180, "width": 288, "height": 120,
@@ -186,6 +225,9 @@ public static class ApiIntegrationTestSuite
                     { "id": "quiz-passed", "sourceNode": "quiz-one", "sourcePort": "success", "targetNode": "passed-node", "targetPort": "enter" },
                     { "id": "passed-nested-quiz", "sourceNode": "passed-node", "sourcePort": "complete", "targetNode": "nested-quiz", "targetPort": "enter" },
                     { "id": "nested-quiz-passed", "sourceNode": "nested-quiz", "sourcePort": "success", "targetNode": "nested-passed-node", "targetPort": "enter" },
+                    { "id": "nested-passed-exercise", "sourceNode": "nested-passed-node", "sourcePort": "complete", "targetNode": "exercise-one", "targetPort": "enter" },
+                    { "id": "exercise-passed", "sourceNode": "exercise-one", "sourcePort": "success", "targetNode": "exercise-passed-node", "targetPort": "enter" },
+                    { "id": "exercise-failed", "sourceNode": "exercise-one", "sourcePort": "failed", "targetNode": "exercise-failed-node", "targetPort": "enter" },
                     { "id": "nested-quiz-failed", "sourceNode": "nested-quiz", "sourcePort": "failed", "targetNode": "nested-failed-node", "targetPort": "enter" },
                     { "id": "quiz-failed", "sourceNode": "quiz-one", "sourcePort": "failed", "targetNode": "failed-node", "targetPort": "enter" }
                   ]
@@ -231,8 +273,9 @@ public static class ApiIntegrationTestSuite
                 .GetProperty("lessons")[0].GetProperty("nodes");
             var nodeIds = lessonNodes.EnumerateArray()
                 .Select(node => node.GetProperty("id").GetString()).ToArray();
-            assert(nodeIds.Contains("quiz-one") && !nodeIds.Contains("passed-node") && !nodeIds.Contains("failed-node"),
-                "Neither Quiz branch may be returned before a result exists.");
+            assert(nodeIds.Contains("quiz-one") && !nodeIds.Contains("passed-node") && !nodeIds.Contains("failed-node")
+                && !nodeIds.Contains("exercise-one"),
+                "Neither Quiz branch nor a nested Exercise may be returned before its upstream results exist.");
             var quizProps = lessonNodes.EnumerateArray()
                 .Single(node => node.GetProperty("id").GetString() == "quiz-one")
                 .GetProperty("props");
@@ -256,6 +299,12 @@ public static class ApiIntegrationTestSuite
             new { selectedOptionIndex = 0 });
         assert(unauthenticatedQuizAttempt.StatusCode == HttpStatusCode.Unauthorized,
             "Quiz attempts must require an authenticated session.");
+
+        var unauthenticatedExerciseAttempt = await emptyClient.PostAsJsonAsync(
+            "/api/enrollments/course/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "print(1)" });
+        assert(unauthenticatedExerciseAttempt.StatusCode == HttpStatusCode.Unauthorized,
+            "Exercise attempts must require an authenticated session.");
 
 
 
@@ -301,6 +350,17 @@ public static class ApiIntegrationTestSuite
             assert(invalidQuizUpdate.StatusCode == HttpStatusCode.BadRequest,
                 "A published course must reject a Quiz whose answer key points outside its option list.");
         }
+
+        var invalidExerciseCourse = JsonNode.Parse(coursePayload)!;
+        var invalidExercise = invalidExerciseCourse["modules"]![0]!["lessons"]![0]!["nodes"]!
+            .AsArray().Single(node => node?["id"]?.GetValue<string>() == "exercise-one");
+        invalidExercise!["props"]!["solution"] = "";
+        var invalidExerciseUpdate = await anonymous.PutAsJsonAsync($"/api/courses/{courseSlug}", new
+        {
+            modules = invalidExerciseCourse["modules"]
+        });
+        assert(invalidExerciseUpdate.StatusCode == HttpStatusCode.BadRequest,
+            "A published course must reject an Exercise without a reference solution.");
 
         var updateCourse = await anonymous.PutAsJsonAsync($"/api/courses/{courseSlug}", new
         {
@@ -367,6 +427,10 @@ public static class ApiIntegrationTestSuite
         assert(createEnrollment.StatusCode == HttpStatusCode.Created,
             "A student must be able to enroll in a published course.");
 
+        var exerciseFailureEnrollment = await exerciseFailureClient.PostAsync($"/api/enrollments/{courseId}", null);
+        assert(exerciseFailureEnrollment.StatusCode == HttpStatusCode.Created,
+            "A second student must be able to enroll independently for the Exercise failure path.");
+
         var quizBeforeLessonCompletion = await studentClient.PostAsJsonAsync(
             $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
             new { selectedOptionIndex = -1 });
@@ -430,6 +494,10 @@ public static class ApiIntegrationTestSuite
                 .Select(node => node.GetProperty("id").GetString()).ToArray();
             assert(nodeIds.Contains("nested-passed-node") && !nodeIds.Contains("nested-failed-node"),
                 "The nested Quiz result must unlock only its own selected output.");
+            assert(nodeIds.Contains("exercise-one")
+                && !nodeIds.Contains("exercise-passed-node")
+                && !nodeIds.Contains("exercise-failed-node"),
+                "An Exercise inside the selected Quiz path must appear before either Exercise result.");
         var refreshedCourseCatalog = await studentClient.GetAsync("/api/courses");
         using (var refreshedCatalog = JsonDocument.Parse(await refreshedCourseCatalog.Content.ReadAsStringAsync()))
         {
@@ -442,6 +510,97 @@ public static class ApiIntegrationTestSuite
                 "The course catalog refresh endpoint must return the student's current unlocked branch.");
         }
         }
+
+        var completeBeforeExercise = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
+        assert(completeBeforeExercise.StatusCode == HttpStatusCode.Conflict,
+            "A lesson must remain incomplete while a reachable Exercise is unanswered.");
+
+        var emptyExerciseAnswer = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "   " });
+        assert(emptyExerciseAnswer.StatusCode == HttpStatusCode.BadRequest,
+            "The Exercise endpoint must reject an empty submission.");
+
+        var successfulExerciseAttempt = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "  print(\"CorseWeb funciona!\")  \r\n" });
+        assert(successfulExerciseAttempt.StatusCode == HttpStatusCode.OK,
+            "A student must be able to submit a correct Exercise response.");
+        using (var exerciseResult = JsonDocument.Parse(await successfulExerciseAttempt.Content.ReadAsStringAsync()))
+        {
+            var attempt = exerciseResult.RootElement.GetProperty("exerciseAttempts")[0];
+            assert(attempt.GetProperty("isCorrect").GetBoolean()
+                && attempt.GetProperty("passed").GetBoolean()
+                && attempt.GetProperty("score").GetInt32() == 100,
+                "The server must compare the text submission and persist a passing Exercise result.");
+        }
+
+        var successfulExerciseCourse = await studentClient.GetAsync($"/api/courses/{courseSlug}");
+        using (var unlockedExercise = JsonDocument.Parse(await successfulExerciseCourse.Content.ReadAsStringAsync()))
+        {
+            var studentLesson = unlockedExercise.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0];
+            var nodeIds = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("exercise-passed-node") && !nodeIds.Contains("exercise-failed-node"),
+                "A correct Exercise response must unlock only its success branch.");
+            var exerciseNode = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Single(node => node.GetProperty("id").GetString() == "exercise-one");
+            assert(!exerciseNode.GetProperty("props").TryGetProperty("solution", out _),
+                "The public course response must never disclose the Exercise reference solution.");
+        }
+
+        var repeatedSuccessfulExercise = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "print(\"CorseWeb funciona!\")\n" });
+        assert(repeatedSuccessfulExercise.StatusCode == HttpStatusCode.OK,
+            "Submitting the same normalized Exercise answer must be idempotent.");
+
+        var changedSuccessfulExercise = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "print(\"Outra resposta\")" });
+        assert(changedSuccessfulExercise.StatusCode == HttpStatusCode.Conflict,
+            "A recorded Exercise response cannot be replaced by a different answer.");
+
+        var exerciseFailureQuizOne = await exerciseFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(exerciseFailureQuizOne.StatusCode == HttpStatusCode.OK,
+            "The Exercise failure-path student must pass the first Quiz to reach the nested path.");
+        var exerciseFailureNestedQuiz = await exerciseFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/nested-quiz/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(exerciseFailureNestedQuiz.StatusCode == HttpStatusCode.OK,
+            "The Exercise failure-path student must pass the nested Quiz before the Exercise.");
+        var failedExerciseAttempt = await exerciseFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "print('resposta diferente')" });
+        assert(failedExerciseAttempt.StatusCode == HttpStatusCode.OK,
+            "An incorrect Exercise submission must be accepted and evaluated as a result.");
+        using (var failedExerciseResult = JsonDocument.Parse(await failedExerciseAttempt.Content.ReadAsStringAsync()))
+        {
+            var attempt = failedExerciseResult.RootElement.GetProperty("exerciseAttempts")[0];
+            assert(!attempt.GetProperty("isCorrect").GetBoolean()
+                && !attempt.GetProperty("passed").GetBoolean()
+                && attempt.GetProperty("score").GetInt32() == 0,
+                "The server must persist an incorrect Exercise response as a failed result.");
+        }
+        var failedExerciseCourse = await exerciseFailureClient.GetAsync($"/api/courses/{courseSlug}");
+        using (var unlockedFailedExercise = JsonDocument.Parse(await failedExerciseCourse.Content.ReadAsStringAsync()))
+        {
+            var studentLesson = unlockedFailedExercise.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0];
+            var nodeIds = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("exercise-failed-node") && !nodeIds.Contains("exercise-passed-node"),
+                "An incorrect Exercise response must unlock only its failed branch.");
+        }
+
+        var completedAfterActivities = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
+        assert(completedAfterActivities.StatusCode == HttpStatusCode.OK,
+            "A student may complete the lesson after every activity in the selected path has a result.");
 
         var repeatedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
             $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
@@ -483,6 +642,12 @@ public static class ApiIntegrationTestSuite
             new { selectedOptionIndex = 0 });
         assert(lockedNestedQuizAttempt.StatusCode == HttpStatusCode.NotFound,
             "A student must not submit an answer to a Quiz inside an unselected branch.");
+
+        var lockedExerciseAttempt = await quizFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/exercises/exercise-one/attempt",
+            new { answer = "print(\"CorseWeb funciona!\")" });
+        assert(lockedExerciseAttempt.StatusCode == HttpStatusCode.NotFound,
+            "A student must not submit an Exercise inside an unselected branch.");
 
         var failedStudentCourse = await quizFailureClient.GetAsync($"/api/courses/{courseSlug}");
         using (var unlockedFailure = JsonDocument.Parse(await failedStudentCourse.Content.ReadAsStringAsync()))
@@ -561,6 +726,10 @@ public static class ApiIntegrationTestSuite
         assert(quizFailureUnenroll.StatusCode == HttpStatusCode.OK,
             "The second student must be able to cancel their own Quiz test enrollment.");
 
+        var exerciseFailureUnenroll = await exerciseFailureClient.DeleteAsync($"/api/enrollments/{courseId}");
+        assert(exerciseFailureUnenroll.StatusCode == HttpStatusCode.OK,
+            "The third student must be able to cancel their own Exercise test enrollment.");
+
         var ownUnenroll = await studentClient.DeleteAsync($"/api/enrollments/{courseId}");
         assert(ownUnenroll.StatusCode == HttpStatusCode.OK,
             "A student must be able to cancel their own enrollment.");
@@ -577,6 +746,8 @@ public static class ApiIntegrationTestSuite
                 "Cancelling an enrollment must cascade-delete its server completion records.");
             assert(await db.CourseQuizAttempts.CountAsync() == 0,
                 "Cancelling both enrollments must cascade-delete their stored Quiz results.");
+            assert(await db.CourseExerciseAttempts.CountAsync() == 0,
+                "Cancelling enrollments must cascade-delete their stored Exercise responses.");
         }
 
         using var unauthorizedMediaClient = factory.CreateClient();
@@ -608,6 +779,7 @@ public static class ApiIntegrationTestSuite
         assert(studentLogout.StatusCode == HttpStatusCode.OK,
             "The student session must be able to log out.");
         await quizFailureClient.PostAsync("/api/auth/logout", null);
+        await exerciseFailureClient.PostAsync("/api/auth/logout", null);
     }
 
     private static async Task<(string Id, string Role)> RegisterAsync(
