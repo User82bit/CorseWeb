@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using CorseWeb.Server.Data;
 using CorseWeb.Server.Dtos;
 using CorseWeb.Server.Helpers;
+using CorseWeb.Server.Models;
 
 namespace CorseWeb.Server.Controllers;
 
@@ -45,9 +46,35 @@ public class CoursesController : ControllerBase
         }
 
         var list = await q.OrderByDescending(c => c.UpdatedAt).Take(200).ToListAsync();
-        return Ok(list.Select(course => IsAdmin || course.AuthorId == CurrentUserId
-            ? CourseMapper.ToDto(course)
-            : CourseMapper.ToStudentDto(course)));
+        var attemptsByCourse = new Dictionary<string, IReadOnlyCollection<CourseQuizAttempt>>(StringComparer.Ordinal);
+        if (!IsAdmin && CurrentUserId is { } userId && list.Count > 0)
+        {
+            var listedCourseIds = list.Select(course => course.Id).ToArray();
+            var enrollmentMap = await _db.Enrollments
+                .Where(enrollment => enrollment.UserId == userId && listedCourseIds.Contains(enrollment.CourseId))
+                .ToDictionaryAsync(enrollment => enrollment.Id, enrollment => enrollment.CourseId);
+            var enrollmentIds = enrollmentMap.Keys.ToArray();
+            if (enrollmentIds.Length > 0)
+            {
+                var attempts = await _db.CourseQuizAttempts
+                    .Where(attempt => enrollmentIds.Contains(attempt.EnrollmentId))
+                    .ToListAsync();
+                attemptsByCourse = attempts
+                    .GroupBy(attempt => enrollmentMap[attempt.EnrollmentId], StringComparer.Ordinal)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => (IReadOnlyCollection<CourseQuizAttempt>)group.ToArray(),
+                        StringComparer.Ordinal);
+            }
+        }
+
+        return Ok(list.Select(course =>
+        {
+            if (IsAdmin || course.AuthorId == CurrentUserId)
+                return CourseMapper.ToDto(course);
+            attemptsByCourse.TryGetValue(course.Id, out var attempts);
+            return CourseMapper.ToStudentDto(course, attempts ?? []);
+        }));
     }
 
     [HttpGet("{slug}")]
@@ -57,9 +84,25 @@ public class CoursesController : ControllerBase
         if (c == null) return NotFound(new { error = "Curso não encontrado" });
         if (c.Status != "publicado" && !IsAdmin && c.AuthorId != CurrentUserId)
             return NotFound(new { error = "Curso não encontrado" });
-        return Ok(IsAdmin || c.AuthorId == CurrentUserId
-            ? CourseMapper.ToDto(c)
-            : CourseMapper.ToStudentDto(c));
+        if (IsAdmin || c.AuthorId == CurrentUserId)
+            return Ok(CourseMapper.ToDto(c));
+
+        IReadOnlyCollection<CourseQuizAttempt> attempts = [];
+        if (CurrentUserId is { } userId)
+        {
+            var enrollmentId = await _db.Enrollments
+                .Where(enrollment => enrollment.UserId == userId && enrollment.CourseId == c.Id)
+                .Select(enrollment => enrollment.Id)
+                .FirstOrDefaultAsync();
+            if (enrollmentId != null)
+            {
+                attempts = await _db.CourseQuizAttempts
+                    .Where(attempt => attempt.EnrollmentId == enrollmentId)
+                    .ToListAsync();
+            }
+        }
+
+        return Ok(CourseMapper.ToStudentDto(c, attempts));
     }
 
     [Authorize]
