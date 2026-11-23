@@ -77,7 +77,15 @@ O endpoint de emissão exige sessão e matrícula do usuário atual. A emissão 
 
 **Limites funcionais atuais:** Quiz possui uma pergunta e escolha única; Exercise usa comparação textual com solução de referência após normalização básica, sem executar/compilar código. Ambos permitem uma tentativa por matrícula/aula/card e score 100/0. Não há tentativas múltiplas, nota mínima configurável, banco de questões ou execução em sandbox. O certificado atesta apenas a conclusão registrada das aulas; como a conclusão da aula continua sendo uma ação explícita do aluno após as atividades alcançáveis, o documento não comprova domínio, competência prática ou habilitação profissional.
 
-## 5. Mídia — `/api/course-media`
+## 5. Certificados — `/api/certificates`
+
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/certificates/{verificationCode}` | Público | Verifica o snapshot de um certificado usando o código aleatório de 128 bits |
+
+O código deve conter exatamente 32 caracteres hexadecimais. Códigos malformados ou não encontrados retornam `404`. A resposta contém nome do aluno, curso, autor, versão, datas de conclusão/emissão e código; não expõe matrícula, e-mail ou dados internos.
+
+## 6. Mídia — `/api/course-media`
 
 | Método | Rota | Acesso | Descrição |
 |---|---|---|---|
@@ -85,7 +93,7 @@ O endpoint de emissão exige sessão e matrícula do usuário atual. A emissão 
 
 A URL devolvida é relativa ao site, em `/uploads/course-covers/{arquivo}`. A pasta é servida como conteúdo estático.
 
-## 6. Dados principais
+## 7. Dados principais
 
 | Entidade | Campos / responsabilidade |
 |---|---|
@@ -100,7 +108,7 @@ A URL devolvida é relativa ao site, em `/uploads/course-covers/{arquivo}`. A pa
 
 Os módulos e aulas não são tabelas independentes no schema atual; ficam serializados em JSON. A evolução de nós/conexões mantém esse contrato JSON. CorseLight ainda não possui coleção de scripts persistida nem endpoints próprios.
 
-## 7. Regras de autorização observadas
+## 8. Regras de autorização observadas
 
 - Curso publicado pode ser consultado publicamente.
 - A listagem geral retorna apenas publicados, exceto quando admin solicita explicitamente `includeAll`/`status=all`.

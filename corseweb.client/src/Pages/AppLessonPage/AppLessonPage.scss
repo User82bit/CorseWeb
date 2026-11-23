@@ -949,9 +949,12 @@
   justify-content: flex-start;
 }
 
-@media print {
-  @page { size: A4 landscape; margin: 10mm; }
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
 
+@media print {
   body * { visibility: hidden !important; }
 
   .student-lesson__certificate,
