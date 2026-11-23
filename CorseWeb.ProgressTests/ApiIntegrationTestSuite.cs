@@ -80,6 +80,13 @@ public static class ApiIntegrationTestSuite
         });
         await RegisterAsync(outsiderClient, "outsider@corseweb.test", "Outsider");
 
+        using var quizFailureClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
+        await RegisterAsync(quizFailureClient, "quiz-failure@corseweb.test", "Quiz failure student");
+
         const string coursePayload = """
         {
           "title": "Curso de integração",
@@ -101,8 +108,53 @@ public static class ApiIntegrationTestSuite
                   "title": "Aula 1",
                   "isPublished": true,
                   "estimatedMinutes": 5,
-                  "nodes": [],
-                  "connections": []
+                  "nodes": [
+                    {
+                      "id": "start",
+                      "type": "start",
+                      "x": 0, "y": 0, "width": 120, "height": 80,
+                      "props": {},
+                      "inputs": [],
+                      "outputs": [{ "id": "complete", "label": "Iniciar" }]
+                    },
+                    {
+                      "id": "quiz-one",
+                      "type": "quiz",
+                      "x": 200, "y": 0, "width": 384, "height": 216,
+                      "props": {
+                        "question": "Quanto é 2 + 2?",
+                        "options": ["4", "5"],
+                        "correctIndex": 0,
+                        "explanation": "Quatro é a soma de dois mais dois."
+                      },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [
+                        { "id": "success", "label": "Aprovado" },
+                        { "id": "failed", "label": "Reprovado" }
+                      ]
+                    },
+                    {
+                      "id": "passed-node",
+                      "type": "paragraph",
+                      "x": 700, "y": 0, "width": 288, "height": 120,
+                      "props": { "content": "Conteúdo liberado após aprovação." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    },
+                    {
+                      "id": "failed-node",
+                      "type": "paragraph",
+                      "x": 700, "y": 180, "width": 288, "height": 120,
+                      "props": { "content": "Conteúdo liberado após reprovação." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    }
+                  ],
+                  "connections": [
+                    { "id": "start-quiz", "sourceNode": "start", "sourcePort": "complete", "targetNode": "quiz-one", "targetPort": "enter" },
+                    { "id": "quiz-passed", "sourceNode": "quiz-one", "sourcePort": "success", "targetNode": "passed-node", "targetPort": "enter" },
+                    { "id": "quiz-failed", "sourceNode": "quiz-one", "sourcePort": "failed", "targetNode": "failed-node", "targetPort": "enter" }
+                  ]
                 },
                 {
                   "id": "lesson-hidden",
@@ -138,6 +190,27 @@ public static class ApiIntegrationTestSuite
         var publicCourse = await studentClient.GetAsync($"/api/courses/{courseSlug}");
         assert(publicCourse.StatusCode == HttpStatusCode.OK,
             "A published course must be readable by a public student session.");
+
+        using (var pendingCourse = JsonDocument.Parse(await publicCourse.Content.ReadAsStringAsync()))
+        {
+            var lessonNodes = pendingCourse.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0].GetProperty("nodes");
+            var nodeIds = lessonNodes.EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("quiz-one") && !nodeIds.Contains("passed-node") && !nodeIds.Contains("failed-node"),
+                "Neither Quiz branch may be returned before a result exists.");
+            var quizProps = lessonNodes.EnumerateArray()
+                .Single(node => node.GetProperty("id").GetString() == "quiz-one")
+                .GetProperty("props");
+            assert(!quizProps.TryGetProperty("correctIndex", out _),
+                "The public course response must never disclose the Quiz answer key.");
+        }
+
+        var unauthenticatedQuizAttempt = await emptyClient.PostAsJsonAsync(
+            "/api/enrollments/course/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(unauthenticatedQuizAttempt.StatusCode == HttpStatusCode.Unauthorized,
+            "Quiz attempts must require an authenticated session.");
 
         using var emptyClient = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -247,6 +320,92 @@ public static class ApiIntegrationTestSuite
         assert(createEnrollment.StatusCode == HttpStatusCode.Created,
             "A student must be able to enroll in a published course.");
 
+        var quizBeforeLessonCompletion = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt", null);
+        assert(quizBeforeLessonCompletion.StatusCode == HttpStatusCode.BadRequest,
+            "Submitting a Quiz without a selected option must be rejected.");
+
+        var completeBeforeQuiz = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
+        assert(completeBeforeQuiz.StatusCode == HttpStatusCode.Conflict,
+            "A lesson containing a Quiz cannot be completed before that Quiz is answered.");
+
+        var successfulQuizAttempt = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(successfulQuizAttempt.StatusCode == HttpStatusCode.OK,
+            "A student must be able to submit a valid Quiz answer.");
+        using (var quizResult = JsonDocument.Parse(await successfulQuizAttempt.Content.ReadAsStringAsync()))
+        {
+            var attempt = quizResult.RootElement.GetProperty("quizAttempts")[0];
+            assert(attempt.GetProperty("isCorrect").GetBoolean()
+                && attempt.GetProperty("passed").GetBoolean()
+                && attempt.GetProperty("score").GetInt32() == 100,
+                "The server must evaluate the correct answer and persist an approved result.");
+        }
+
+        var successfulStudentCourse = await studentClient.GetAsync($"/api/courses/{courseSlug}");
+        using (var unlockedSuccess = JsonDocument.Parse(await successfulStudentCourse.Content.ReadAsStringAsync()))
+        {
+            var studentLesson = unlockedSuccess.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0];
+            var nodeIds = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("passed-node") && !nodeIds.Contains("failed-node"),
+                "An approved result must unlock only the success branch in the student response.");
+            var connectionIds = studentLesson.GetProperty("connections").EnumerateArray()
+                .Select(edge => edge.GetProperty("id").GetString()).ToArray();
+            assert(connectionIds.Contains("quiz-passed") && !connectionIds.Contains("quiz-failed"),
+                "Only the selected Quiz output connection may be returned to the student.");
+        }
+
+        var repeatedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(repeatedSuccessfulQuizAttempt.StatusCode == HttpStatusCode.OK,
+            "Resubmitting the same Quiz answer must be idempotent.");
+
+        var changedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 1 });
+        assert(changedSuccessfulQuizAttempt.StatusCode == HttpStatusCode.Conflict,
+            "A recorded Quiz result cannot be replaced by another answer.");
+
+        var quizFailureEnroll = await quizFailureClient.PostAsync($"/api/enrollments/{courseId}", null);
+        assert(quizFailureEnroll.StatusCode == HttpStatusCode.Created,
+            "A second student must be able to enroll independently for the Quiz failure path.");
+        var invalidQuizChoice = await quizFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 9 });
+        assert(invalidQuizChoice.StatusCode == HttpStatusCode.BadRequest,
+            "The Quiz endpoint must reject option indices outside the authored answer list.");
+
+        var failedQuizAttempt = await quizFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = 1 });
+        assert(failedQuizAttempt.StatusCode == HttpStatusCode.OK,
+            "A student must be able to submit an incorrect answer and receive a failed result.");
+        using (var quizResult = JsonDocument.Parse(await failedQuizAttempt.Content.ReadAsStringAsync()))
+        {
+            var attempt = quizResult.RootElement.GetProperty("quizAttempts")[0];
+            assert(!attempt.GetProperty("isCorrect").GetBoolean()
+                && !attempt.GetProperty("passed").GetBoolean()
+                && attempt.GetProperty("score").GetInt32() == 0,
+                "The server must persist an incorrect answer as a failed result.");
+        }
+
+        var failedStudentCourse = await quizFailureClient.GetAsync($"/api/courses/{courseSlug}");
+        using (var unlockedFailure = JsonDocument.Parse(await failedStudentCourse.Content.ReadAsStringAsync()))
+        {
+            var studentLesson = unlockedFailure.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0];
+            var nodeIds = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("failed-node") && !nodeIds.Contains("passed-node"),
+                "A failed result must unlock only the failed branch for that student's enrollment.");
+        }
+
+
         var forgedProgress = await studentClient.PutAsJsonAsync(
             $"/api/enrollments/{courseId}/progress",
             new
@@ -304,6 +463,10 @@ public static class ApiIntegrationTestSuite
         assert(outsiderUnenroll.StatusCode == HttpStatusCode.NotFound,
             "A different student must not remove another user's enrollment.");
 
+        var quizFailureUnenroll = await quizFailureClient.DeleteAsync($"/api/enrollments/{courseId}");
+        assert(quizFailureUnenroll.StatusCode == HttpStatusCode.OK,
+            "The second student must be able to cancel their own Quiz test enrollment.");
+
         var ownUnenroll = await studentClient.DeleteAsync($"/api/enrollments/{courseId}");
         assert(ownUnenroll.StatusCode == HttpStatusCode.OK,
             "A student must be able to cancel their own enrollment.");
@@ -348,6 +511,7 @@ public static class ApiIntegrationTestSuite
         var studentLogout = await studentClient.PostAsync("/api/auth/logout", null);
         assert(studentLogout.StatusCode == HttpStatusCode.OK,
             "The student session must be able to log out.");
+        await quizFailureClient.PostAsync("/api/auth/logout", null);
     }
 
     private static async Task<(string Id, string Role)> RegisterAsync(
