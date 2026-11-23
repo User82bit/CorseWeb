@@ -8,6 +8,7 @@ import {
   getMyEnrollments,
   completeEnrollmentLesson,
   submitEnrollmentQuizAttempt,
+  submitEnrollmentExerciseAttempt,
   updateEnrollmentProgress,
   type CourseEnrollment,
   type EnrollmentProgressUpdate,
@@ -36,6 +37,9 @@ function AppLessonPage() {
   const [enrollmentError, setEnrollmentError] = useState(false);
   const [submittingQuizNodeId, setSubmittingQuizNodeId] = useState<string | null>(null);
   const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
+  const [submittingExerciseNodeId, setSubmittingExerciseNodeId] = useState<string | null>(null);
+  const [exerciseSubmitError, setExerciseSubmitError] = useState<string | null>(null);
+  const [exerciseErrorNodeId, setExerciseErrorNodeId] = useState<string | null>(null);
   const lastTrackedLesson = useRef<string | null>(null);
   const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
   const pendingCompletionLesson = useRef<string | null>(null);
@@ -128,11 +132,16 @@ function AppLessonPage() {
   };
 
   const handleCompleteLesson = async () => {
-    const hasUnansweredQuiz = !!lesson?.nodes?.some(node =>
-      node.type === "quiz"
-      && !enrollment?.quizAttempts.some(attempt =>
-        attempt.lessonId === lesson.id && attempt.quizNodeId === node.id));
-    if (!course || !lesson || !enrollment || saving || isLessonComplete || hasUnansweredQuiz) return;
+    const hasUnansweredActivity = !!lesson?.nodes?.some(node => {
+      if (node.type === "quiz")
+        return !enrollment?.quizAttempts.some(attempt =>
+          attempt.lessonId === lesson.id && attempt.quizNodeId === node.id);
+      if (node.type === "exercise")
+        return !enrollment?.exerciseAttempts.some(attempt =>
+          attempt.lessonId === lesson.id && attempt.exerciseNodeId === node.id);
+      return false;
+    });
+    if (!course || !lesson || !enrollment || saving || isLessonComplete || hasUnansweredActivity) return;
     setSaving(true);
     setSaveError(false);
     pendingCompletionLesson.current = lesson.id;
@@ -183,6 +192,43 @@ function AppLessonPage() {
       );
     } finally {
       setSubmittingQuizNodeId(null);
+    }
+  };
+
+  const handleExerciseSubmit = async (exerciseNodeId: string, answer: string) => {
+    if (!course || !lesson || !enrollment || submittingExerciseNodeId) return;
+    setSubmittingExerciseNodeId(exerciseNodeId);
+    setExerciseSubmitError(null);
+    setExerciseErrorNodeId(null);
+
+    try {
+      const updatedEnrollment = await submitEnrollmentExerciseAttempt(
+        course.slug,
+        lesson.id,
+        exerciseNodeId,
+        answer,
+      );
+      setEnrollment(updatedEnrollment);
+
+      // The server now returns the only branch unlocked by this result.
+      try {
+        await refreshCourses();
+        const refreshedCourse = getCourseBySlugStore(course.slug);
+        if (refreshedCourse) setCourse(refreshedCourse);
+      } catch {
+        // The attempt is persisted; a later course refresh will project the branch.
+      }
+    } catch {
+      setExerciseErrorNodeId(exerciseNodeId);
+      setExerciseSubmitError(
+        locale.startsWith("en")
+          ? "The response could not be evaluated. Check your connection and try again."
+          : locale.startsWith("es")
+            ? "No se pudo evaluar la respuesta. Comprueba la conexión e inténtalo de nuevo."
+            : "Não foi possível corrigir a resposta. Verifique sua conexão e tente novamente.",
+      );
+    } finally {
+      setSubmittingExerciseNodeId(null);
     }
   };
 
@@ -273,14 +319,17 @@ function AppLessonPage() {
 
   const completionPercent = Math.round(enrollment.overallPercent);
   const quizAttemptsForLesson = enrollment.quizAttempts.filter(attempt => attempt.lessonId === lesson.id);
-  const activeQuizNodes = (lesson.nodes ?? []).filter(node => node.type === "quiz");
-  const hasPendingQuiz = activeQuizNodes.some(node =>
-    !quizAttemptsForLesson.some(attempt => attempt.quizNodeId === node.id));
-  const quizCompletionHint = locale.startsWith("en")
-    ? "Answer every Quiz in this lesson before marking it complete."
+  const exerciseAttemptsForLesson = enrollment.exerciseAttempts.filter(attempt => attempt.lessonId === lesson.id);
+  const activeActivityNodes = (lesson.nodes ?? []).filter(node => node.type === "quiz" || node.type === "exercise");
+  const hasPendingActivity = activeActivityNodes.some(node =>
+    node.type === "quiz"
+      ? !quizAttemptsForLesson.some(attempt => attempt.quizNodeId === node.id)
+      : !exerciseAttemptsForLesson.some(attempt => attempt.exerciseNodeId === node.id));
+  const activityCompletionHint = locale.startsWith("en")
+    ? "Answer every Quiz and Exercise available in this path before marking the lesson complete."
     : locale.startsWith("es")
-      ? "Responde todos los cuestionarios de esta lección antes de completarla."
-      : "Responda a todos os quizzes desta aula antes de concluí-la.";
+      ? "Responde todos los cuestionarios y ejercicios disponibles en esta ruta antes de completar la lección."
+      : "Responda a todos os Quizzes e Exercícios disponíveis neste caminho antes de concluir a aula.";
   // The graph defines reading order; canvas geometry remains authoring-only.
   const studentNodes = sortNodesByLessonFlow(lesson.nodes ?? [], lesson.connections ?? [])
     .filter(isStudentVisibleNode);
@@ -344,6 +393,11 @@ function AppLessonPage() {
               onQuizSubmit={handleQuizSubmit}
               submittingQuizNodeId={submittingQuizNodeId}
               quizError={quizSubmitError}
+              exerciseAttempts={exerciseAttemptsForLesson}
+              onExerciseSubmit={handleExerciseSubmit}
+              submittingExerciseNodeId={submittingExerciseNodeId}
+              exerciseError={exerciseSubmitError}
+              exerciseErrorNodeId={exerciseErrorNodeId}
               locale={locale}
             />
           )}
@@ -355,16 +409,16 @@ function AppLessonPage() {
               </span>
               <div>
                 <h2>{isLessonComplete ? t.learning.lessonCompleted : t.learning.completeLesson}</h2>
-                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : hasPendingQuiz ? quizCompletionHint : t.learning.lessonCompletionDescription}</p>
+                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : hasPendingActivity ? activityCompletionHint : t.learning.lessonCompletionDescription}</p>
               </div>
             </div>
             <button
               type="button"
               className={isLessonComplete ? "student-lesson__button student-lesson__button--completed" : "student-lesson__button student-lesson__button--primary"}
               onClick={handleCompleteLesson}
-              disabled={saving || isLessonComplete || hasPendingQuiz}
+              disabled={saving || isLessonComplete || hasPendingActivity}
             >
-              {saving ? t.learning.savingProgress : isLessonComplete ? t.learning.lessonCompleted : hasPendingQuiz ? (locale.startsWith("en") ? "Answer the Quiz first" : locale.startsWith("es") ? "Responde el cuestionario" : "Responda ao Quiz primeiro") : t.learning.completeLesson}
+              {saving ? t.learning.savingProgress : isLessonComplete ? t.learning.lessonCompleted : hasPendingActivity ? (locale.startsWith("en") ? "Finish the activities first" : locale.startsWith("es") ? "Completa las actividades primero" : "Conclua as atividades primeiro") : t.learning.completeLesson}
               {!isLessonComplete && <SvgIcon name="check" size="1rem" />}
             </button>
           </section>
