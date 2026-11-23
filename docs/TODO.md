@@ -1,6 +1,6 @@
 # CorseWeb — Kanban do projeto
 
-Última atualização: 2026-11-18.
+Última atualização: 2026-11-23.
 
 Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
@@ -37,12 +37,13 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Separar `scripts[]` de `modules[]`; parser/AST próprio; validação de sintaxe, tipos, eventos, funções permitidas, permissões, limites e testes unitários. Não usar JavaScript/C# scripting, `eval` ou reflexão. Dependência: revisão/aceite de CL-001.
 
 - **FLOW-001 · P1 · Executar o grafo de fluxo pedagógico.** Interpretar conexões no servidor; definir semântica de `success`/`failed`; controlar liberação de nós/aulas e tentativas; integrar Quiz, Exercício e certificados reais. O editor atual apenas desenha/persiste conexões.
-- **API-TEST-001 · P1 · Criar testes de integração do backend.** Cobrir autenticação, roles, propriedade de curso/rascunho, publicação, versões, matrículas, progresso, uploads e migrações em banco descartável.
 - **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
 - **DATA-001 · P2 · Definir importação/exportação de cursos.** Especificar schema versionado, validação de entrada, tratamento de mídia, nós/conexões e scripts CL sem aceitar código executável não confiável.
 - **OPS-001 · P2 · Definir operação de produção.** Escolher banco/provider, backup/restore, gestão de secrets, HTTPS/proxy, armazenamento de uploads, logs e processo de migração; validar antes de publicar dados reais.
 
 ### Iniciada
+
+- **API-TEST-001 · P1 · Criar testes de integração do backend.** Em implementação: `WebApplicationFactory` com sessão por cookie e SQLite em memória; cobre registro/login, roles, propriedade de curso/rascunho, atualização, arquivamento/republicação e versões, matrícula, progresso server-side, isolamento de aluno, cascade delete e validação básica de upload. Primeira suíte HTTP integrada está na PR #48; faltam fluxo Google com token real, CSRF/expiração, concorrência, casos de migração/upgrade e ampliar endpoints restantes. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
@@ -50,7 +51,9 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 - **PROG-001 · P0 · Tornar o progresso autoritativo no servidor.** Integrado em `Homologa` pelo PR #44; CI aprovada. A API valida curso/matrícula/aula publicada, grava conclusão no servidor e projeta percentuais a partir dos eventos. Permanecem pendentes os testes dinâmicos de rotas com sessão real e a revisão manual dos fluxos; o botão de conclusão ainda é autodeclaração, não avaliação de quiz/exercício. [PROG-001](./BACKEND/etapas/prog-001-server-authoritative-progress.md).
 
-- **VERSION-001 · P1 · Versionar alterações de status de publicação.** Integrado em `Homologa` pela PR #46; transições efetivas atualizam status, versão, autor/data e changelog e gravam snapshot correspondente. Testes SQLite cobrem persistência e idempotência. Ainda falta teste HTTP integrado com sessão real e revisão manual do fluxo. [VERSION-001](./BACKEND/etapas/version-001-course-status-history.md).
+- **VERSION-001 · P1 · Versionar alterações de status de publicação.** Integrado em `Homologa` pela PR #46; transições efetivas atualizam status, versão, autor/data e changelog e gravam snapshot correspondente. Testes SQLite e API HTTP cobrem persistência, arquivamento e republicação. Ainda faltam concorrência e revisão manual do fluxo. [VERSION-001](./BACKEND/etapas/version-001-course-status-history.md).
+
+- **EDITOR-004 · P1 · Validar ordem de leitura pelo grafo de conexões.** Integrado em `Homologa` pela PR #47; CI #751 aprovada. Prévia e aula compartilham a linearização a partir de `start`, percorrem portas na ordem declarada e mantêm fallback para nós desconectados/legados. Testes cobrem ramos, ciclos e caminhos convergentes. Falta inspeção manual e aceite do proprietário; a sequência dos ramos não executa ainda decisões condicionais. [FE-015](./FRONTEND/etapas/fe-015-connection-reading-order.md).
 
 - **EDITOR-003 · P1 · Validar conexão de nós por toque no celular.** Correção integrada à `Homologa` pelo PR #45 e CI aprovada. A ligação agora usa toque/clique na saída e depois na entrada. Falta validação em dispositivo real e aceite do proprietário. [FE-014](./FRONTEND/etapas/fe-014-mobile-connection-gestures.md).
 
@@ -73,7 +76,6 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Precisa de correção
 
-- **EDITOR-004 · P1 · Usar as conexões do grafo como ordem de leitura.** A prévia e a aula exibiam os cards por `order`/posição, ignorando `connections[]`. Implementação na PR em rascunho: linearização a partir de `start`, DFS na ordem das portas de saída, fallback para nós desconectados/legados e testes de ramificações, ciclos e caminhos duplicados. A exibição dos ramos é sequencial e não equivale à execução pedagógica do grafo. Falta CI e revisão manual. [FE-015](./FRONTEND/etapas/fe-015-connection-reading-order.md).
 
 
 ## Fluxo de contribuição
