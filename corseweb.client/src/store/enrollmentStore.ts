@@ -98,10 +98,6 @@ export async function updateEnrollmentProgress(
   return normalizeEnrollment(result);
 }
 
-/**
- * Records the student's completion action for one lesson.
- * The API validates publication and calculates all progress values.
- */
 /** Submits one answer; the backend evaluates and persists the result. */
 export async function submitEnrollmentQuizAttempt(
   courseSlug: string,
@@ -119,6 +115,10 @@ export async function submitEnrollmentQuizAttempt(
   return normalizeEnrollment(result);
 }
 
+/**
+ * Records the student's completion action for one lesson.
+ * The API validates publication and calculates all progress values.
+ */
 export async function completeEnrollmentLesson(
   courseSlug: string,
   lessonId: string,
