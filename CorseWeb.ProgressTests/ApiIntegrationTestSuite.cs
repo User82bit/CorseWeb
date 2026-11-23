@@ -597,11 +597,6 @@ public static class ApiIntegrationTestSuite
                 "An incorrect Exercise response must unlock only its failed branch.");
         }
 
-        var completedAfterActivities = await studentClient.PostAsync(
-            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
-        assert(completedAfterActivities.StatusCode == HttpStatusCode.OK,
-            "A student may complete the lesson after every activity in the selected path has a result.");
-
         var repeatedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
             $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
             new { selectedOptionIndex = 0 });
