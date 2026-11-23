@@ -74,8 +74,9 @@ public static class CourseQuizEvaluator
                         }
 
                         var options = optionsElement.EnumerateArray()
-                            .Where(option => option.ValueKind == JsonValueKind.String)
-                            .Select(option => option.GetString()?.Trim() ?? string.Empty)
+                            .Select(option => option.ValueKind == JsonValueKind.String
+                                ? option.GetString()?.Trim() ?? string.Empty
+                                : string.Empty)
                             .ToArray();
 
                         if (options.Length < 2
