@@ -36,7 +36,7 @@ Cada nó possui:
 
 Tipos previstos no contrato TypeScript: `start`, `heading`, `paragraph`, `list`, `image`, `video`, `code`, `quiz`, `exercise`, `callout`, `divider`, `embed`, `certificate` e `container`.
 
-O nó `start` é um marcador de controle e permanece no nível principal. O nó `certificate` existe como card de conteúdo; sua presença não significa que o backend emita um certificado.
+O nó `start` é um marcador de controle e permanece no nível principal. O nó `certificate` é um card de emissão: na área do aluno ele consulta o certificado persistido da matrícula e permite solicitar emissão quando todas as aulas publicadas foram concluídas; no preview do editor permanece estático. Ver CERT-001 e a referência de API.
 
 ### Hierarquia visual de containers
 
@@ -140,9 +140,11 @@ CorseLight (CL) é uma linguagem proposta para lógica restrita de cursos, disti
 
 - A especificação atual é [CorseLight v0.1](./corselight-language-v0.1.md).
 - O contrato-alvo separa scripts internos numa coleção raiz `scripts[]`, fora de `modules[]`.
-- O backend atual não possui coluna/coleção `ScriptsJson`, parser, AST ou runtime CL.
-- O filtro do renderizador do aluno oculta nós/tags identificados como scripts CL; isso é uma proteção de apresentação, não execução segura nem implementação da linguagem.
-- Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime futuro deve obedecer à lista de funções e aos limites explícitos da especificação.
+- O backend atual ainda não possui `ScriptsJson`, parser, AST ou runtime CL. O formato-alvo prevê coleção raiz `scripts[]`, separada de `modules[]`, com snapshot versionado e exclusão completa da fonte nos DTOs do aluno.
+- A especificação CL v0.1 candidate.2 define três eventos (`lesson.start`, `lesson.finish`, `activity.submit`), funções nativas allowlisted, estado isolado por matrícula/script e efeitos declarativos de apresentação. `activity.retry`, `activity.setScore` e `activity.allowRetry` ficam fora desta versão porque o backend atual não oferece retentativas nem override de pontuação.
+- CL-001 continua aguardando aceite do proprietário; CL-002 deve implementar lexer/parser/AST própria, validação, persistência de estado/execução, idempotência, efeitos por matrícula e testes. Até então nenhum script é executado.
+- O filtro do renderizador do aluno que oculta tags/nós internos é uma proteção de apresentação, não execução segura nem implementação da linguagem.
+- Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime futuro deve obedecer à allowlist e aos limites explícitos da especificação.
 
 ## 10. Referências no código
 
