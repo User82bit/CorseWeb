@@ -367,10 +367,11 @@ public static class ApiIntegrationTestSuite
         assert(createEnrollment.StatusCode == HttpStatusCode.Created,
             "A student must be able to enroll in a published course.");
 
-        var quizBeforeLessonCompletion = await studentClient.PostAsync(
-            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt", null);
+        var quizBeforeLessonCompletion = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/quiz-one/attempt",
+            new { selectedOptionIndex = -1 });
         assert(quizBeforeLessonCompletion.StatusCode == HttpStatusCode.BadRequest,
-            "Submitting a Quiz without a selected option must be rejected.");
+            "The Quiz endpoint must reject an out-of-range answer index.");
 
         var completeBeforeQuiz = await studentClient.PostAsync(
             $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
