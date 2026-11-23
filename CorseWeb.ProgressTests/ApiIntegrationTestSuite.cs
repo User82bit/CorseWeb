@@ -142,6 +142,37 @@ public static class ApiIntegrationTestSuite
                       "outputs": [{ "id": "complete", "label": "Concluído" }]
                     },
                     {
+                      "id": "nested-quiz",
+                      "type": "quiz",
+                      "x": 1080, "y": 0, "width": 384, "height": 216,
+                      "props": {
+                        "question": "Qual linguagem é tipada?",
+                        "options": ["Python", "JavaScript"],
+                        "correctIndex": 0
+                      },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [
+                        { "id": "success", "label": "Aprovado" },
+                        { "id": "failed", "label": "Reprovado" }
+                      ]
+                    },
+                    {
+                      "id": "nested-passed-node",
+                      "type": "paragraph",
+                      "x": 1550, "y": 0, "width": 288, "height": 120,
+                      "props": { "content": "Segundo nível aprovado." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    },
+                    {
+                      "id": "nested-failed-node",
+                      "type": "paragraph",
+                      "x": 1550, "y": 180, "width": 288, "height": 120,
+                      "props": { "content": "Segundo nível reprovado." },
+                      "inputs": [{ "id": "enter", "label": "Entrada" }],
+                      "outputs": [{ "id": "complete", "label": "Concluído" }]
+                    },
+                    {
                       "id": "failed-node",
                       "type": "paragraph",
                       "x": 700, "y": 180, "width": 288, "height": 120,
@@ -153,6 +184,9 @@ public static class ApiIntegrationTestSuite
                   "connections": [
                     { "id": "start-quiz", "sourceNode": "start", "sourcePort": "complete", "targetNode": "quiz-one", "targetPort": "enter" },
                     { "id": "quiz-passed", "sourceNode": "quiz-one", "sourcePort": "success", "targetNode": "passed-node", "targetPort": "enter" },
+                    { "id": "passed-nested-quiz", "sourceNode": "passed-node", "sourcePort": "complete", "targetNode": "nested-quiz", "targetPort": "enter" },
+                    { "id": "nested-quiz-passed", "sourceNode": "nested-quiz", "sourcePort": "success", "targetNode": "nested-passed-node", "targetPort": "enter" },
+                    { "id": "nested-quiz-failed", "sourceNode": "nested-quiz", "sourcePort": "failed", "targetNode": "nested-failed-node", "targetPort": "enter" },
                     { "id": "quiz-failed", "sourceNode": "quiz-one", "sourcePort": "failed", "targetNode": "failed-node", "targetPort": "enter" }
                   ]
                 },
@@ -355,10 +389,35 @@ public static class ApiIntegrationTestSuite
                 .Select(node => node.GetProperty("id").GetString()).ToArray();
             assert(nodeIds.Contains("passed-node") && !nodeIds.Contains("failed-node"),
                 "An approved result must unlock only the success branch in the student response.");
+            assert(nodeIds.Contains("nested-quiz")
+                && !nodeIds.Contains("nested-passed-node")
+                && !nodeIds.Contains("nested-failed-node"),
+                "A Quiz inside the selected path must appear while its own output branches remain hidden.");
             var connectionIds = studentLesson.GetProperty("connections").EnumerateArray()
                 .Select(edge => edge.GetProperty("id").GetString()).ToArray();
             assert(connectionIds.Contains("quiz-passed") && !connectionIds.Contains("quiz-failed"),
                 "Only the selected Quiz output connection may be returned to the student.");
+        }
+
+        var completeBeforeNestedQuiz = await studentClient.PostAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/complete", null);
+        assert(completeBeforeNestedQuiz.StatusCode == HttpStatusCode.Conflict,
+            "A lesson must remain incomplete while a newly unlocked Quiz is unanswered.");
+
+        var nestedQuizAttempt = await studentClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/nested-quiz/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(nestedQuizAttempt.StatusCode == HttpStatusCode.OK,
+            "A Quiz must become answerable after its parent branch is selected.");
+        var nestedQuizCourse = await studentClient.GetAsync($"/api/courses/{courseSlug}");
+        using (var nestedResult = JsonDocument.Parse(await nestedQuizCourse.Content.ReadAsStringAsync()))
+        {
+            var studentLesson = nestedResult.RootElement.GetProperty("modules")[0]
+                .GetProperty("lessons")[0];
+            var nodeIds = studentLesson.GetProperty("nodes").EnumerateArray()
+                .Select(node => node.GetProperty("id").GetString()).ToArray();
+            assert(nodeIds.Contains("nested-passed-node") && !nodeIds.Contains("nested-failed-node"),
+                "The nested Quiz result must unlock only its own selected output.");
         }
 
         var repeatedSuccessfulQuizAttempt = await studentClient.PostAsJsonAsync(
@@ -395,6 +454,12 @@ public static class ApiIntegrationTestSuite
                 && attempt.GetProperty("score").GetInt32() == 0,
                 "The server must persist an incorrect answer as a failed result.");
         }
+
+        var lockedNestedQuizAttempt = await quizFailureClient.PostAsJsonAsync(
+            $"/api/enrollments/{courseId}/lessons/lesson-one/quizzes/nested-quiz/attempt",
+            new { selectedOptionIndex = 0 });
+        assert(lockedNestedQuizAttempt.StatusCode == HttpStatusCode.NotFound,
+            "A student must not submit an answer to a Quiz inside an unselected branch.");
 
         var failedStudentCourse = await quizFailureClient.GetAsync($"/api/courses/{courseSlug}");
         using (var unlockedFailure = JsonDocument.Parse(await failedStudentCourse.Content.ReadAsStringAsync()))
