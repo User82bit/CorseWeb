@@ -98,6 +98,62 @@ public static class CourseQuizEvaluator
         return null;
     }
 
+    public static IReadOnlyList<string> GetPublishedQuizNodeIds(string? modulesJson, string lessonId)
+    {
+        if (string.IsNullOrWhiteSpace(modulesJson) || string.IsNullOrWhiteSpace(lessonId))
+            return [];
+
+        try
+        {
+            using var document = JsonDocument.Parse(modulesJson);
+            if (document.RootElement.ValueKind != JsonValueKind.Array) return [];
+
+            foreach (var module in document.RootElement.EnumerateArray())
+            {
+                if (module.ValueKind != JsonValueKind.Object) continue;
+                if (TryGetProperty(module, "isPublished", out var modulePublished)
+                    && modulePublished.ValueKind != JsonValueKind.True)
+                {
+                    continue;
+                }
+                if (!TryGetProperty(module, "lessons", out var lessons)
+                    || lessons.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var lesson in lessons.EnumerateArray())
+                {
+                    if (lesson.ValueKind != JsonValueKind.Object
+                        || !HasString(lesson, "id", lessonId)
+                        || !TryGetProperty(lesson, "isPublished", out var lessonPublished)
+                        || lessonPublished.ValueKind != JsonValueKind.True
+                        || !TryGetProperty(lesson, "nodes", out var nodes)
+                        || nodes.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    return nodes.EnumerateArray()
+                        .Where(node => node.ValueKind == JsonValueKind.Object
+                            && HasString(node, "type", "quiz")
+                            && TryGetProperty(node, "id", out var id)
+                            && id.ValueKind == JsonValueKind.String
+                            && !string.IsNullOrWhiteSpace(id.GetString()))
+                        .Select(node => node.GetProperty("id").GetString()!)
+                        .Distinct(StringComparer.Ordinal)
+                        .ToArray();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+
+        return [];
+    }
+
     public static bool IsCorrect(QuizDefinition quiz, int selectedOptionIndex)
     {
         return selectedOptionIndex >= 0
