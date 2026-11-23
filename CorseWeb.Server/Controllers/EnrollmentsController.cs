@@ -43,19 +43,29 @@ public class EnrollmentsController : ControllerBase
             : await _db.CourseLessonCompletions
                 .Where(completion => enrollmentIds.Contains(completion.EnrollmentId))
                 .ToListAsync();
+        var quizAttempts = enrollmentIds.Length == 0
+            ? new List<CourseQuizAttempt>()
+            : await _db.CourseQuizAttempts
+                .Where(attempt => enrollmentIds.Contains(attempt.EnrollmentId))
+                .ToListAsync();
 
         var completionsByEnrollment = completions
             .GroupBy(completion => completion.EnrollmentId)
             .ToDictionary(group => group.Key, group => (IReadOnlyCollection<CourseLessonCompletion>)group.ToArray());
+        var quizAttemptsByEnrollment = quizAttempts
+            .GroupBy(attempt => attempt.EnrollmentId)
+            .ToDictionary(group => group.Key, group => (IReadOnlyCollection<CourseQuizAttempt>)group.ToArray());
 
         return Ok(enrollments.Select(enrollment =>
         {
             courses.TryGetValue(enrollment.CourseId, out var course);
             completionsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentCompletions);
+            quizAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentQuizAttempts);
             return EnrollmentProgressProjector.ToDto(
                 enrollment,
                 course,
-                enrollmentCompletions ?? []);
+                enrollmentCompletions ?? [],
+                enrollmentQuizAttempts ?? []);
         }));
     }
 
@@ -141,6 +151,19 @@ public class EnrollmentsController : ControllerBase
             .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
         if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
 
+        var lessonQuizAttempts = await _db.CourseQuizAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
+            .ToListAsync();
+        var quizResults = lessonQuizAttempts
+            .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+        var requiredQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
+            course.ModulesJson, lessonId, quizResults);
+        var answeredQuizIds = lessonQuizAttempts.Select(attempt => attempt.QuizNodeId)
+            .ToHashSet(StringComparer.Ordinal);
+        if (requiredQuizIds.Except(answeredQuizIds, StringComparer.Ordinal).Any())
+            return Conflict(new { error = "Responda a todos os quizzes disponíveis neste caminho antes de concluir a aula." });
+
         var completionExists = await _db.CourseLessonCompletions.AnyAsync(record =>
             record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
 
@@ -176,6 +199,87 @@ public class EnrollmentsController : ControllerBase
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
     }
 
+    /// <summary>
+    /// Evaluates one single-choice Quiz answer and permanently records the outcome
+    /// for this student's enrollment, lesson and Quiz card.
+    /// </summary>
+    [HttpPost("{courseId}/lessons/{lessonId}/quizzes/{quizNodeId}/attempt")]
+    public async Task<IActionResult> SubmitQuizAttempt(
+        string courseId,
+        string lessonId,
+        string quizNodeId,
+        [FromBody] QuizAttemptRequestDto dto)
+    {
+        var course = await FindCourseAsync(courseId);
+        if (course == null || course.Status != "publicado")
+            return NotFound(new { error = "Curso publicado não encontrado" });
+
+        var enrollment = await _db.Enrollments
+            .FirstOrDefaultAsync(item => item.UserId == UserId && item.CourseId == course.Id);
+        if (enrollment == null) return NotFound(new { error = "Matrícula não encontrada" });
+
+        var priorAttempts = await _db.CourseQuizAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id && attempt.LessonId == lessonId)
+            .ToListAsync();
+        var priorResults = priorAttempts
+            .GroupBy(attempt => attempt.QuizNodeId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.CompletedAt).First().Passed, StringComparer.Ordinal);
+        var availableQuizIds = CourseQuizEvaluator.GetPublishedQuizNodeIds(
+            course.ModulesJson, lessonId, priorResults);
+        if (!availableQuizIds.Contains(quizNodeId, StringComparer.Ordinal))
+            return NotFound(new { error = "Este Quiz ainda não está disponível no caminho atual." });
+
+        var definition = CourseQuizEvaluator.FindPublishedQuiz(course.ModulesJson, lessonId, quizNodeId);
+        if (definition == null)
+            return NotFound(new { error = "Quiz publicado não encontrado nesta aula" });
+        if (dto.SelectedOptionIndex < 0 || dto.SelectedOptionIndex >= definition.Options.Count)
+            return BadRequest(new { error = "A opção selecionada é inválida" });
+
+        var existing = priorAttempts.FirstOrDefault(attempt => attempt.QuizNodeId == quizNodeId);
+        if (existing != null)
+        {
+            if (existing.SelectedOptionIndex != dto.SelectedOptionIndex)
+                return Conflict(new { error = "Este Quiz já foi respondido nesta matrícula." });
+            return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
+        }
+
+        var isCorrect = CourseQuizEvaluator.IsCorrect(definition, dto.SelectedOptionIndex);
+        var completedAt = DateTime.UtcNow;
+        var attempt = new CourseQuizAttempt
+        {
+            EnrollmentId = enrollment.Id,
+            LessonId = lessonId,
+            QuizNodeId = quizNodeId,
+            SelectedOptionIndex = dto.SelectedOptionIndex,
+            IsCorrect = isCorrect,
+            Passed = isCorrect,
+            Score = isCorrect ? 100 : 0,
+            CompletedAt = completedAt
+        };
+
+        enrollment.CurrentLessonId = lessonId;
+        enrollment.LastAccessedAt = completedAt;
+        _db.CourseQuizAttempts.Add(attempt);
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // The unique index arbitrates simultaneous attempts on the same Quiz.
+            _db.Entry(attempt).State = EntityState.Detached;
+            var persisted = await _db.CourseQuizAttempts.FirstOrDefaultAsync(item =>
+                item.EnrollmentId == enrollment.Id
+                && item.LessonId == lessonId
+                && item.QuizNodeId == quizNodeId);
+            if (persisted == null) throw;
+            if (persisted.SelectedOptionIndex != dto.SelectedOptionIndex)
+                return Conflict(new { error = "Este Quiz já foi respondido nesta matrícula." });
+        }
+
+        return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
+    }
+
     [HttpDelete("{courseId}")]
     public async Task<IActionResult> Unenroll(string courseId)
     {
@@ -203,6 +307,10 @@ public class EnrollmentsController : ControllerBase
             .Where(record => record.EnrollmentId == enrollment.Id)
             .ToListAsync();
 
-        return EnrollmentProgressProjector.ToDto(enrollment, course, completions);
+        var quizAttempts = await _db.CourseQuizAttempts
+            .Where(attempt => attempt.EnrollmentId == enrollment.Id)
+            .ToListAsync();
+
+        return EnrollmentProgressProjector.ToDto(enrollment, course, completions, quizAttempts);
     }
 }

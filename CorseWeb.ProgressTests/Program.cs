@@ -172,6 +172,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         appliedMigrations.Contains("20261117120000_AddCourseLessonCompletions"),
         "The lesson-completion migration must be discoverable and applied.");
+    Assert(
+        appliedMigrations.Contains("20261123130000_AddCourseQuizAttempts"),
+        "The Quiz-attempt migration must be discoverable and applied.");
 
     var persistedEnrollment = new CourseEnrollment
     {
@@ -196,6 +199,53 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseLessonCompletions.CountAsync() == 1,
         "A completion record must persist in the migrated SQLite schema.");
+
+    var persistedQuizAttempt = new CourseQuizAttempt
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        QuizNodeId = "sqlite-quiz",
+        SelectedOptionIndex = 0,
+        IsCorrect = true,
+        Passed = true,
+        Score = 100,
+        CompletedAt = DateTime.UtcNow
+    };
+    db.CourseQuizAttempts.Add(persistedQuizAttempt);
+    await db.SaveChangesAsync();
+    Assert(
+        await db.CourseQuizAttempts.CountAsync() == 1,
+        "A Quiz result must persist in the migrated SQLite schema.");
+
+    db.CourseQuizAttempts.Add(new CourseQuizAttempt
+    {
+        EnrollmentId = persistedEnrollment.Id,
+        LessonId = "sqlite-lesson",
+        QuizNodeId = "sqlite-quiz",
+        SelectedOptionIndex = 1,
+        IsCorrect = false,
+        Passed = false,
+        Score = 0,
+        CompletedAt = DateTime.UtcNow
+    });
+    var duplicateQuizAttemptRejected = false;
+    try
+    {
+        await db.SaveChangesAsync();
+    }
+    catch (DbUpdateException)
+    {
+        duplicateQuizAttemptRejected = true;
+        foreach (var entry in db.ChangeTracker.Entries<CourseQuizAttempt>()
+                     .Where(entry => entry.State == EntityState.Added))
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+    Assert(
+        duplicateQuizAttemptRejected,
+        "SQLite must reject more than one Quiz attempt for the same enrollment/lesson/card.");
+
 
     db.CourseLessonCompletions.Add(new CourseLessonCompletion
     {
@@ -226,6 +276,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         await db.CourseLessonCompletions.CountAsync() == 0,
         "Deleting an enrollment must cascade-delete its completion records.");
+    Assert(
+        await db.CourseQuizAttempts.CountAsync() == 0,
+        "Deleting an enrollment must cascade-delete its Quiz attempt records.");
 
     // Publication status changes must increment the course version and persist
     // a snapshot with exactly the same status/version in the same unit of work.

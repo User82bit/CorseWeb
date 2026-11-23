@@ -21,14 +21,16 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 | MEDIA-001 | Reforçar validação e ciclo de vida do upload de capas | `Controllers/CourseMediaController.cs` |
 | CL-001 / CL-002 | Aprovar spec e implementar parser/runtime controlado | `docs/ARCHITECTURE/corselight-language-v0.1.md` e backend futuro |
 | API-TEST-001 | Criar testes de integração HTTP/EF Core para endpoints e regras | `CorseWeb.ProgressTests/ApiIntegrationTestSuite.cs`, `WebApplicationFactory`, SQLite em memória e harness de contrato |
+| FLOW-001 | Avaliar Quiz no servidor e liberar ramo pelo resultado | `Controllers/EnrollmentsController.cs`, `Helpers/CourseQuizEvaluator.cs`, `Helpers/StudentLessonFlowProjector.cs`, `Models/CourseQuizAttempt.cs`, migração e testes HTTP |
 
 ## Limites atuais importantes
 
 - Não há runtime da CorseLight no servidor. O backend não deve executar texto de autor como código.
-- PROG-001 remove percentual/status do corpo de escrita e calcula o progresso a partir de eventos server-side. Falta teste dinâmico de endpoints/migration; a conclusão é autodeclarada até haver avaliação server-side de quiz/exercício.
+- PROG-001 remove percentual/status do corpo de escrita e calcula o progresso a partir de eventos server-side. A conclusão manual permanece uma autodeclaração. FLOW-001 acrescenta avaliação server-side para o Quiz simples, mas não transforma o percentual em prova de aprendizagem.
 - VERSION-001 acrescenta versionamento e snapshot para transições efetivas do status de publicação; pedidos idempotentes não criam histórico duplicado.
 - Migração de `PasswordHash` possui tratamento específico de SQLite no startup; precisa virar uma migração versionada.
 - O upload de capa limita tamanho e verifica assinatura de formato, mas ainda precisa de validação de imagem completa/reprocessamento.
-- O workflow compila o backend e executa o harness de contrato do projetor, migrações SQLite e suíte HTTP integrada com `WebApplicationFactory`. A cobertura inicial inclui autenticação local/cookies, roles, propriedade de curso/rascunho, publicação/versões, matrícula/progresso, isolamento e upload inválido. Ainda faltam Google OAuth real, CSRF/expiração, concorrência, fluxos adicionais de migração e suíte E2E.
+- FLOW-001 introduz `CourseQuizAttempts`: uma resposta por matrícula/aula/card, correção e score 100/0 no servidor. A rota de aluno só retorna os nós alcançáveis após o resultado; tentativas em ramos bloqueados são rejeitadas. Limite atual: uma pergunta e uma escolha por card; não há tentativas múltiplas, exercícios executáveis ou certificado.
+- O workflow compila o backend e executa o harness de contrato do projetor, migrações SQLite e suíte HTTP integrada com `WebApplicationFactory`. A cobertura inicial inclui autenticação local/cookies, roles, propriedade de curso/rascunho, publicação/versões, matrícula/progresso, isolamento, upload inválido e os dois caminhos de Quiz (incluindo Quiz aninhado). Ainda faltam Google OAuth real, CSRF/expiração, concorrência, fluxos adicionais de migração e suíte E2E.
 
 Consulte o [Kanban central](../TODO.md), a [referência de API](../API/api-reference.md) e os [achados da auditoria](../SECURITY/audit-findings.md).

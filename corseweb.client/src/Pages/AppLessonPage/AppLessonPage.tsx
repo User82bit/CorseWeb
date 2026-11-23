@@ -7,6 +7,7 @@ import {
   enrollInCourse,
   getMyEnrollments,
   completeEnrollmentLesson,
+  submitEnrollmentQuizAttempt,
   updateEnrollmentProgress,
   type CourseEnrollment,
   type EnrollmentProgressUpdate,
@@ -33,6 +34,8 @@ function AppLessonPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [enrollmentError, setEnrollmentError] = useState(false);
+  const [submittingQuizNodeId, setSubmittingQuizNodeId] = useState<string | null>(null);
+  const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
   const lastTrackedLesson = useRef<string | null>(null);
   const pendingProgress = useRef<EnrollmentProgressUpdate | null>(null);
   const pendingCompletionLesson = useRef<string | null>(null);
@@ -125,7 +128,11 @@ function AppLessonPage() {
   };
 
   const handleCompleteLesson = async () => {
-    if (!course || !lesson || !enrollment || saving || isLessonComplete) return;
+    const hasUnansweredQuiz = !!lesson?.nodes?.some(node =>
+      node.type === "quiz"
+      && !enrollment?.quizAttempts.some(attempt =>
+        attempt.lessonId === lesson.id && attempt.quizNodeId === node.id));
+    if (!course || !lesson || !enrollment || saving || isLessonComplete || hasUnansweredQuiz) return;
     setSaving(true);
     setSaveError(false);
     pendingCompletionLesson.current = lesson.id;
@@ -139,6 +146,43 @@ function AppLessonPage() {
       setSaveError(true);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleQuizSubmit = async (quizNodeId: string, selectedOptionIndex: number) => {
+    if (!course || !lesson || !enrollment || submittingQuizNodeId) return;
+    setSubmittingQuizNodeId(quizNodeId);
+    setQuizSubmitError(null);
+
+    try {
+      const updatedEnrollment = await submitEnrollmentQuizAttempt(
+        course.slug,
+        lesson.id,
+        quizNodeId,
+        selectedOptionIndex,
+      );
+      setEnrollment(updatedEnrollment);
+
+      // Refresh the public course projection. The API now returns only the
+      // branch unlocked by this server-recorded result for the current user.
+      try {
+        await refreshCourses();
+        const refreshedCourse = getCourseBySlugStore(course.slug);
+        if (refreshedCourse) setCourse(refreshedCourse);
+      } catch {
+        // The attempt is already persisted; the next normal load will refresh
+        // the graph projection without asking the learner to answer again.
+      }
+    } catch {
+      setQuizSubmitError(
+        locale.startsWith("en")
+          ? "The answer could not be evaluated. Check your connection and try again."
+          : locale.startsWith("es")
+            ? "No se pudo evaluar la respuesta. Comprueba tu conexión e inténtalo de nuevo."
+            : "Não foi possível avaliar a resposta. Verifique sua conexão e tente novamente.",
+      );
+    } finally {
+      setSubmittingQuizNodeId(null);
     }
   };
 
@@ -228,6 +272,15 @@ function AppLessonPage() {
   }
 
   const completionPercent = Math.round(enrollment.overallPercent);
+  const quizAttemptsForLesson = enrollment.quizAttempts.filter(attempt => attempt.lessonId === lesson.id);
+  const activeQuizNodes = (lesson.nodes ?? []).filter(node => node.type === "quiz");
+  const hasPendingQuiz = activeQuizNodes.some(node =>
+    !quizAttemptsForLesson.some(attempt => attempt.quizNodeId === node.id));
+  const quizCompletionHint = locale.startsWith("en")
+    ? "Answer every Quiz in this lesson before marking it complete."
+    : locale.startsWith("es")
+      ? "Responde todos los cuestionarios de esta lección antes de completarla."
+      : "Responda a todos os quizzes desta aula antes de concluí-la.";
   // The graph defines reading order; canvas geometry remains authoring-only.
   const studentNodes = sortNodesByLessonFlow(lesson.nodes ?? [], lesson.connections ?? [])
     .filter(isStudentVisibleNode);
@@ -284,7 +337,15 @@ function AppLessonPage() {
               <p>{t.learning.noLessonContentDescription}</p>
             </div>
           ) : (
-            <LessonContentTree nodes={lesson.nodes ?? []} connections={lesson.connections ?? []} />
+            <LessonContentTree
+              nodes={lesson.nodes ?? []}
+              connections={lesson.connections ?? []}
+              quizAttempts={quizAttemptsForLesson}
+              onQuizSubmit={handleQuizSubmit}
+              submittingQuizNodeId={submittingQuizNodeId}
+              quizError={quizSubmitError}
+              locale={locale}
+            />
           )}
 
           <section className="student-lesson__completion">
@@ -294,16 +355,16 @@ function AppLessonPage() {
               </span>
               <div>
                 <h2>{isLessonComplete ? t.learning.lessonCompleted : t.learning.completeLesson}</h2>
-                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : t.learning.lessonCompletionDescription}</p>
+                <p>{isLessonComplete ? t.learning.courseProgress + ": " + completionPercent + "%" : hasPendingQuiz ? quizCompletionHint : t.learning.lessonCompletionDescription}</p>
               </div>
             </div>
             <button
               type="button"
               className={isLessonComplete ? "student-lesson__button student-lesson__button--completed" : "student-lesson__button student-lesson__button--primary"}
               onClick={handleCompleteLesson}
-              disabled={saving || isLessonComplete}
+              disabled={saving || isLessonComplete || hasPendingQuiz}
             >
-              {saving ? t.learning.savingProgress : isLessonComplete ? t.learning.lessonCompleted : t.learning.completeLesson}
+              {saving ? t.learning.savingProgress : isLessonComplete ? t.learning.lessonCompleted : hasPendingQuiz ? (locale.startsWith("en") ? "Answer the Quiz first" : locale.startsWith("es") ? "Responde el cuestionario" : "Responda ao Quiz primeiro") : t.learning.completeLesson}
               {!isLessonComplete && <SvgIcon name="check" size="1rem" />}
             </button>
           </section>

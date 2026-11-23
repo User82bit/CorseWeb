@@ -110,7 +110,11 @@ O backend mantém o conteúdo de módulos como JSON em `Course.ModulesJson`/`Cou
 
 A página não usa as coordenadas do canvas para posicionar elementos dentro do fluxo, não mostra portas/conexões e não executa scripts. Containers são representados como seções agrupadoras e seus filhos são renderizados recursivamente. Preview do editor e página do aluno compartilham o renderizador e o filtro de nós visíveis.
 
-**Importante:** a linearização das conexões define somente a ordem de apresentação do conteúdo. Ela não executa ramificações nem determina progressão, bloqueio/liberação de nós ou avaliação do aluno. Quando há saídas alternativas, a prévia e a página do aluno exibem sequencialmente os ramos na ordem das portas (Aprovado antes de Reprovado). O quiz mostra pergunta e opções, mas não aceita uma resposta nem calcula o resultado no fluxo atual. O exercício mostra instrução e código inicial, sem executar ou verificar a solução.
+**Execução condicional — FLOW-001:** a prévia do editor continua sendo uma visão de autoria e apresenta o grafo inteiro, incluindo os dois ramos. Na página do aluno, o backend interpreta as portas do Quiz: enquanto não existe resultado, os nós conectados a `success` e `failed` ficam fora do JSON público; depois da resposta, somente o ramo escolhido é retornado. Quizzes dentro de um ramo só ficam acessíveis quando o caminho anterior os alcança. O endpoint também rejeita tentativas diretas em Quizzes bloqueados. O renderizador de leitura apresenta formulário de escolha única, recebe o resultado persistido e exibe aprovado/reprovado.
+
+A primeira fatia avalia uma pergunta por Quiz, com opções de texto e `correctIndex` armazenado apenas no servidor. Acerto produz score 100 e `success`; erro produz score 0 e `failed`. A mesma resposta repetida é idempotente; alterar uma resposta já registrada retorna conflito. A tabela `CourseQuizAttempts` possui índice único por matrícula/aula/card e FK com exclusão em cascata. A publicação valida pergunta, pelo menos duas opções não vazias e índice correto válido. A conclusão da aula é bloqueada até que todos os Quizzes alcançáveis no caminho selecionado tenham resultado.
+
+Isso ainda não é um motor genérico de execução: Exercício, certificado, score mínimo configurável, múltiplas perguntas, múltipla seleção e retentativas permanecem fora desta etapa. A conclusão da aula continua sendo uma ação explícita do aluno após os Quizzes alcançáveis; não deve ser usada isoladamente para comprovar aprendizagem ou liberar benefícios de alto valor.
 
 ## 6. Progresso e conclusão de aulas
 
@@ -118,11 +122,11 @@ O progresso da matrícula não é calculado pelo navegador. A tabela `CourseLess
 
 O endpoint de atualização de navegação aceita apenas `currentLessonId`; percentual, status de módulos e datas enviados pelo cliente não fazem parte do contrato. O backend projeta `modulesProgress`, `overallPercent` e `completedAt` a partir dos eventos persistidos e das aulas atualmente publicadas. Dados antigos guardados em `ModulesProgressJson`/colunas de percentual não são mais considerados como fonte confiável.
 
-A conclusão atual é uma autodeclaração do aluno pelo botão “Concluir aula”. Ela não é uma avaliação de aprendizagem: quizzes e exercícios ainda não são corrigidos no servidor. Não usar esse percentual como prova para emissão de certificado, acesso pago ou decisão de alto valor até existir avaliação server-side.
+A conclusão de aula continua sendo uma autodeclaração explícita do aluno, mas o backend impede que ela seja registrada enquanto houver Quiz alcançável sem resposta. A avaliação do Quiz simples é server-side e libera o ramo correspondente; o card Exercício ainda não é corrigido. O percentual geral não comprova domínio do conteúdo e não deve, sozinho, liberar certificado, acesso pago ou decisão de alto valor.
 
 ## 7. Separação de dados de autoria e aluno
 
-As respostas dos endpoints públicos de cursos usam CourseMapper.ToStudentDto, que remove propriedades privadas dos props dos nós, incluindo correctIndex, solution, answer, acceptedAnswers e expectedOutput. Administradores e autores continuam recebendo o DTO completo no acesso autenticado. Esconder esses campos apenas na interface não é controle de segurança.
+As respostas dos endpoints públicos de cursos usam CourseMapper.ToStudentDto, que remove propriedades privadas dos props dos nós, incluindo correctIndex, solution, answer, acceptedAnswers e expectedOutput. O mesmo mapper aplica o resultado da matrícula atual e não envia os nós/conexões dos ramos ainda bloqueados ou não escolhidos. Administradores e autores continuam recebendo o DTO completo no acesso autenticado para editar o grafo. Esconder esses campos apenas na interface não é controle de segurança.
 
 ## 8. Quebra intencional de compatibilidade
 

@@ -56,8 +56,16 @@ public record DraftUpdateDto(
     bool? AllowComments, bool? AllowFork, string? Slug
 );
 
+public record QuizAttemptPayload(
+    string LessonId, string QuizNodeId, int SelectedOptionIndex, bool IsCorrect,
+    bool Passed, int Score, DateTime CompletedAt);
+
+public record QuizAttemptRequestDto(int SelectedOptionIndex);
+
 public record EnrollmentDto(
-    string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent, string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress
+    string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent,
+    string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress,
+    JsonElement QuizAttempts
 );
 
 // Only the current lesson is client-updatable. Completion and percentages are server-derived.

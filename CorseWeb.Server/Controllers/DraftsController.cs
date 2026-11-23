@@ -106,6 +106,8 @@ public class DraftsController : ControllerBase
         if (d.OwnerId != UserId && User.FindFirstValue(ClaimTypes.Role) != "admin") return Forbid();
         var contentError = CourseContentValidator.ValidateJson(d.ModulesJson);
         if (contentError != null) return BadRequest(new { error = contentError });
+        var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(d.ModulesJson);
+        if (quizError != null) return BadRequest(new { error = quizError });
 
         var user = await _db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
