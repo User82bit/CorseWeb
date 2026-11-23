@@ -30,7 +30,8 @@ public static class EnrollmentProgressProjector
         CourseEnrollment enrollment,
         Course? course,
         IReadOnlyCollection<CourseLessonCompletion> completionRecords,
-        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null)
+        IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null,
+        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null)
     {
         var modules = ReadPublishedModules(course?.ModulesJson);
         var validLessonIds = modules
@@ -99,8 +100,21 @@ public static class EnrollmentProgressProjector
                 attempt.CompletedAt))
             .ToArray();
 
+        var exercisePayload = (exerciseAttempts ?? Array.Empty<CourseExerciseAttempt>())
+            .Where(attempt => string.Equals(attempt.EnrollmentId, enrollment.Id, StringComparison.Ordinal))
+            .OrderBy(attempt => attempt.CompletedAt)
+            .Select(attempt => new ExerciseAttemptPayload(
+                attempt.LessonId,
+                attempt.ExerciseNodeId,
+                attempt.IsCorrect,
+                attempt.Passed,
+                attempt.Score,
+                attempt.CompletedAt))
+            .ToArray();
+
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(modulesProgress, JsonOptions));
         using var quizDocument = JsonDocument.Parse(JsonSerializer.Serialize(attemptPayload, JsonOptions));
+        using var exerciseDocument = JsonDocument.Parse(JsonSerializer.Serialize(exercisePayload, JsonOptions));
         var currentLessonId = enrollment.CurrentLessonId is { } current
             && validLessonIds.Contains(current)
                 ? current
@@ -114,7 +128,8 @@ public static class EnrollmentProgressProjector
             currentLessonId,
             enrollment.LastAccessedAt,
             document.RootElement.Clone(),
-            quizDocument.RootElement.Clone());
+            quizDocument.RootElement.Clone(),
+            exerciseDocument.RootElement.Clone());
     }
 
     private static IReadOnlyList<PublishedModule> ReadPublishedModules(string? modulesJson)
