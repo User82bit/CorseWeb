@@ -53,19 +53,24 @@ Todos os endpoints exigem sessão.
 | `GET` | `/api/enrollments` | Lista matrículas do usuário atual; progresso é calculado a partir dos eventos de conclusão persistidos |
 | `POST` | `/api/enrollments/{courseId}` | Matricula usuário em curso publicado; aceita ID ou slug |
 | `PUT` | `/api/enrollments/{courseId}/progress` | Atualiza somente a aula atual, desde que pertença ao curso e esteja publicada |
-| `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/complete` | Registra de forma idempotente a ação de conclusão de uma aula publicada; exige resposta a todos os Quizzes alcançáveis da aula |
+| `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/complete` | Registra de forma idempotente a ação de conclusão de uma aula publicada; exige resultado para todos os Quizzes e Exercícios alcançáveis no caminho selecionado |
 | `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/quizzes/{quizNodeId}/attempt` | Avalia e registra a resposta de um Quiz alcançável da matrícula |
+| `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/exercises/{exerciseNodeId}/attempt` | Compara e registra a resposta textual/código de um Exercício alcançável da matrícula |
 | `DELETE` | `/api/enrollments/{courseId}` | Cancela matrícula e remove os eventos de conclusão associados |
 
 O corpo de `PUT .../progress` aceita apenas `currentLessonId`. Percentuais, estados de aulas/módulos e datas de conclusão não são aceitos como autoridade do navegador. No `POST .../complete`, o backend exige sessão e matrícula do usuário atual, curso publicado e aula com `isPublished: true` dentro daquele curso. A data é criada pelo servidor; um índice único por matrícula/aula torna a ação idempotente.
 
 O corpo do endpoint de tentativa contém `selectedOptionIndex`. O backend exige curso e aula publicados, matrícula do usuário, Quiz configurado e atualmente alcançável no grafo. A tentativa é corrigida com o gabarito mantido no servidor; o resultado contém `lessonId`, `quizNodeId`, `selectedOptionIndex`, `isCorrect`, `passed`, `score` e `completedAt`. A mesma opção repetida é idempotente; uma resposta diferente após o resultado gera `409 Conflict`; opção inválida gera `400`; Quiz em ramo bloqueado não é encontrado para aquela matrícula. Cada matrícula/aula/card aceita uma tentativa persistida, protegida por índice único e removida em cascata ao cancelar a matrícula.
 
-A projeção pública de `GET /api/courses` e `GET /api/courses/{slug}` usa os resultados da matrícula atual: antes do resultado, nenhum nó conectado a `success`/`failed` é enviado; após o resultado, somente o caminho escolhido é enviado. O gabarito `correctIndex` continua removido do DTO do aluno. O autor/admin recebe o grafo completo para edição. Cursos e rascunhos só podem ser publicados quando cada Quiz em aula publicada tiver pergunta, pelo menos duas opções de texto não vazias e índice correto dentro da lista.
+A rota de Quiz recebe `selectedOptionIndex`; a rota de Exercício recebe `answer` (string de até 20.000 caracteres). O servidor exige curso/aula publicados, matrícula do usuário, atividade válida e alcançável no caminho atual. Para Quiz, corrige pelo índice `correctIndex`; para Exercício, compara o texto enviado com `props.solution` após normalizar CRLF/CR para LF, remover espaços no fim das linhas e aparar as extremidades. A comparação é sensível a maiúsculas/minúsculas, indentação e espaços internos. Não há execução nem compilação de código.
+
+Cada atividade aceita uma tentativa por matrícula/aula/card. Repetir a mesma resposta normalizada é idempotente; enviar outra resposta para a mesma atividade retorna `409 Conflict`. Resposta vazia ou acima de 20.000 caracteres é rejeitada; atividade em ramo bloqueado retorna `404`. Resultados são persistidos nas entidades `CourseQuizAttempt` e `CourseExerciseAttempt`, com índice único e FK em cascata para matrícula. O DTO de matrícula contém `quizAttempts[]` e `exerciseAttempts[]` sem expor as respostas enviadas do exercício.
+
+A projeção pública de `GET /api/courses` e `GET /api/courses/{slug}` usa os resultados da matrícula atual: antes do resultado, nenhum nó conectado a `success`/`failed` é enviado; após o resultado, somente o caminho escolhido é enviado. Os gabaritos `correctIndex` e `solution` continuam removidos do DTO do aluno. O autor/admin recebe o grafo completo para edição. Cursos publicados e rascunhos só podem ser publicados quando cada Quiz tiver pergunta, pelo menos duas opções e índice correto válido; cada Exercise em aula publicada precisa de instrução e solução de referência, ambas dentro do limite de tamanho.
 
 O servidor calcula `overallPercent`, `modulesProgress` e `completedAt` a partir das aulas publicadas e dos eventos existentes em `CourseLessonCompletions`. Aulas não publicadas ou IDs de outro curso não entram no cálculo. Valores legados gravados pelo contrato antigo do cliente são ignorados; matrículas antigas voltam a mostrar 0% até que novos eventos válidos sejam registrados.
 
-**Limite funcional atual:** o Quiz de uma pergunta/escolha única tem correção server-side e seleciona o ramo do grafo, mas não oferece tentativas múltiplas, nota mínima configurável ou banco de questões. O botão de conclusão continua sendo uma autodeclaração de que o aluno terminou a aula; o Quiz simples não é prova suficiente para certificado, conteúdo pago ou decisão de alto valor. O card Exercício ainda não é executado nem corrigido.
+**Limites funcionais atuais:** Quiz possui uma pergunta e escolha única; Exercise usa comparação textual com solução de referência após normalização básica, sem executar/compilar código. Ambos permitem uma tentativa por matrícula/aula/card e score 100/0. Não há tentativas múltiplas, nota mínima configurável, banco de questões, execução em sandbox ou certificado funcional. O botão de conclusão ainda é uma autodeclaração de que o aluno terminou a aula; esse percentual não comprova domínio do conteúdo nem deve, sozinho, liberar benefícios de alto valor.
 
 ## 5. Mídia — `/api/course-media`
 
@@ -85,6 +90,7 @@ A URL devolvida é relativa ao site, em `/uploads/course-covers/{arquivo}`. A pa
 | `CourseVersion` | `CourseId`, número, `SnapshotJson`, autor e data |
 | `CourseEnrollment` | Usuário, curso, percentual, aula atual e `ModulesProgressJson` |
 | `CourseQuizAttempt` | Matrícula, aula, Quiz, índice escolhido, correção, aprovação, score e timestamp; único por matrícula/aula/card |
+| `CourseExerciseAttempt` | Matrícula, aula, Exercise, resposta enviada, correção, aprovação, score e timestamp; único por matrícula/aula/card |
 
 Os módulos e aulas não são tabelas independentes no schema atual; ficam serializados em JSON. A evolução de nós/conexões mantém esse contrato JSON. CorseLight ainda não possui coleção de scripts persistida nem endpoints próprios.
 
