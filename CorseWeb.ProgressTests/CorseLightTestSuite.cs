@@ -1,6 +1,8 @@
 using System.Text;
+using System.Text.Json;
 using CorseWeb.Server.CorseLight;
 using CorseWeb.Server.Helpers;
+using CorseWeb.Server.Models;
 
 public static class CorseLightTestSuite
 {
@@ -291,5 +293,114 @@ public static class CorseLightTestSuite
 
         var scriptCount = CorseLightValidator.ValidateScriptsJson("[]", lessonModules);
         assert(scriptCount.Count == 0, "Courses without scripts must remain valid.");
+
+        const string projectionModules = """
+        [
+          {
+            "id": "module",
+            "lessons": [
+              {
+                "id": "projection-lesson",
+                "nodes": [
+                  { "id": "start", "type": "start", "props": {} },
+                  { "id": "intro-heading", "type": "heading", "props": { "content": "Original" } },
+                  { "id": "quiz-1", "type": "quiz", "props": { "question": "Pergunta", "correctIndex": 0 } },
+                  { "id": "success-node", "type": "paragraph", "props": { "content": "Aprovado" } },
+                  { "id": "failed-node", "type": "paragraph", "props": { "content": "Reprovado" } }
+                ],
+                "connections": [
+                  { "sourceNode": "start", "sourcePort": "next", "targetNode": "intro-heading" },
+                  { "sourceNode": "intro-heading", "sourcePort": "next", "targetNode": "quiz-1" },
+                  { "sourceNode": "quiz-1", "sourcePort": "success", "targetNode": "success-node" },
+                  { "sourceNode": "quiz-1", "sourcePort": "failed", "targetNode": "failed-node" }
+                ]
+              }
+            ]
+          }
+        ]
+        """;
+        const string privateSource = """
+        [
+          {
+            "id": "private-script",
+            "name": "Script privado",
+            "language": "CL",
+            "languageVersion": "0.1",
+            "enabled": false,
+            "source": "on lesson.start { state.set(\"private-key\", true); }"
+          }
+        ]
+        """;
+        var projectionCourse = new Course
+        {
+            Id = "projection-course",
+            Slug = "projection-course",
+            Title = "Curso de projeção",
+            Description = "Curso para validar o isolamento dos scripts CorseLight.",
+            Category = "Teste",
+            Status = "publicado",
+            Language = "pt-BR",
+            ModulesJson = projectionModules,
+            ScriptsJson = privateSource,
+            AuthorId = "author",
+            AuthorName = "Author",
+            CreatedBy = "author",
+            UpdatedBy = "author"
+        };
+        var authorCourseJson = JsonSerializer.Serialize(CourseMapper.ToDto(projectionCourse));
+        assert(authorCourseJson.Contains("private-script", StringComparison.Ordinal)
+                && authorCourseJson.Contains("private-key", StringComparison.Ordinal),
+            "Author course DTOs must retain the source of valid disabled scripts for editing.");
+
+        var marker = new CourseScriptExecution
+        {
+            EnrollmentId = "projection-enrollment",
+            CourseId = projectionCourse.Id,
+            LessonId = "projection-lesson",
+            EventName = "activity.submit",
+            SourceEventId = "quiz-1",
+            ScriptId = CourseScriptExecution.EventMarkerScriptId,
+            Failed = false,
+            ResultJson = """
+            {
+              "feedback": [],
+              "nodeVisibility": [
+                { "nodeId": "success-node", "visible": true }
+              ],
+              "nodeText": [
+                { "nodeId": "intro-heading", "field": "content", "value": "Texto personalizado" }
+              ]
+            }
+            """
+        };
+        var studentDto = CourseMapper.ToStudentDto(
+            projectionCourse,
+            Array.Empty<CourseQuizAttempt>(),
+            Array.Empty<CourseExerciseAttempt>(),
+            [marker]);
+        var studentCourseJson = JsonSerializer.Serialize(studentDto);
+        assert(studentDto.Scripts.ValueKind == JsonValueKind.Array
+                && studentDto.Scripts.GetArrayLength() == 0
+                && studentDto.ScriptDiagnostics.ValueKind == JsonValueKind.Array
+                && studentDto.ScriptDiagnostics.GetArrayLength() == 0,
+            "Public student course DTOs must redact both script sources and private diagnostics.");
+        assert(!studentCourseJson.Contains("private-script", StringComparison.Ordinal)
+                && !studentCourseJson.Contains("private-key", StringComparison.Ordinal),
+            "A public student response must never contain author CL source or private identifiers.");
+
+        var projectionLesson = studentDto.Modules[0].GetProperty("lessons")[0];
+        var projectedNodes = projectionLesson.GetProperty("nodes").EnumerateArray().ToArray();
+        var projectedIds = projectedNodes
+            .Select(node => node.GetProperty("id").GetString())
+            .ToHashSet(StringComparer.Ordinal);
+        assert(projectedIds.Contains("intro-heading") && projectedIds.Contains("quiz-1")
+                && !projectedIds.Contains("success-node") && !projectedIds.Contains("failed-node"),
+            "Stored CL visibility effects must not reintroduce a Quiz branch that the server has kept locked.");
+        var projectedHeading = projectedNodes.First(node => node.GetProperty("id").GetString() == "intro-heading");
+        assert(projectedHeading.GetProperty("props").GetProperty("content").GetString() == "Texto personalizado",
+            "A valid stored text effect must be projected into the student's passive content node.");
+        var projectedQuiz = projectedNodes.First(node => node.GetProperty("id").GetString() == "quiz-1");
+        assert(!projectedQuiz.GetProperty("props").TryGetProperty("correctIndex", out _),
+            "The CL projection must retain the existing redaction of private Quiz answers.");
     }
 }
