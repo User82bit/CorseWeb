@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { CorseLightDiagnostic, CorseLightScript } from "../../types/course";
 import "./CorseLightEditor.scss";
 
@@ -167,13 +167,9 @@ export function CorseLightEditor({ scripts, diagnostics, locale, onChange }: Pro
   const copy = useMemo(() => copyFor(locale), [locale]);
   const [selectedId, setSelectedId] = useState<string | null>(scripts[0]?.id ?? null);
   const [localMessage, setLocalMessage] = useState<string | null>(null);
-  const selected = scripts.find((script) => script.id === selectedId) ?? null;
+  const selected = scripts.find((script) => script.id === selectedId) ?? scripts[0] ?? null;
+  const activeSelectedId = selected?.id ?? null;
   const sourceBytes = selected ? new TextEncoder().encode(selected.source).byteLength : 0;
-
-  useEffect(() => {
-    if (selectedId && scripts.some((script) => script.id === selectedId)) return;
-    setSelectedId(scripts[0]?.id ?? null);
-  }, [scripts, selectedId]);
 
   const updateSelected = (patch: Partial<CorseLightScript>) => {
     if (!selected) return;
@@ -257,9 +253,9 @@ export function CorseLightEditor({ scripts, diagnostics, locale, onChange }: Pro
                 <li key={script.id}>
                   <button
                     type="button"
-                    className={`corselight-editor__script-option${script.id === selectedId ? " is-active" : ""}`}
+                    className={`corselight-editor__script-option${script.id === activeSelectedId ? " is-active" : ""}`}
                     onClick={() => { setSelectedId(script.id); setLocalMessage(null); }}
-                    aria-current={script.id === selectedId ? "true" : undefined}
+                    aria-current={script.id === activeSelectedId ? "true" : undefined}
                   >
                     <span className={`corselight-editor__script-dot${script.enabled ? " is-enabled" : ""}`} aria-hidden="true" />
                     <span className="corselight-editor__script-name">{script.name}</span>
