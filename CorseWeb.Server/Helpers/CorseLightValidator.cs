@@ -46,6 +46,7 @@ public static class CorseLightValidator
 
             var nodeTypes = ReadNodeTypes(modulesJson);
             var ids = new HashSet<string>(StringComparer.Ordinal);
+            var enabledScriptCountsByEvent = new Dictionary<string, int>(StringComparer.Ordinal);
             var index = 0;
             foreach (var script in scripts.EnumerateArray())
             {
@@ -66,6 +67,8 @@ public static class CorseLightValidator
 
                 if (string.IsNullOrWhiteSpace(id))
                     diagnostics.Add(Diagnostic("CL_SCRIPT_ID_REQUIRED", $"O script #{index} precisa de um id.", 1, 1));
+                else if (id.Length > 128)
+                    diagnostics.Add(Diagnostic("CL_SCRIPT_ID_LIMIT", "O id do script deve ter até 128 caracteres.", 1, 1));
                 else if (!ids.Add(id))
                     diagnostics.Add(Diagnostic("CL_DUPLICATE_SCRIPT_ID", $"O id '{id}' está duplicado no curso.", 1, 1));
 
@@ -111,8 +114,19 @@ public static class CorseLightValidator
                     }
 
                     ValidateStatements(eventBlock.Statements, eventBlock.EventName, nodeTypes, diagnostics);
+                    if (enabledElement.ValueKind == JsonValueKind.True)
+                    {
+                        enabledScriptCountsByEvent.TryGetValue(eventBlock.EventName, out var eventCount);
+                        enabledScriptCountsByEvent[eventBlock.EventName] = eventCount + 1;
+                    }
                 }
             }
+
+            foreach (var pair in enabledScriptCountsByEvent.Where(item => item.Value > 16))
+                diagnostics.Add(Diagnostic(
+                    "CL_ENABLED_EVENT_SCRIPT_LIMIT",
+                    $"O evento '{pair.Key}' não pode executar mais de 16 scripts habilitados.",
+                    1, 1));
         }
         catch (JsonException)
         {
@@ -411,7 +425,7 @@ public static class CorseLightValidator
     {
         if (string.IsNullOrWhiteSpace(nodeId)
             || !nodeTypes.TryGetValue(nodeId, out var types)
-            || types.Any(type => !PassiveNodeTypes.Contains(type)))
+            || !types.Any(type => PassiveNodeTypes.Contains(type)))
         {
             diagnostics.Add(At("CL_INVALID_NODE_TARGET", "O alvo precisa ser um nó passivo existente no curso.", call));
         }
@@ -432,7 +446,7 @@ public static class CorseLightValidator
             return;
         }
 
-        var valid = types.All(type =>
+        var valid = types.Any(type =>
             (type == "heading" && field == "content")
             || (type == "paragraph" && field == "content")
             || (type == "callout" && field is "title" or "content"));
