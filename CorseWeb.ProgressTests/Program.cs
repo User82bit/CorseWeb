@@ -519,6 +519,7 @@ await using (var db = new AppDbContext(options))
 }
 
 CorseLightTestSuite.Run(Assert);
+await CorseLightPersistenceTestSuite.RunAsync(Assert);
 await ApiIntegrationTestSuite.RunAsync(Assert);
 
 Console.WriteLine($"Passed {testCount} server contract, SQLite migration and HTTP integration assertions.");
