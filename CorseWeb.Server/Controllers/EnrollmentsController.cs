@@ -163,7 +163,26 @@ public class EnrollmentsController : ControllerBase
         }
 
         enrollment.LastAccessedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            if (dto.CurrentLessonId == null) throw;
+            DetachScriptChanges();
+            var markerExists = await _db.CourseScriptExecutions.AnyAsync(execution =>
+                execution.EnrollmentId == enrollment.Id
+                && execution.LessonId == dto.CurrentLessonId
+                && execution.EventName == "lesson.start"
+                && execution.SourceEventId == dto.CurrentLessonId
+                && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId);
+            if (!markerExists) throw;
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, dto.CurrentLessonId,
+                "lesson.start", dto.CurrentLessonId);
+            await _db.SaveChangesAsync();
+        }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
     }
@@ -345,6 +364,13 @@ public class EnrollmentsController : ControllerBase
             if (persisted == null) throw;
             if (persisted.SelectedOptionIndex != dto.SelectedOptionIndex)
                 return Conflict(new { error = "Este Quiz já foi respondido nesta matrícula." });
+            DetachScriptChanges();
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, lessonId,
+                "activity.submit", quizNodeId,
+                activityAnswer: (double)persisted.SelectedOptionIndex,
+                activityIsCorrect: persisted.IsCorrect);
+            await _db.SaveChangesAsync();
         }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
@@ -456,6 +482,13 @@ public class EnrollmentsController : ControllerBase
             {
                 return Conflict(new { error = "Este Exercício já foi respondido nesta matrícula." });
             }
+            DetachScriptChanges();
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, lessonId,
+                "activity.submit", exerciseNodeId,
+                activityAnswer: persisted.SubmittedAnswer,
+                activityIsCorrect: persisted.IsCorrect);
+            await _db.SaveChangesAsync();
         }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
