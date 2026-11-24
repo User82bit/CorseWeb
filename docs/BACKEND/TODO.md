@@ -28,7 +28,7 @@ Este arquivo organiza o escopo do servidor. **O Kanban oficial e os estados fica
 
 ## Limites atuais importantes
 
-- `Homologa` ainda não contém runtime CorseLight integrado. A branch `feature/cl-002-corselight-runtime` já contém o parser/AST, validador, interpretador tipado e limitado, migração/armazenamento isolado e integração dos três eventos, ainda pendentes de CI/revisão/merge. O backend nunca executa texto de autor como JavaScript, C#, código nativo ou linguagem irrestrita.
+- `Homologa` ainda não contém runtime CorseLight integrado. A PR #53 (`feature/cl-002-corselight-runtime`) contém parser/AST, validador, interpretador tipado e limitado, migração/armazenamento isolado, integração dos três eventos e projeção de efeitos seguros. CI #935 passou, incluindo build .NET e 207 assertions de contrato/SQLite/API; revisão/aceite manual e merge ainda estão pendentes. O backend nunca executa texto de autor como JavaScript, C#, código nativo ou linguagem irrestrita.
 - PROG-001 remove percentual/status do corpo de escrita e calcula o progresso a partir de eventos server-side. A conclusão manual permanece uma autodeclaração. FLOW-001 acrescenta avaliação server-side para o Quiz simples, mas não transforma o percentual em prova de aprendizagem.
 - VERSION-001 acrescenta versionamento e snapshot para transições efetivas do status de publicação; pedidos idempotentes não criam histórico duplicado.
 - Migração de `PasswordHash` possui tratamento específico de SQLite no startup; precisa virar uma migração versionada.
