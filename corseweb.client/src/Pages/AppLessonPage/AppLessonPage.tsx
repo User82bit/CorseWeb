@@ -25,6 +25,14 @@ function interpolate(template: string, values: Record<string, string | number>) 
     Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
 }
 
+function getApiErrorDetail(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const body = (error as { body?: unknown }).body;
+  if (!body || typeof body !== "object") return null;
+  const message = (body as { error?: unknown }).error;
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
 function AppLessonPage() {
   const { t, locale } = useTranslation();
   const { courseSlug, lessonSlug } = useParams<{ courseSlug: string; lessonSlug: string }>();
@@ -35,6 +43,7 @@ function AppLessonPage() {
   const [enrolling, setEnrolling] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [saveErrorDetail, setSaveErrorDetail] = useState<string | null>(null);
   const [enrollmentError, setEnrollmentError] = useState(false);
   const [submittingQuizNodeId, setSubmittingQuizNodeId] = useState<string | null>(null);
   const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
@@ -107,6 +116,7 @@ function AppLessonPage() {
 
     let active = true;
     setSaveError(false);
+    setSaveErrorDetail(null);
     const progressUpdate: EnrollmentProgressUpdate = {
       currentLessonId: lesson.id,
     };
@@ -123,8 +133,11 @@ function AppLessonPage() {
       } catch {
         // Progress and script state are already persisted; content effects will replay on the next course refresh.
       }
-    }).catch(() => {
-      if (active && requestVersion === progressRequestVersion.current) setSaveError(true);
+    }).catch((caught: unknown) => {
+      if (active && requestVersion === progressRequestVersion.current) {
+        setSaveError(true);
+        setSaveErrorDetail(getApiErrorDetail(caught));
+      }
     });
     return () => { active = false; };
   }, [accessKey, course, enrollment, lesson]);
@@ -155,6 +168,7 @@ function AppLessonPage() {
     if (!course || !lesson || !enrollment || saving || isLessonComplete || hasUnansweredActivity) return;
     setSaving(true);
     setSaveError(false);
+    setSaveErrorDetail(null);
     pendingCompletionLesson.current = lesson.id;
     const requestVersion = ++progressRequestVersion.current;
 
@@ -170,8 +184,9 @@ function AppLessonPage() {
       } catch {
         // Completion and CL effects are persisted; a later refresh will replay the projection.
       }
-    } catch {
+    } catch (caught: unknown) {
       setSaveError(true);
+      setSaveErrorDetail(getApiErrorDetail(caught));
     } finally {
       setSaving(false);
     }
@@ -281,6 +296,7 @@ function AppLessonPage() {
     const requestVersion = ++progressRequestVersion.current;
     setSaving(true);
     setSaveError(false);
+    setSaveErrorDetail(null);
 
     try {
       const updated = completionLessonId
@@ -298,8 +314,9 @@ function AppLessonPage() {
       } catch {
         // The persisted event will replay the presentation effects on the next refresh.
       }
-    } catch {
+    } catch (caught: unknown) {
       setSaveError(true);
+      setSaveErrorDetail(getApiErrorDetail(caught));
     } finally {
       setSaving(false);
     }
@@ -409,7 +426,10 @@ function AppLessonPage() {
       {saveError && (
         <div className="student-lesson__notice" role="alert">
           <SvgIcon name="bell" size="1rem" />
-          <span>{t.learning.saveProgressError}</span>
+          <span>
+            {t.learning.saveProgressError}
+            {saveErrorDetail && <small className="student-lesson__notice-detail">{saveErrorDetail}</small>}
+          </span>
           <button type="button" onClick={() => void handleRetryProgress()} disabled={saving}>{saving ? t.learning.savingProgress : t.learning.retry}</button>
         </div>
       )}

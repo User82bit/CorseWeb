@@ -1,5 +1,5 @@
 import { apiFetch, apiJson } from "../lib/api";
-import type { Course, CourseCreateInput, CourseLevel, Media } from "../types/course";
+import type { Course, CourseCreateInput, CourseLevel, Media, CorseLightScript, CorseLightDiagnostic } from "../types/course";
 import { courseCatalog as seedCatalog } from "../content/courses";
 
 // ── Cache backend (publicados + drafts do usuário) ──
@@ -35,6 +35,42 @@ function saveLegacy(courses: Course[]) {
 
 const DEFAULT_COURSE_THUMBNAIL = "/course-cover-placeholder.svg";
 
+function normalizeScripts(raw: unknown): CorseLightScript[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): CorseLightScript[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    if (typeof value.id !== "string" || typeof value.name !== "string" || typeof value.source !== "string") return [];
+    return [{
+      id: value.id,
+      name: value.name,
+      language: "CL",
+      languageVersion: "0.1",
+      enabled: value.enabled === true,
+      source: value.source,
+    }];
+  });
+}
+
+function normalizeScriptDiagnostics(raw: unknown): CorseLightDiagnostic[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): CorseLightDiagnostic[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    if (typeof value.code !== "string" || typeof value.message !== "string") return [];
+    const severity = value.severity === "warning" || value.severity === "info" ? value.severity : "error";
+    return [{
+      code: value.code,
+      message: value.message,
+      line: Math.max(1, Number(value.line) || 1),
+      column: Math.max(1, Number(value.column) || 1),
+      endLine: Math.max(1, Number(value.endLine) || Number(value.line) || 1),
+      endColumn: Math.max(1, Number(value.endColumn) || Number(value.column) || 1),
+      severity,
+    }];
+  });
+}
+
 function normalizeThumbnail(raw: unknown, title: string): Media {
   const candidate = typeof raw === "object" && raw !== null
     ? raw as Partial<Media>
@@ -69,6 +105,8 @@ function normalizeCourse(raw: unknown): Course {
     status: (r["status"] ?? "publicado") as Course["status"],
     language: String(r["language"] ?? "pt-BR"),
     modules: (r["modules"] ?? []) as Course["modules"],
+    scripts: normalizeScripts(r["scripts"]),
+    scriptDiagnostics: normalizeScriptDiagnostics(r["scriptDiagnostics"]),
     totalModules: Number(r["totalModules"] ?? 0),
     totalLessons: Number(r["totalLessons"] ?? 0),
     totalMinutes: Number(r["totalMinutes"] ?? 0),
@@ -110,6 +148,8 @@ function draftToCourse(raw: unknown): CourseDraftClient {
     status: "rascunho" as const,
     language: String(r["language"] ?? "pt-BR"),
     modules: (r["modules"] ?? []) as Course["modules"],
+    scripts: normalizeScripts(r["scripts"]),
+    scriptDiagnostics: normalizeScriptDiagnostics(r["scriptDiagnostics"]),
     totalModules: Number(r["totalModules"] ?? 0),
     totalLessons: Number(r["totalLessons"] ?? 0),
     totalMinutes: Number(r["totalMinutes"] ?? 0),
@@ -227,7 +267,7 @@ export async function createDraft(input: CourseCreateInput, authorId?: string, a
   const body = {
     title: input.title, subtitle: input.subtitle ?? null, description: input.description,
     category: input.category, level: input.level, language: input.language ?? "pt-BR",
-    tags: input.tags ?? [], thumbnail: normalizeThumbnail(input.thumbnail, input.title), modules: [],
+    tags: input.tags ?? [], thumbnail: normalizeThumbnail(input.thumbnail, input.title), modules: [], scripts: [],
     allowComments: input.allowComments ?? true, allowFork: input.allowFork ?? true,
   };
   try {
@@ -253,7 +293,7 @@ export async function createCourse(input: CourseCreateInput, authorId = "local-u
   return res as Course;
 }
 
-export async function updateDraft(draftId: string, patch: Partial<CourseCreateInput> & { slug?: string; modules?: Course["modules"] }): Promise<CourseDraftClient> {
+export async function updateDraft(draftId: string, patch: Partial<CourseCreateInput> & { slug?: string; modules?: Course["modules"]; scripts?: Course["scripts"] }): Promise<CourseDraftClient> {
   const body: Record<string, unknown> = {};
   if (patch.title !== undefined) body["title"] = patch.title;
   if (patch.subtitle !== undefined) body["subtitle"] = patch.subtitle ?? null;
@@ -267,6 +307,7 @@ export async function updateDraft(draftId: string, patch: Partial<CourseCreateIn
   if (patch.allowFork !== undefined) body["allowFork"] = patch.allowFork;
   if (patch.slug !== undefined) body["slug"] = patch.slug;
   if (patch.modules !== undefined) body["modules"] = patch.modules;
+  if (patch.scripts !== undefined) body["scripts"] = patch.scripts;
   const raw = await apiJson<unknown>(`/api/drafts/${encodeURIComponent(draftId)}`, { method: "PUT", body: JSON.stringify(body) });
   const updated = draftToCourse(raw);
   draftsCache = draftsCache.map(d => d.draftId === draftId ? updated : d);
@@ -309,6 +350,7 @@ export async function updatePublishedCourse(slug: string, patch: Partial<Course>
   if (patch.isFeatured !== undefined) body["isFeatured"] = patch.isFeatured;
   // Nested course content remains data-only; scripts are not executed by the editor.
   if (patch.modules !== undefined) body["modules"] = patch.modules;
+  if (patch.scripts !== undefined) body["scripts"] = patch.scripts;
   const raw = await apiJson<unknown>(`/api/courses/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(body) });
   const updated = normalizeCourse(raw);
   // slug pode não mudar; se mudar, remove antigo
@@ -330,17 +372,16 @@ export async function updateCourse(slug: string, patch: Partial<Course>): Promis
   // draft?
   const draft = draftsCache.find(d => d.slug === slug);
   if (draft?.draftId) {
-    try {
-      const upd = await updateDraft(draft.draftId, {
-        title: patch.title, subtitle: patch.subtitle, description: patch.description,
-        category: patch.category, level: patch.level as Course["level"], language: patch.language,
-        tags: patch.tags as CourseCreateInput["tags"], thumbnail: patch.thumbnail,
-        allowComments: patch.allowComments, allowFork: patch.allowFork, modules: patch.modules,
-      });
-      return upd as unknown as Course;
-    } catch {
-      // fallback legado
-    }
+    // A cached backend draft is authoritative: surface API errors instead of
+    // silently treating a failed remote save as a successful legacy-local save.
+    const updatedDraft = await updateDraft(draft.draftId, {
+      title: patch.title, subtitle: patch.subtitle, description: patch.description,
+      category: patch.category, level: patch.level as Course["level"], language: patch.language,
+      tags: patch.tags as CourseCreateInput["tags"], thumbnail: patch.thumbnail,
+      allowComments: patch.allowComments, allowFork: patch.allowFork, modules: patch.modules,
+      scripts: patch.scripts,
+    });
+    return updatedDraft as unknown as Course;
   }
   // publicado?
   const pub = publishedCache.find(c => c.slug === slug);

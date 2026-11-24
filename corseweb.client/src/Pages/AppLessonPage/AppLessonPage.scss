@@ -103,6 +103,14 @@
     }
   }
 
+  &__notice-detail {
+    display: block;
+    margin-top: 0.2rem;
+    color: inherit;
+    font-size: 0.82em;
+    opacity: 0.92;
+  }
+
   &__main {
     width: 100%;
     min-width: 0;
