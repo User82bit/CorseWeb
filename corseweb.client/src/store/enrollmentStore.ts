@@ -44,6 +44,24 @@ export type CourseCertificate = {
   issuedAt: string;
 };
 
+export type CorseLightFeedbackTone = "info" | "success" | "warning" | "error";
+
+export type CorseLightFeedback = {
+  message: string;
+  tone: CorseLightFeedbackTone;
+};
+
+export type CourseScriptEffect = {
+  lessonId: string;
+  eventName: string;
+  createdAt: string;
+  effects: {
+    feedback: CorseLightFeedback[];
+    nodeVisibility: { nodeId: string; visible: boolean }[];
+    nodeText: { nodeId: string; field: string; value: string }[];
+  };
+};
+
 export type CourseEnrollment = {
   courseId: string;
   enrolledAt: string;
@@ -55,6 +73,7 @@ export type CourseEnrollment = {
   quizAttempts: QuizAttemptResult[];
   exerciseAttempts: ExerciseAttemptResult[];
   certificate: CourseCertificate | null;
+  scriptEffects: CourseScriptEffect[];
 };
 
 export type EnrollmentProgressUpdate = {
@@ -99,6 +118,49 @@ function normalizeEnrollment(raw: unknown): CourseEnrollment {
             completedAt: String(item.completedAt ?? ""),
           };
         }).filter((attempt) => attempt.lessonId && attempt.exerciseNodeId)
+      : [],
+    scriptEffects: Array.isArray(value.scriptEffects)
+      ? value.scriptEffects.map((effect) => {
+          const item = effect as Record<string, unknown>;
+          const rawEffects = item.effects && typeof item.effects === "object"
+            ? item.effects as Record<string, unknown>
+            : {};
+          const feedback: CorseLightFeedback[] = Array.isArray(rawEffects.feedback)
+            ? rawEffects.feedback.map((entry): CorseLightFeedback => {
+                const value = entry as Record<string, unknown>;
+                const tone: CorseLightFeedbackTone =
+                  value.tone === "success" || value.tone === "warning" || value.tone === "error"
+                    ? value.tone
+                    : "info";
+                return {
+                  message: String(value.message ?? ""),
+                  tone,
+                };
+              }).filter((entry) => entry.message.trim().length > 0)
+            : [];
+          const nodeVisibility = Array.isArray(rawEffects.nodeVisibility)
+            ? rawEffects.nodeVisibility.map((entry) => {
+                const value = entry as Record<string, unknown>;
+                return { nodeId: String(value.nodeId ?? ""), visible: value.visible === true };
+              }).filter((entry) => entry.nodeId.length > 0)
+            : [];
+          const nodeText = Array.isArray(rawEffects.nodeText)
+            ? rawEffects.nodeText.map((entry) => {
+                const value = entry as Record<string, unknown>;
+                return {
+                  nodeId: String(value.nodeId ?? ""),
+                  field: String(value.field ?? ""),
+                  value: String(value.value ?? ""),
+                };
+              }).filter((entry) => entry.nodeId.length > 0 && entry.field.length > 0)
+            : [];
+          return {
+            lessonId: String(item.lessonId ?? ""),
+            eventName: String(item.eventName ?? ""),
+            createdAt: String(item.createdAt ?? ""),
+            effects: { feedback, nodeVisibility, nodeText },
+          };
+        }).filter((effect) => effect.lessonId.length > 0)
       : [],
     certificate: value.certificate && typeof value.certificate === "object"
       ? (() => {

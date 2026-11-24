@@ -1,6 +1,6 @@
 # CorseWeb — Kanban do projeto
 
-Última atualização: 2026-11-23.
+Última atualização: 2026-11-24.
 
 Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
@@ -18,7 +18,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - A interface segue mobile-first: estruturar e testar celular primeiro, depois tablet e desktop. A existência de media queries não substitui teste em dispositivo/navegador.
 - Stack do cliente preservada: React, TypeScript/TSX, SCSS/Sass e Node.js. Backend atual: ASP.NET Core com EF Core/SQLite.
 - O editor de blocos anterior foi substituído intencionalmente pelo modelo de grafo FE-011. `blocks[]` e `elements[]` não são migrados automaticamente.
-- CorseLight v0.1 é especificação em revisão; não há parser/runtime. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
+- CorseLight v0.1 foi aceita e integrada em `Homologa` pela PR #52. CL-002 está em revisão na PR #53; CI #935 passou, mas a implementação ainda não foi integrada. Nenhum script deve ser considerado disponível até revisão/aceite e integração. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
 
 ## Significado dos estados
 
@@ -34,14 +34,13 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Não iniciada
 
-- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Separar `scripts[]` de `modules[]`; parser/AST próprio; validação de sintaxe, tipos, eventos, funções permitidas, permissões, limites e testes unitários. Não usar JavaScript/C# scripting, `eval` ou reflexão. Dependência: revisão/aceite de CL-001.
-
-
 - **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
 - **DATA-001 · P2 · Definir importação/exportação de cursos.** Especificar schema versionado, validação de entrada, tratamento de mídia, nós/conexões e scripts CL sem aceitar código executável não confiável.
 - **OPS-001 · P2 · Definir operação de produção.** Escolher banco/provider, backup/restore, gestão de secrets, HTTPS/proxy, armazenamento de uploads, logs e processo de migração; validar antes de publicar dados reais.
 
 ### Iniciada
+
+
 
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 
@@ -50,6 +49,8 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
 ### Revisão
+
+- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Implementação na branch `feature/cl-002-corselight-runtime`, PR #53 aberta em rascunho para `Homologa`. Inclui `scripts[]` separado, lexer/parser/AST, validador semântico, runtime tipado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos, feedback na tela do aluno e migração SQLite. CI #935 passou: builds frontend/backend e 207 assertions de contrato/SQLite/API. Falta revisão/aceite manual e integração; não habilitar scripts em produção antes disso. [PR #53](https://github.com/User82bit/CorseWeb/pull/53).
 
 - **FLOW-002 · P1 · Executar o card Exercício no grafo pedagógico.** Integrado à `Homologa` pela PR #50. O servidor compara o texto/código com a solução privada, persiste o resultado, protege ramos bloqueados e exige resposta para atividades alcançáveis antes de concluir a aula. CI #850 passou com 138 asserções de contrato/SQLite/API e builds frontend/backend. Falta validação manual e aceite. [FLOW-002](./BACKEND/etapas/flow-002-exercise-branching.md).
 
@@ -73,12 +74,12 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **MEDIA-001 · P1 · Revisar upload e ciclo de vida de capas.** O endpoint verifica tamanho e assinatura PNG/JPEG/WebP; validar decodificação/re-encode, metadados, dimensões, autorização e limpeza de arquivos órfãos.
 - **EDITOR-001 · P1 · Validar visualmente o editor de grafo FE-011.** Workspace, paleta, canvas, nós, portas, ligações SVG, seleção múltipla, grade 20 px, câmera e inspetor foram integrados em `Homologa` via PRs #35–#38. A etapa FE-012 acrescenta painéis mobile, prévia e schema de apresentação 2; ainda faltam CI, inspeção manual em celular/tablet/desktop e aceite do proprietário. Critérios em [FE-011](./FRONTEND/etapas/fe-011-lesson-editor-workspace.md) e [FE-012](./FRONTEND/etapas/fe-012-responsive-editor-and-presentation.md).
 - **STUDENT-001 · P1 · Validar apresentação da aula e ocultação de dados internos.** FE-012 adiciona layout/estilo por aula e elemento e DTO público que remove gabaritos/soluções; verificar conteúdo permitido, links/mídia, quiz, exercício, estilos, acessibilidade e ausência de dados privados em todos os breakpoints.
-- **CL-001 · P1 · Revisar e aprovar a especificação CorseLight v0.1.** Em revisão nesta branch: candidate.2 fecha gramática/precedência, três eventos, funções allowlisted, estado isolado, efeitos por matrícula, limites, idempotência e testes obrigatórios. Aguarda aceite do proprietário antes de iniciar CL-002. [Especificação](./ARCHITECTURE/corselight-language-v0.1.md).
 - **STORE-001 · P2 · Definir comportamento do cache/fallback localStorage.** Verificar o que é cache remoto, legado e dado local; impedir sucesso silencioso quando a API falha e validar sincronização entre abas.
 - **DOC-001 · P1 · Revisar este pacote documental.** Arquitetura, conteúdo, API, setup, achados e Kanban estão preparados; revisar nomenclaturas e aceitar antes de integrar em `Homologa`.
 
 ### Finalizada
 
+- **CL-001 · P1 · Aprovar a especificação CorseLight v0.1.** Contrato consolidado e aceito pelo proprietário, integrado em `Homologa` pela PR #52. Define gramática, precedência, três eventos, funções allowlisted, estado por matrícula/script, efeitos declarativos e limites. O aceite da especificação não equivale ao aceite do runtime CL-002. [Especificação](./ARCHITECTURE/corselight-language-v0.1.md).
 - **CI-001 · P0 · Pipeline inicial de validação.** Workflow presente; executa lint/testes disponíveis/build frontend e restore/build Release .NET. A aprovação do workflow não cobre testes manuais ou E2E. Histórico: [PR #2](https://github.com/User82bit/CorseWeb/pull/2).
 - **FE-006 · P0 · Corrigir resolução do LanguageProvider em Windows/Vite.** PR integrado e inicialização local confirmada pelo proprietário. Histórico: [PR #5](https://github.com/User82bit/CorseWeb/pull/5).
 

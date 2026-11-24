@@ -59,6 +59,12 @@ public class EnrollmentsController : ControllerBase
             : await _db.CourseCertificates
                 .Where(certificate => enrollmentIds.Contains(certificate.EnrollmentId))
                 .ToListAsync();
+        var scriptExecutions = enrollmentIds.Length == 0
+            ? new List<CourseScriptExecution>()
+            : await _db.CourseScriptExecutions
+                .Where(execution => enrollmentIds.Contains(execution.EnrollmentId)
+                    && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId)
+                .ToListAsync();
 
         var completionsByEnrollment = completions
             .GroupBy(completion => completion.EnrollmentId)
@@ -72,6 +78,9 @@ public class EnrollmentsController : ControllerBase
         var certificatesByEnrollment = certificates
             .GroupBy(certificate => certificate.EnrollmentId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.IssuedAt).First(), StringComparer.Ordinal);
+        var scriptExecutionsByEnrollment = scriptExecutions
+            .GroupBy(execution => execution.EnrollmentId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyCollection<CourseScriptExecution>)group.ToArray(), StringComparer.Ordinal);
 
         return Ok(enrollments.Select(enrollment =>
         {
@@ -80,13 +89,15 @@ public class EnrollmentsController : ControllerBase
             quizAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentQuizAttempts);
             exerciseAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentExerciseAttempts);
             certificatesByEnrollment.TryGetValue(enrollment.Id, out var enrollmentCertificate);
+            scriptExecutionsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentScriptExecutions);
             return EnrollmentProgressProjector.ToDto(
                 enrollment,
                 course,
                 enrollmentCompletions ?? [],
                 enrollmentQuizAttempts ?? [],
                 enrollmentExerciseAttempts ?? [],
-                enrollmentCertificate);
+                enrollmentCertificate,
+                enrollmentScriptExecutions ?? []);
         }));
     }
 
@@ -146,10 +157,32 @@ public class EnrollmentsController : ControllerBase
             }
 
             enrollment.CurrentLessonId = dto.CurrentLessonId;
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, dto.CurrentLessonId,
+                "lesson.start", dto.CurrentLessonId);
         }
 
         enrollment.LastAccessedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            if (dto.CurrentLessonId == null) throw;
+            DetachScriptChanges();
+            var markerExists = await _db.CourseScriptExecutions.AnyAsync(execution =>
+                execution.EnrollmentId == enrollment.Id
+                && execution.LessonId == dto.CurrentLessonId
+                && execution.EventName == "lesson.start"
+                && execution.SourceEventId == dto.CurrentLessonId
+                && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId);
+            if (!markerExists) throw;
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, dto.CurrentLessonId,
+                "lesson.start", dto.CurrentLessonId);
+            await _db.SaveChangesAsync();
+        }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
     }
@@ -204,6 +237,10 @@ public class EnrollmentsController : ControllerBase
 
         if (!completionExists)
         {
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, lessonId,
+                "lesson.finish", lessonId);
+
             var completion = new CourseLessonCompletion
             {
                 EnrollmentId = enrollment.Id,
@@ -219,11 +256,14 @@ public class EnrollmentsController : ControllerBase
             catch (DbUpdateException)
             {
                 // A unique index makes simultaneous duplicate requests idempotent.
-                // Detach the failed insert and confirm another request persisted it.
                 _db.Entry(completion).State = EntityState.Detached;
                 var wasRecorded = await _db.CourseLessonCompletions.AnyAsync(record =>
                     record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
                 if (!wasRecorded) throw;
+                DetachScriptChanges();
+                _ = await CorseLightEventRunner.ExecuteAsync(
+                    _db, course, enrollment, lessonId,
+                    "lesson.finish", lessonId);
             }
         }
 
@@ -304,6 +344,11 @@ public class EnrollmentsController : ControllerBase
         enrollment.CurrentLessonId = lessonId;
         enrollment.LastAccessedAt = completedAt;
         _db.CourseQuizAttempts.Add(attempt);
+        _ = await CorseLightEventRunner.ExecuteAsync(
+            _db, course, enrollment, lessonId,
+            "activity.submit", quizNodeId,
+            activityAnswer: (double)dto.SelectedOptionIndex,
+            activityIsCorrect: isCorrect);
         try
         {
             await _db.SaveChangesAsync();
@@ -319,6 +364,13 @@ public class EnrollmentsController : ControllerBase
             if (persisted == null) throw;
             if (persisted.SelectedOptionIndex != dto.SelectedOptionIndex)
                 return Conflict(new { error = "Este Quiz já foi respondido nesta matrícula." });
+            DetachScriptChanges();
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, lessonId,
+                "activity.submit", quizNodeId,
+                activityAnswer: (double)persisted.SelectedOptionIndex,
+                activityIsCorrect: persisted.IsCorrect);
+            await _db.SaveChangesAsync();
         }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
@@ -405,6 +457,11 @@ public class EnrollmentsController : ControllerBase
         enrollment.CurrentLessonId = lessonId;
         enrollment.LastAccessedAt = completedAt;
         _db.CourseExerciseAttempts.Add(attempt);
+        _ = await CorseLightEventRunner.ExecuteAsync(
+            _db, course, enrollment, lessonId,
+            "activity.submit", exerciseNodeId,
+            activityAnswer: dto.Answer,
+            activityIsCorrect: isCorrect);
         try
         {
             await _db.SaveChangesAsync();
@@ -425,6 +482,13 @@ public class EnrollmentsController : ControllerBase
             {
                 return Conflict(new { error = "Este Exercício já foi respondido nesta matrícula." });
             }
+            DetachScriptChanges();
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, lessonId,
+                "activity.submit", exerciseNodeId,
+                activityAnswer: persisted.SubmittedAnswer,
+                activityIsCorrect: persisted.IsCorrect);
+            await _db.SaveChangesAsync();
         }
 
         return Ok(await BuildEnrollmentDtoAsync(enrollment, course));
@@ -510,6 +574,14 @@ public class EnrollmentsController : ControllerBase
         return Ok(new { ok = true });
     }
 
+    private void DetachScriptChanges()
+    {
+        foreach (var entry in _db.ChangeTracker.Entries<CourseScriptState>().ToArray())
+            _db.Entry(entry.Entity).State = EntityState.Detached;
+        foreach (var entry in _db.ChangeTracker.Entries<CourseScriptExecution>().ToArray())
+            _db.Entry(entry.Entity).State = EntityState.Detached;
+    }
+
     private Task<Course?> FindCourseAsync(string courseId)
     {
         return _db.Courses.FirstOrDefaultAsync(course =>
@@ -530,8 +602,12 @@ public class EnrollmentsController : ControllerBase
             .ToListAsync();
         var certificate = await _db.CourseCertificates
             .FirstOrDefaultAsync(item => item.EnrollmentId == enrollment.Id);
+        var scriptExecutions = await _db.CourseScriptExecutions
+            .Where(execution => execution.EnrollmentId == enrollment.Id
+                && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId)
+            .ToListAsync();
 
         return EnrollmentProgressProjector.ToDto(
-            enrollment, course, completions, quizAttempts, exerciseAttempts, certificate);
+            enrollment, course, completions, quizAttempts, exerciseAttempts, certificate, scriptExecutions);
     }
 }

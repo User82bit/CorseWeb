@@ -20,10 +20,10 @@ Os nomes JSON são camelCase. O contrato de curso aceita módulos como JSON estr
 
 | Método | Rota | Acesso | Descrição |
 |---|---|---|---|
-| `GET` | `/api/courses` | Público; admin pode filtrar todos | Lista cursos publicados; aceita `search`, `status` e `includeAll` para admin |
+| `GET` | `/api/courses` | Público; admin pode filtrar todos | Lista cursos publicados; aceita `search`, `status` e `includeAll` para admin; projeção de efeitos CL somente para matrícula atual |
 | `GET` | `/api/courses/{slug}` | Público para publicados; proprietário/admin para não publicados | Busca curso por slug |
 | `POST` | `/api/courses` | Autenticado | Cria curso publicado diretamente; o fluxo normal do editor usa rascunho |
-| `PUT` | `/api/courses/{slug}` | Proprietário ou admin | Atualiza metadados e/ou `modules`; incrementa versão e grava snapshot |
+| `PUT` | `/api/courses/{slug}` | Proprietário ou admin | Atualiza metadados, `modules` e/ou `scripts`; valida CL e grava snapshot versionado |
 | `DELETE` | `/api/courses/{slug}` | Proprietário ou admin | Exclui curso e versões associadas |
 | `GET` | `/api/courses/{slug}/versions` | Público para publicado; proprietário/admin para não publicado | Lista metadados das versões (não devolve o snapshot completo) |
 | `POST` | `/api/courses/{slug}/publish` | Proprietário ou admin | Altera status entre publicado/arquivado/rascunho; transições efetivas incrementam a versão e gravam snapshot no histórico |
@@ -34,13 +34,36 @@ A rota de publicação aceita `status` opcional. Sem corpo/status, alterna entre
 
 Todos os endpoints de rascunho exigem usuário autenticado.
 
+### Contrato CorseLight v0.1 (CL-002)
+
+Os endpoints de autoria de curso e rascunho aceitam uma coleção raiz `scripts[]`, separada de `modules[]`. Cada item usa o formato:
+
+```json
+{
+  "id": "script-feedback-01",
+  "name": "Feedback de envio",
+  "language": "CL",
+  "languageVersion": "0.1",
+  "enabled": true,
+  "source": "on activity.submit { activity.feedback(\"Resposta registrada.\", \"info\"); }"
+}
+```
+
+`POST/PUT /api/courses` validam todos os scripts antes de gravar uma versão publicada. `POST/PUT /api/drafts` permitem salvar um rascunho com erros e devolvem `scriptDiagnostics[]` para correção; `POST /api/drafts/{id}/publish` rejeita scripts inválidos, inclusive quando estão desabilitados. Os DTOs de autoria/admin incluem `scripts[]` e `scriptDiagnostics[]`; a especificação detalha gramática, eventos, allowlist e limites.
+
+O DTO público de curso do aluno sempre devolve `scripts: []` e `scriptDiagnostics: []`. Fonte, AST, diagnóstico privado e estado de execução não são enviados ao navegador. Efeitos declarativos autorizados podem alterar apenas apresentação de nós passivos já presentes no caminho liberado; o DTO de matrícula inclui `scriptEffects[]` para feedback e replay. Efeitos CL não podem reabrir ramos bloqueados nem alterar tentativas, score, conclusão ou permissões.
+
+A entrega CL-002 está em desenvolvimento na branch `feature/cl-002-corselight-runtime`; este contrato descreve a implementação proposta para revisão e não afirma que a branch já foi integrada em `Homologa`.
+
+
+
 | Método | Rota | Acesso | Descrição |
 |---|---|---|---|
 | `GET` | `/api/drafts` | Autenticado | Lista apenas os rascunhos do usuário atual |
 | `GET` | `/api/drafts/{id}` | Proprietário ou admin | Busca rascunho por ID |
 | `GET` | `/api/drafts/by-slug/{slug}` | Proprietário | Busca rascunho próprio por slug |
 | `POST` | `/api/drafts` | Autenticado | Cria rascunho com slug único |
-| `PUT` | `/api/drafts/{id}` | Proprietário | Atualiza metadados e conteúdo JSON do rascunho |
+| `PUT` | `/api/drafts/{id}` | Proprietário | Atualiza metadados, `modules` e `scripts`; pode retornar `scriptDiagnostics[]` |
 | `DELETE` | `/api/drafts/{id}` | Proprietário ou admin | Remove rascunho |
 | `POST` | `/api/drafts/{id}/publish` | Proprietário ou admin | Publica novo curso ou aplica rascunho a um curso-fonte; registra snapshot e remove o rascunho |
 
@@ -50,7 +73,7 @@ Todos os endpoints exigem sessão.
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/enrollments` | Lista matrículas do usuário atual; progresso é calculado a partir dos eventos de conclusão persistidos |
+| `GET` | `/api/enrollments` | Lista matrículas do usuário atual; progresso e `scriptEffects[]` são calculados a partir de eventos persistidos |
 | `POST` | `/api/enrollments/{courseId}` | Matricula usuário em curso publicado; aceita ID ou slug |
 | `PUT` | `/api/enrollments/{courseId}/progress` | Atualiza somente a aula atual, desde que pertença ao curso e esteja publicada |
 | `POST` | `/api/enrollments/{courseId}/lessons/{lessonId}/complete` | Registra de forma idempotente a ação de conclusão de uma aula publicada; exige resultado para todos os Quizzes e Exercícios alcançáveis no caminho selecionado |
@@ -98,13 +121,15 @@ A URL devolvida é relativa ao site, em `/uploads/course-covers/{arquivo}`. A pa
 | Entidade | Campos / responsabilidade |
 |---|---|
 | `AppUser` | Identidade, nome, e-mail, role e `PasswordHash` |
-| `Course` | Curso publicado/arquivado, `ModulesJson`, metadados, status e versão |
-| `CourseDraft` | Cópia editável do curso, `OwnerId`, `SourceCourseId` e `ModulesJson` |
+| `Course` | Curso publicado/arquivado, `ModulesJson`, `ScriptsJson`, metadados, status e versão |
+| `CourseDraft` | Cópia editável do curso, `OwnerId`, `SourceCourseId`, `ModulesJson` e `ScriptsJson` |
 | `CourseVersion` | `CourseId`, número, `SnapshotJson`, autor e data |
 | `CourseEnrollment` | Usuário, curso, percentual, aula atual e `ModulesProgressJson` |
 | `CourseQuizAttempt` | Matrícula, aula, Quiz, índice escolhido, correção, aprovação, score e timestamp; único por matrícula/aula/card |
 | `CourseExerciseAttempt` | Matrícula, aula, Exercise, resposta enviada, correção, aprovação, score e timestamp; único por matrícula/aula/card |
 | `CourseCertificate` | Snapshot imutável de matrícula/curso, aluno, autor, versão, conclusão, emissão e código público único de verificação |
+| `CourseScriptState` | Estado primitivo por matrícula/script/chave, removido em cascata ao cancelar matrícula |
+| `CourseScriptExecution` | Resultado e ledger idempotente por matrícula/aula/evento/origem/script; erros guardam apenas código diagnóstico interno |
 
 Os módulos e aulas não são tabelas independentes no schema atual; ficam serializados em JSON. A evolução de nós/conexões mantém esse contrato JSON. CorseLight ainda não possui coleção de scripts persistida nem endpoints próprios.
 

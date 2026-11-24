@@ -109,6 +109,10 @@ namespace CorseWeb.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ScriptsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("OgImageJson")
                         .HasColumnType("TEXT");
 
@@ -209,6 +213,10 @@ namespace CorseWeb.Server.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ModulesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScriptsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -494,6 +502,111 @@ namespace CorseWeb.Server.Migrations
                 });
 
             modelBuilder.Entity("CorseWeb.Server.Models.CourseExerciseAttempt", b =>
+                {
+                    b.HasOne("CorseWeb.Server.Models.CourseEnrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseScriptState", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnrollmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScriptId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ValueJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId", "ScriptId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("CourseScriptStates");
+                });
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseScriptExecution", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnrollmentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CourseId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LessonId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceEventId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScriptId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResultJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Failed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DiagnosticCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId", "LessonId", "EventName", "SourceEventId", "ScriptId")
+                        .IsUnique();
+
+                    b.ToTable("CourseScriptExecutions");
+                });
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseScriptState", b =>
+                {
+                    b.HasOne("CorseWeb.Server.Models.CourseEnrollment", null)
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CorseWeb.Server.Models.CourseScriptExecution", b =>
                 {
                     b.HasOne("CorseWeb.Server.Models.CourseEnrollment", null)
                         .WithMany()

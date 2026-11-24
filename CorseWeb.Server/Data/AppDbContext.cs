@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<CourseQuizAttempt> CourseQuizAttempts => Set<CourseQuizAttempt>();
     public DbSet<CourseExerciseAttempt> CourseExerciseAttempts => Set<CourseExerciseAttempt>();
     public DbSet<CourseCertificate> CourseCertificates => Set<CourseCertificate>();
+    public DbSet<CourseScriptState> CourseScriptStates => Set<CourseScriptState>();
+    public DbSet<CourseScriptExecution> CourseScriptExecutions => Set<CourseScriptExecution>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -66,6 +68,33 @@ public class AppDbContext : DbContext
             e.HasIndex(x => x.EnrollmentId).IsUnique();
             e.HasIndex(x => x.VerificationCode).IsUnique();
             // Certificates are immutable snapshots and intentionally survive enrollment/course deletion.
+        });
+
+        b.Entity<CourseScriptState>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ScriptId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Key).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ValueJson).IsRequired();
+            e.HasIndex(x => new { x.EnrollmentId, x.ScriptId, x.Key }).IsUnique();
+            e.HasOne<CourseEnrollment>()
+                .WithMany()
+                .HasForeignKey(x => x.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CourseScriptExecution>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EventName).HasMaxLength(32).IsRequired();
+            e.Property(x => x.SourceEventId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ScriptId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ResultJson).IsRequired();
+            e.HasIndex(x => new { x.EnrollmentId, x.LessonId, x.EventName, x.SourceEventId, x.ScriptId }).IsUnique();
+            e.HasOne<CourseEnrollment>()
+                .WithMany()
+                .HasForeignKey(x => x.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CourseExerciseAttempt>(e =>

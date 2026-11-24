@@ -112,9 +112,17 @@ function AppLessonPage() {
     };
     pendingProgress.current = progressUpdate;
     const requestVersion = ++progressRequestVersion.current;
-    updateEnrollmentProgress(course.slug, progressUpdate).then(updated => {
+    updateEnrollmentProgress(course.slug, progressUpdate).then(async updated => {
       if (pendingProgress.current === progressUpdate) pendingProgress.current = null;
       if (active && requestVersion === progressRequestVersion.current) setEnrollment(updated);
+      try {
+        await refreshCourses();
+        const refreshedCourse = getCourseBySlugStore(course.slug);
+        if (active && requestVersion === progressRequestVersion.current && refreshedCourse)
+          setCourse(refreshedCourse);
+      } catch {
+        // Progress and script state are already persisted; content effects will replay on the next course refresh.
+      }
     }).catch(() => {
       if (active && requestVersion === progressRequestVersion.current) setSaveError(true);
     });
@@ -154,6 +162,14 @@ function AppLessonPage() {
       const updated = await completeEnrollmentLesson(course.slug, lesson.id);
       pendingCompletionLesson.current = null;
       if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
+      try {
+        await refreshCourses();
+        const refreshedCourse = getCourseBySlugStore(course.slug);
+        if (requestVersion === progressRequestVersion.current && refreshedCourse)
+          setCourse(refreshedCourse);
+      } catch {
+        // Completion and CL effects are persisted; a later refresh will replay the projection.
+      }
     } catch {
       setSaveError(true);
     } finally {
@@ -274,6 +290,14 @@ function AppLessonPage() {
         pendingCompletionLesson.current = null;
       if (!completionLessonId) pendingProgress.current = null;
       if (requestVersion === progressRequestVersion.current) setEnrollment(updated);
+      try {
+        await refreshCourses();
+        const refreshedCourse = getCourseBySlugStore(course.slug);
+        if (requestVersion === progressRequestVersion.current && refreshedCourse)
+          setCourse(refreshedCourse);
+      } catch {
+        // The persisted event will replay the presentation effects on the next refresh.
+      }
     } catch {
       setSaveError(true);
     } finally {
@@ -356,6 +380,14 @@ function AppLessonPage() {
   // The graph defines reading order; canvas geometry remains authoring-only.
   const studentNodes = sortNodesByLessonFlow(lesson.nodes ?? [], lesson.connections ?? [])
     .filter(isStudentVisibleNode);
+  const scriptFeedbackForLesson = enrollment.scriptEffects
+    .filter(effect => effect.lessonId === lesson.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .flatMap(effect => effect.effects.feedback.map((feedback, index) => ({
+      ...feedback,
+      key: `${effect.eventName}:${effect.createdAt}:${index}`,
+    })))
+    .slice(-12);
   const readingTime = interpolate(t.learning.readingTime, { count: number(lesson.estimatedMinutes) });
   const lessonCountText = interpolate(t.learning.lessonNumber, { index: number(lessonIndex + 1), count: number(allLessons.length) });
 
@@ -428,6 +460,24 @@ function AppLessonPage() {
               certificateIssueError={certificateIssueError}
               locale={locale}
             />
+          )}
+
+          {scriptFeedbackForLesson.length > 0 && (
+            <section
+              className="student-lesson__script-feedback"
+              aria-label={locale.startsWith("en") ? "Course logic feedback" : locale.startsWith("es") ? "Mensajes de la lógica del curso" : "Mensagens da lógica do curso"}
+              aria-live="polite"
+            >
+              {scriptFeedbackForLesson.map((feedback) => (
+                <p
+                  key={feedback.key}
+                  className={`student-lesson__script-feedback-item student-lesson__script-feedback-item--${feedback.tone}`}
+                  role={feedback.tone === "error" ? "alert" : "status"}
+                >
+                  {feedback.message}
+                </p>
+              ))}
+            </section>
           )}
 
           <section className="student-lesson__completion">

@@ -48,6 +48,7 @@ public class CoursesController : ControllerBase
         var list = await q.OrderByDescending(c => c.UpdatedAt).Take(200).ToListAsync();
         var attemptsByCourse = new Dictionary<string, IReadOnlyCollection<CourseQuizAttempt>>(StringComparer.Ordinal);
         var exerciseAttemptsByCourse = new Dictionary<string, IReadOnlyCollection<CourseExerciseAttempt>>(StringComparer.Ordinal);
+        var scriptExecutionsByCourse = new Dictionary<string, IReadOnlyCollection<CourseScriptExecution>>(StringComparer.Ordinal);
         if (!IsAdmin && CurrentUserId is { } userId && list.Count > 0)
         {
             var listedCourseIds = list.Select(course => course.Id).ToArray();
@@ -76,6 +77,17 @@ public class CoursesController : ControllerBase
                         group => group.Key,
                         group => (IReadOnlyCollection<CourseExerciseAttempt>)group.ToArray(),
                         StringComparer.Ordinal);
+
+                var scriptExecutions = await _db.CourseScriptExecutions
+                    .Where(execution => enrollmentIds.Contains(execution.EnrollmentId)
+                        && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId)
+                    .ToListAsync();
+                scriptExecutionsByCourse = scriptExecutions
+                    .GroupBy(execution => enrollmentMap[execution.EnrollmentId], StringComparer.Ordinal)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => (IReadOnlyCollection<CourseScriptExecution>)group.ToArray(),
+                        StringComparer.Ordinal);
             }
         }
 
@@ -85,7 +97,8 @@ public class CoursesController : ControllerBase
                 return CourseMapper.ToDto(course);
             attemptsByCourse.TryGetValue(course.Id, out var attempts);
             exerciseAttemptsByCourse.TryGetValue(course.Id, out var exerciseAttempts);
-            return CourseMapper.ToStudentDto(course, attempts ?? [], exerciseAttempts ?? []);
+            scriptExecutionsByCourse.TryGetValue(course.Id, out var scriptExecutions);
+            return CourseMapper.ToStudentDto(course, attempts ?? [], exerciseAttempts ?? [], scriptExecutions ?? []);
         }));
     }
 
@@ -101,6 +114,7 @@ public class CoursesController : ControllerBase
 
         IReadOnlyCollection<CourseQuizAttempt> attempts = [];
         IReadOnlyCollection<CourseExerciseAttempt> exerciseAttempts = [];
+        IReadOnlyCollection<CourseScriptExecution> scriptExecutions = [];
         if (CurrentUserId is { } userId)
         {
             var enrollmentId = await _db.Enrollments
@@ -115,10 +129,14 @@ public class CoursesController : ControllerBase
                 exerciseAttempts = await _db.CourseExerciseAttempts
                     .Where(attempt => attempt.EnrollmentId == enrollmentId)
                     .ToListAsync();
+                scriptExecutions = await _db.CourseScriptExecutions
+                    .Where(execution => execution.EnrollmentId == enrollmentId
+                        && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId)
+                    .ToListAsync();
             }
         }
 
-        return Ok(CourseMapper.ToStudentDto(c, attempts, exerciseAttempts));
+        return Ok(CourseMapper.ToStudentDto(c, attempts, exerciseAttempts, scriptExecutions));
     }
 
     [Authorize]
@@ -136,6 +154,9 @@ public class CoursesController : ControllerBase
         if (quizError != null) return BadRequest(new { error = quizError });
         var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(dto.Modules?.GetRawText());
         if (exerciseError != null) return BadRequest(new { error = exerciseError });
+        var scriptDiagnostics = CorseLightValidator.ValidateScriptsJson(dto.Scripts?.GetRawText(), dto.Modules?.GetRawText());
+        if (scriptDiagnostics.Count > 0)
+            return BadRequest(new { error = "Os scripts CorseLight contêm erros e não podem ser publicados.", diagnostics = scriptDiagnostics });
 
         var baseSlug = SlugHelper.Slugify(dto.Title);
         var existingSlugs = await _db.Courses.Select(c => c.Slug).ToListAsync();
@@ -169,10 +190,16 @@ public class CoursesController : ControllerBase
         if (!IsAdmin && c.AuthorId != CurrentUserId) return Forbid();
         var contentError = CourseContentValidator.Validate(dto.Modules);
         if (contentError != null) return BadRequest(new { error = contentError });
-        var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(dto.Modules?.GetRawText());
+        var mergedModulesJson = dto.Modules?.GetRawText() ?? c.ModulesJson;
+        var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(mergedModulesJson);
         if (quizError != null) return BadRequest(new { error = quizError });
-        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(dto.Modules?.GetRawText());
+        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(mergedModulesJson);
         if (exerciseError != null) return BadRequest(new { error = exerciseError });
+        var scriptDiagnostics = CorseLightValidator.ValidateScriptsJson(
+            dto.Scripts?.GetRawText() ?? c.ScriptsJson,
+            dto.Modules?.GetRawText() ?? c.ModulesJson);
+        if (scriptDiagnostics.Count > 0)
+            return BadRequest(new { error = "Os scripts CorseLight contêm erros e não podem ser publicados.", diagnostics = scriptDiagnostics });
         CourseMapper.ApplyUpdate(c, dto, CurrentUserId!);
         _db.CourseVersions.Add(new CorseWeb.Server.Models.CourseVersion
         {
@@ -232,6 +259,9 @@ public class CoursesController : ControllerBase
             if (quizError != null) return BadRequest(new { error = quizError });
             var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(c.ModulesJson);
             if (exerciseError != null) return BadRequest(new { error = exerciseError });
+            var scriptDiagnostics = CorseLightValidator.ValidateScriptsJson(c.ScriptsJson, c.ModulesJson);
+            if (scriptDiagnostics.Count > 0)
+                return BadRequest(new { error = "Os scripts CorseLight contêm erros e não podem ser publicados.", diagnostics = scriptDiagnostics });
         }
         var changed = CourseVersioning.ApplyStatusTransition(c, target, CurrentUserId!);
         if (!changed)

@@ -136,15 +136,17 @@ Não reintroduzir silenciosamente os campos antigos. Qualquer necessidade futura
 
 ## 9. CorseLight
 
-CorseLight (CL) é uma linguagem proposta para lógica restrita de cursos, distinta do card pedagógico `code`.
+CorseLight (CL) é a linguagem restrita de lógica de cursos, distinta do card pedagógico `code`.
 
-- A especificação atual é [CorseLight v0.1](./corselight-language-v0.1.md).
-- O contrato-alvo separa scripts internos numa coleção raiz `scripts[]`, fora de `modules[]`.
-- O backend atual ainda não possui `ScriptsJson`, parser, AST ou runtime CL. O formato-alvo prevê coleção raiz `scripts[]`, separada de `modules[]`, com snapshot versionado e exclusão completa da fonte nos DTOs do aluno.
-- A especificação CL v0.1 candidate.2 define três eventos (`lesson.start`, `lesson.finish`, `activity.submit`), funções nativas allowlisted, estado isolado por matrícula/script e efeitos declarativos de apresentação. `activity.retry`, `activity.setScore` e `activity.allowRetry` ficam fora desta versão porque o backend atual não oferece retentativas nem override de pontuação.
-- CL-001 continua aguardando aceite do proprietário; CL-002 deve implementar lexer/parser/AST própria, validação, persistência de estado/execução, idempotência, efeitos por matrícula e testes. Até então nenhum script é executado.
-- O filtro do renderizador do aluno que oculta tags/nós internos é uma proteção de apresentação, não execução segura nem implementação da linguagem.
-- Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime futuro deve obedecer à allowlist e aos limites explícitos da especificação.
+- A especificação normativa aprovada é [CorseLight v0.1](./corselight-language-v0.1.md), integrada em `Homologa` pela PR #52.
+- O contrato separa scripts internos numa coleção raiz `scripts[]`, irmã de `modules[]`; o backend mantém `ScriptsJson` em `Course` e `CourseDraft`, preservando o grafo pedagógico independente.
+- A branch `feature/cl-002-corselight-runtime` implementa lexer, parser/AST próprios, validação semântica, runtime tipado e limitado, persistência de estado por matrícula/script e ledger de execução idempotente. A migração acrescenta as tabelas de estado/execução; snapshots de curso incluem a coleção raiz.
+- Os três eventos são `lesson.start`, `lesson.finish` e `activity.submit`. O backend dispara-os após validar matrícula/aula, após verificar as atividades alcançáveis antes da conclusão e após avaliar uma submissão aceita, respectivamente.
+- DTOs de autoria/admin incluem `scripts[]` e `scriptDiagnostics[]`. Os DTOs públicos do aluno enviam arrays vazios para esses campos e nunca expõem fonte, AST, diagnóstico privado ou estado de execução.
+- Efeitos de apresentação são armazenados por evento e projetados apenas sobre nós passivos presentes na rota já autorizada pelo backend. `content.show` não restaura nós removidos por ramificações bloqueadas. Feedback de execução é projetado em `EnrollmentDto.scriptEffects[]` e exibido na tela da aula; a interface atualiza a projeção do curso após os eventos de início e conclusão.
+- `activity.retry`, `activity.setScore` e `activity.allowRetry` ficam fora da v0.1; CL não altera score, tentativas, conclusão, autorização ou navegação de segurança.
+- A implementação CL-002 ainda está em revisão/CI nesta branch e não é considerada integrada até o merge explícito.
+- Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime obedece à allowlist e aos limites explícitos da especificação.
 
 ## 10. Referências no código
 

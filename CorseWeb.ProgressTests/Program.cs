@@ -229,6 +229,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         appliedMigrations.Contains("20261123150000_AddCourseCertificates"),
         "The course-certificate migration must be discoverable and applied.");
+    Assert(
+        appliedMigrations.Contains("20261124100000_AddCorseLightRuntimeStorage"),
+        "The CorseLight storage migration must be discoverable and applied.");
 
     var persistedEnrollment = new CourseEnrollment
     {
@@ -518,6 +521,8 @@ await using (var db = new AppDbContext(options))
         "Each effective status transition must have one history snapshot.");
 }
 
+CorseLightTestSuite.Run(Assert);
+await CorseLightPersistenceTestSuite.RunAsync(Assert);
 await ApiIntegrationTestSuite.RunAsync(Assert);
 
 Console.WriteLine($"Passed {testCount} server contract, SQLite migration and HTTP integration assertions.");
