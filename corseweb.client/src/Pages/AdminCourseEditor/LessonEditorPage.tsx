@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../../i18n/useTranslation";
-import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module } from "../../types/course";
+import type { CanvasConnection, CanvasNode, CanvasNodeLayout, CanvasNodeStyle, CanvasNodeType, Course, Lesson, LessonPresentation, Module, CorseLightScript, CorseLightDiagnostic } from "../../types/course";
 import { canAssignNodeParent, CONTAINER_CONTENT_INSET, findContainerAtPosition, findContainerDropTarget, fitsInsideContainer, getContainerContentBounds, getEligibleContainerParents, getNodeDescendantIds, getNodeHierarchyDepth, isContainerNode, MAX_NODE_HIERARCHY_DEPTH, validateNodeHierarchy } from "./nodeHierarchy";
 import { LessonContentTree } from "../AppLessonPage/LessonContentRenderer";
+import { CorseLightEditor } from "./CorseLightEditor";
 import { getLessonPresentationStyle } from "../AppLessonPage/lessonPresentation";
 import { getCourseBySlugStore, getDraftCourses, publishDraft, refreshCourses, updateCourse } from "../../store/courseStore";
 import "./LessonEditorPage.scss";
@@ -749,6 +750,9 @@ function LessonEditorPage() {
 
   const [course, setCourse] = useState<Course | undefined>(() => cachedCourse);
   const [modules, setModules] = useState<Module[]>(() => cachedCourse && !hasUnsupportedContentSchema(cachedCourse) ? prepareModules(cachedCourse) : []);
+  const [scripts, setScripts] = useState<CorseLightScript[]>(() => cachedCourse?.scripts ?? []);
+  const [scriptDiagnostics, setScriptDiagnostics] = useState<CorseLightDiagnostic[]>(() => cachedCourse?.scriptDiagnostics ?? []);
+  const [editorSection, setEditorSection] = useState<"content" | "scripts">("content");
   const [selectedLessonId, setSelectedLessonId] = useState("");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -785,6 +789,8 @@ function LessonEditorPage() {
         if (loaded && !dirty.current) {
           const prepared = prepareModules(loaded);
           setModules(prepared);
+          setScripts(loaded.scripts ?? []);
+          setScriptDiagnostics(loaded.scriptDiagnostics ?? []);
           setSelectedLessonId(prepared[0]?.lessons[0]?.id ?? "");
         }
         setLoading(false);
@@ -1602,14 +1608,19 @@ function LessonEditorPage() {
         allowComments: course.allowComments,
         allowFork: course.allowFork,
         modules: sanitizedModules,
+        scripts,
       });
       if (!updated) throw new Error("O curso não foi encontrado na store.");
       setCourse(updated);
       setModules(sanitizedModules);
+      setScripts(updated.scripts ?? scripts);
+      setScriptDiagnostics(updated.scriptDiagnostics ?? []);
       dirty.current = false;
       setNotice(copy.saved);
       return true;
     } catch (caught) {
+      const diagnostics = (caught as { body?: { diagnostics?: unknown } })?.body?.diagnostics;
+      if (Array.isArray(diagnostics)) setScriptDiagnostics(diagnostics as CorseLightDiagnostic[]);
       setError((caught as { body?: { error?: string }; message?: string })?.body?.error
         ?? (caught as { message?: string })?.message
         ?? copy.saveError);
@@ -1698,16 +1709,18 @@ function LessonEditorPage() {
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddModule}>{copy.addModule}</button>
         <button type="button" className="lesson-editor-workspace__secondary" onClick={handleAddLesson} disabled={!activeModule}>{copy.addLesson}</button>
         <button type="button" className="lesson-editor-workspace__secondary lesson-editor-workspace__desktop-preview-toggle" onClick={() => setMobilePanel((current) => current === "preview" ? "canvas" : "preview")} aria-pressed={mobilePanel === "preview"}>{mobilePanel === "preview" ? copy.backToCanvas : copy.preview}</button>
+        <button type="button" className="lesson-editor-workspace__secondary" aria-pressed={editorSection === "scripts"} onClick={() => setEditorSection((current) => current === "scripts" ? "content" : "scripts")}>CorseLight · CL 0.1</button>
         <span className="lesson-editor-workspace__grid-scale">Grid · 20 px</span>
       </div>
 
-      <nav className="lesson-editor-workspace__mobile-tabs" aria-label={copy.canvas}>
+      <nav className="lesson-editor-workspace__mobile-tabs" aria-label={copy.canvas} hidden={editorSection !== "content"}>
         <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "cards"} onClick={() => setMobilePanel("cards")}>{copy.cardsTab}</button>
         <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "canvas"} onClick={() => setMobilePanel("canvas")}>{copy.canvasTab}</button>
         <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "properties"} onClick={() => setMobilePanel("properties")}>{copy.propertiesTab}</button>
         <button type="button" className="lesson-editor-workspace__mobile-tab" aria-pressed={mobilePanel === "preview"} onClick={() => setMobilePanel("preview")}>{copy.preview}</button>
       </nav>
 
+      {editorSection === "content" ? (
       <div className="lesson-editor-workspace__body">
         <aside className="lesson-editor-workspace__palette" aria-label={copy.palette}>
           <div className="lesson-editor-workspace__panel-heading">
@@ -2091,6 +2104,18 @@ function LessonEditorPage() {
           {error && <p className="lesson-editor-workspace__error" role="alert">{error}</p>}
         </aside>
       </div>
+      ) : (
+        <CorseLightEditor
+          scripts={scripts}
+          diagnostics={scriptDiagnostics}
+          locale={locale}
+          onChange={(nextScripts) => {
+            dirty.current = true;
+            setScripts(nextScripts);
+            setNotice(null);
+          }}
+        />
+      )}
     </main>
   );
 }
