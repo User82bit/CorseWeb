@@ -125,13 +125,16 @@ function normalizeEnrollment(raw: unknown): CourseEnrollment {
           const rawEffects = item.effects && typeof item.effects === "object"
             ? item.effects as Record<string, unknown>
             : {};
-          const feedback = Array.isArray(rawEffects.feedback)
-            ? rawEffects.feedback.map((entry) => {
+          const feedback: CorseLightFeedback[] = Array.isArray(rawEffects.feedback)
+            ? rawEffects.feedback.map((entry): CorseLightFeedback => {
                 const value = entry as Record<string, unknown>;
-                const tone = value.tone;
+                const tone: CorseLightFeedbackTone =
+                  value.tone === "success" || value.tone === "warning" || value.tone === "error"
+                    ? value.tone
+                    : "info";
                 return {
                   message: String(value.message ?? ""),
-                  tone: tone === "success" || tone === "warning" || tone === "error" ? tone : "info",
+                  tone,
                 };
               }).filter((entry) => entry.message.trim().length > 0)
             : [];
