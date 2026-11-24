@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using CorseWeb.Server.Models;
 using CorseWeb.Server.Dtos;
+using CorseWeb.Server.CorseLight;
 
 namespace CorseWeb.Server.Helpers;
 
@@ -34,6 +35,12 @@ public static class CourseMapper
     }
 
     private static string StringifyArray(JsonElement? el) => Stringify(el, "[]");
+
+    private static JsonElement SerializeToElement<T>(T value)
+    {
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(value, JsonOpts));
+        return document.RootElement.Clone();
+    }
 
     // Courses must always have a usable cover URL. Empty URLs can exist in old
     // browser caches or in drafts created before cover validation was added.
@@ -134,7 +141,9 @@ public static class CourseMapper
             c.AllowComments, c.AllowFork, c.IsFeatured,
             c.AuthorId, c.AuthorName, ParseNullable(c.AuthorAvatarJson),
             c.Version, c.Changelog,
-            c.CreatedAt, c.UpdatedAt, c.CreatedBy, c.UpdatedBy
+            c.CreatedAt, c.UpdatedAt, c.CreatedBy, c.UpdatedBy,
+            ParseJsonElement(c.ScriptsJson, "[]"),
+            SerializeToElement(CorseLightValidator.ValidateScriptsJson(c.ScriptsJson, c.ModulesJson))
         );
     }
 
@@ -143,7 +152,8 @@ public static class CourseMapper
     public static CourseListDto ToStudentDto(
         Course c,
         IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null,
-        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null)
+        IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null,
+        IReadOnlyCollection<CourseScriptExecution>? scriptExecutions = null)
     {
         var dto = ToDto(c);
         return dto with
@@ -151,14 +161,18 @@ public static class CourseMapper
             Modules = ParseStudentModules(
                 c.ModulesJson,
                 quizAttempts ?? Array.Empty<CourseQuizAttempt>(),
-                exerciseAttempts ?? Array.Empty<CourseExerciseAttempt>())
+                exerciseAttempts ?? Array.Empty<CourseExerciseAttempt>(),
+                scriptExecutions ?? Array.Empty<CourseScriptExecution>()),
+            Scripts = ParseJsonElement("[]", "[]"),
+            ScriptDiagnostics = ParseJsonElement("[]", "[]")
         };
     }
 
     private static JsonElement ParseStudentModules(
         string? modulesJson,
         IReadOnlyCollection<CourseQuizAttempt> quizAttempts,
-        IReadOnlyCollection<CourseExerciseAttempt> exerciseAttempts)
+        IReadOnlyCollection<CourseExerciseAttempt> exerciseAttempts,
+        IReadOnlyCollection<CourseScriptExecution> scriptExecutions)
     {
         try
         {
@@ -191,6 +205,14 @@ public static class CourseMapper
                         }
 
                         StudentLessonFlowProjector.Apply(lessonObject, activityResults);
+                        ApplyStudentScriptEffects(
+                            lessonObject,
+                            scriptExecutions.Where(execution =>
+                                execution.ScriptId == CourseScriptExecution.EventMarkerScriptId
+                                && string.Equals(execution.LessonId, lessonId, StringComparison.Ordinal)
+                                && !execution.Failed)
+                                .OrderBy(execution => execution.CreatedAt)
+                                .ToArray());
                         if (lessonObject["nodes"] is not JsonArray nodes) continue;
                         foreach (var node in nodes)
                         {
@@ -214,6 +236,133 @@ public static class CourseMapper
         }
     }
 
+    private static void ApplyStudentScriptEffects(
+        JsonObject lesson,
+        IReadOnlyCollection<CourseScriptExecution> executions)
+    {
+        if (lesson["nodes"] is not JsonArray nodes || executions.Count == 0) return;
+
+        var nodeLookup = nodes.OfType<JsonObject>()
+            .Select(node => (Node: node, Id: ReadNodeString(node["id"]), Type: ReadNodeString(node["type"])))
+            .Where(item => !string.IsNullOrWhiteSpace(item.Id))
+            .ToDictionary(item => item.Id!, item => item, StringComparer.Ordinal);
+        var visibility = new Dictionary<string, bool>(StringComparer.Ordinal);
+        var textOverrides = new Dictionary<(string NodeId, string Field), string>();
+
+        foreach (var execution in executions)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(execution.ResultJson);
+                var root = document.RootElement;
+                if (TryGetProperty(root, "nodeVisibility", out var visibilityEffects)
+                    && visibilityEffects.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var effect in visibilityEffects.EnumerateArray())
+                    {
+                        var nodeId = ReadStringProperty(effect, "nodeId");
+                        if (nodeId == null || !nodeLookup.TryGetValue(nodeId, out var node)
+                            || node.Type is not ("heading" or "paragraph" or "list" or "image" or "video" or "code" or "callout" or "divider" or "embed"))
+                            continue;
+                        if (TryGetProperty(effect, "visible", out var visible) && visible.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                            visibility[nodeId] = visible.GetBoolean();
+                    }
+                }
+
+                if (TryGetProperty(root, "nodeText", out var textEffects)
+                    && textEffects.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var effect in textEffects.EnumerateArray())
+                    {
+                        var nodeId = ReadStringProperty(effect, "nodeId");
+                        var field = ReadStringProperty(effect, "field");
+                        var value = ReadStringProperty(effect, "value");
+                        if (nodeId == null || field == null || value == null
+                            || !nodeLookup.TryGetValue(nodeId, out var node))
+                            continue;
+                        var allowed = (node.Type, field) switch
+                        {
+                            ("heading", "content") => true,
+                            ("paragraph", "content") => true,
+                            ("callout", "title") => true,
+                            ("callout", "content") => true,
+                            _ => false
+                        };
+                        if (allowed) textOverrides[(nodeId, field)] = value;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Invalid stored effects are ignored; scripts never control raw markup.
+            }
+        }
+
+        foreach (var pair in textOverrides)
+        {
+            if (!nodeLookup.TryGetValue(pair.Key.NodeId, out var node)
+                || node.Node["props"] is not JsonObject props)
+                continue;
+            props[pair.Key.Field] = JsonValue.Create(pair.Value);
+        }
+
+        for (var index = nodes.Count - 1; index >= 0; index--)
+        {
+            if (nodes[index] is not JsonObject node) continue;
+            var id = ReadNodeString(node["id"]);
+            if (id != null && visibility.TryGetValue(id, out var visible) && !visible)
+                nodes.RemoveAt(index);
+        }
+
+        if (lesson["connections"] is JsonArray connections)
+        {
+            var remainingIds = nodes.OfType<JsonObject>()
+                .Select(node => ReadNodeString(node["id"]))
+                .Where(id => id != null)
+                .ToHashSet(StringComparer.Ordinal);
+            for (var index = connections.Count - 1; index >= 0; index--)
+            {
+                if (connections[index] is not JsonObject connection) continue;
+                var source = ReadNodeString(connection["sourceNode"]);
+                var target = ReadNodeString(connection["targetNode"]);
+                if (source == null || target == null
+                    || !remainingIds.Contains(source) || !remainingIds.Contains(target))
+                    connections.RemoveAt(index);
+            }
+        }
+    }
+
+    private static string? ReadNodeString(JsonNode? node)
+    {
+        try { return node?.GetValue<string>(); }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    private static string? ReadStringProperty(JsonElement element, string propertyName)
+    {
+        return TryGetProperty(element, propertyName, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+    }
+
+    private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+        }
+        value = default;
+        return false;
+    }
+
     public static CourseDraftDto ToDto(CourseDraft d)
     {
         var totals = CalculateContentTotals(d.ModulesJson);
@@ -224,7 +373,9 @@ public static class CourseMapper
             d.Category, ParseJsonElement(d.TagsJson, "[]"), d.Level, d.Language,
             ParseJsonElement(d.ModulesJson, "[]"), totals.Modules, totals.Lessons, totals.Minutes,
             d.AllowComments, d.AllowFork,
-            d.CreatedAt, d.UpdatedAt
+            d.CreatedAt, d.UpdatedAt,
+            ParseJsonElement(d.ScriptsJson, "[]"),
+            SerializeToElement(CorseLightValidator.ValidateScriptsJson(d.ScriptsJson, d.ModulesJson))
         );
     }
 
@@ -232,6 +383,7 @@ public static class CourseMapper
     {
         var now = DateTime.UtcNow;
         var modulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]";
+        var scriptsJson = StringifyArray(dto.Scripts);
         var totals = CalculateContentTotals(modulesJson);
         return new Course
         {
@@ -248,6 +400,7 @@ public static class CourseMapper
             Status = "publicado",
             Language = dto.Language ?? "pt-BR",
             ModulesJson = modulesJson,
+            ScriptsJson = scriptsJson,
             TotalModules = totals.Modules,
             TotalLessons = totals.Lessons,
             TotalMinutes = totals.Minutes,
@@ -282,6 +435,8 @@ public static class CourseMapper
             c.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
             ApplyContentTotals(c);
         }
+        if (dto.Scripts != null)
+            c.ScriptsJson = StringifyArray(dto.Scripts);
         if (dto.AllowComments != null) c.AllowComments = dto.AllowComments.Value;
         if (dto.AllowFork != null) c.AllowFork = dto.AllowFork.Value;
         if (dto.IsFeatured != null) c.IsFeatured = dto.IsFeatured.Value;
@@ -298,6 +453,7 @@ public static class CourseMapper
     {
         var now = DateTime.UtcNow;
         var modulesJson = dto.Modules != null ? JsonSerializer.Serialize(dto.Modules.Value, JsonOpts) : "[]";
+        var scriptsJson = StringifyArray(dto.Scripts);
         var totals = CalculateContentTotals(modulesJson);
         return new CourseDraft
         {
@@ -315,6 +471,7 @@ public static class CourseMapper
             Level = dto.Level,
             Language = dto.Language ?? "pt-BR",
             ModulesJson = modulesJson,
+            ScriptsJson = scriptsJson,
             TotalModules = totals.Modules,
             TotalLessons = totals.Lessons,
             TotalMinutes = totals.Minutes,
@@ -340,6 +497,8 @@ public static class CourseMapper
             d.ModulesJson = JsonSerializer.Serialize(dto.Modules.Value, JsonOpts);
             ApplyContentTotals(d);
         }
+        if (dto.Scripts != null)
+            d.ScriptsJson = StringifyArray(dto.Scripts);
         if (dto.AllowComments != null) d.AllowComments = dto.AllowComments.Value;
         if (dto.AllowFork != null) d.AllowFork = dto.AllowFork.Value;
         if (dto.Slug != null) d.Slug = dto.Slug.Trim();
