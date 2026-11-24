@@ -110,10 +110,6 @@ public static class CorseLightTestSuite
         assert(unknownFunction.Any(item => item.Code == "CL_UNKNOWN_FUNCTION"),
             "Unknown functions and arbitrary system access must be rejected.");
 
-        var duplicateScriptIds = goodScripts.Replace(
-            "},\n          {",
-            "},\n          {",
-            StringComparison.Ordinal);
         var duplicateSource = """
         [
           { "id":"same", "name":"A", "language":"CL", "languageVersion":"0.1", "enabled":false, "source":"on lesson.start {}" },
