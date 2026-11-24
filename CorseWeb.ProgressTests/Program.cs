@@ -518,6 +518,7 @@ await using (var db = new AppDbContext(options))
         "Each effective status transition must have one history snapshot.");
 }
 
+CorseLightTestSuite.Run(Assert);
 await ApiIntegrationTestSuite.RunAsync(Assert);
 
 Console.WriteLine($"Passed {testCount} server contract, SQLite migration and HTTP integration assertions.");
