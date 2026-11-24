@@ -156,15 +156,10 @@ public class EnrollmentsController : ControllerBase
                 return BadRequest(new { error = "Aula não publicada ou não pertencente ao curso" });
             }
 
-            var isFirstValidatedEntry = !string.Equals(
-                enrollment.CurrentLessonId, dto.CurrentLessonId, StringComparison.Ordinal);
             enrollment.CurrentLessonId = dto.CurrentLessonId;
-            if (isFirstValidatedEntry)
-            {
-                _ = await CorseLightEventRunner.ExecuteAsync(
-                    _db, course, enrollment, dto.CurrentLessonId,
-                    "lesson.start", dto.CurrentLessonId);
-            }
+            _ = await CorseLightEventRunner.ExecuteAsync(
+                _db, course, enrollment, dto.CurrentLessonId,
+                "lesson.start", dto.CurrentLessonId);
         }
 
         enrollment.LastAccessedAt = DateTime.UtcNow;
