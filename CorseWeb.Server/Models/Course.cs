@@ -19,6 +19,7 @@ public class Course
     public string Status { get; set; } = "publicado"; // publicado|arquivado (rascunho vive em Drafts)
     public string Language { get; set; } = "pt-BR";
     public string ModulesJson { get; set; } = "[]";    // Module[]
+    public string ScriptsJson { get; set; } = "[]";    // CorseLight Script[]
 
     public int TotalModules { get; set; }
     public int TotalLessons { get; set; }
