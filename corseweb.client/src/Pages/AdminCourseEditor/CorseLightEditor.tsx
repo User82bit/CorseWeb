@@ -16,7 +16,7 @@ const MAX_SOURCE_BYTES = 16 * 1024;
 const MAX_SCRIPTS = 100;
 
 function createScriptId() {
-  const randomPart = typeof crypto !== "undefined" && "randomUUID" in crypto
+  const randomPart = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   return `cl-${randomPart}`;
