@@ -140,12 +140,12 @@ CorseLight (CL) é a linguagem restrita de lógica de cursos, distinta do card p
 
 - A especificação normativa aprovada é [CorseLight v0.1](./corselight-language-v0.1.md), integrada em `Homologa` pela PR #52.
 - O contrato separa scripts internos numa coleção raiz `scripts[]`, irmã de `modules[]`; o backend mantém `ScriptsJson` em `Course` e `CourseDraft`, preservando o grafo pedagógico independente.
-- A branch `feature/cl-002-corselight-runtime` implementa lexer, parser/AST próprios, validação semântica, runtime tipado e limitado, persistência de estado por matrícula/script e ledger de execução idempotente. A migração acrescenta as tabelas de estado/execução; snapshots de curso incluem a coleção raiz.
+- O runtime CorseLight CL-002 foi integrado em `Homologa` pela PR #53 (CI #938): lexer/parser/AST próprios, validação semântica, runtime tipado e limitado, estado por matrícula/script, ledger idempotente e migração das tabelas de estado/execução.
 - Os três eventos são `lesson.start`, `lesson.finish` e `activity.submit`. O backend dispara-os após validar matrícula/aula, após verificar as atividades alcançáveis antes da conclusão e após avaliar uma submissão aceita, respectivamente.
 - DTOs de autoria/admin incluem `scripts[]` e `scriptDiagnostics[]`. Os DTOs públicos do aluno enviam arrays vazios para esses campos e nunca expõem fonte, AST, diagnóstico privado ou estado de execução.
 - Efeitos de apresentação são armazenados por evento e projetados apenas sobre nós passivos presentes na rota já autorizada pelo backend. `content.show` não restaura nós removidos por ramificações bloqueadas. Feedback de execução é projetado em `EnrollmentDto.scriptEffects[]` e exibido na tela da aula; a interface atualiza a projeção do curso após os eventos de início e conclusão.
 - `activity.retry`, `activity.setScore` e `activity.allowRetry` ficam fora da v0.1; CL não altera score, tentativas, conclusão, autorização ou navegação de segurança.
-- A implementação CL-002 ainda está em revisão/CI nesta branch e não é considerada integrada até o merge explícito.
+- A autoria frontend está sendo adicionada pela etapa CL-003 na PR #54: o editor administrativo mantém `scripts[]` separado de `modules[]`, salva a fonte em rascunhos/cursos publicados e exibe diagnósticos server-side. O navegador nunca executa a fonte CL.
 - Nunca usar `eval`, JavaScript, C# scripting, reflexão ou código arbitrário para executar conteúdo escrito por autores. O runtime obedece à allowlist e aos limites explícitos da especificação.
 
 ## 10. Referências no código
