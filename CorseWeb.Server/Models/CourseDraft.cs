@@ -21,6 +21,7 @@ public class CourseDraft
     public string Level { get; set; } = "Iniciante";
     public string Language { get; set; } = "pt-BR";
     public string ModulesJson { get; set; } = "[]";
+    public string ScriptsJson { get; set; } = "[]";
     public int TotalModules { get; set; }
     public int TotalLessons { get; set; }
     public int TotalMinutes { get; set; }
