@@ -78,6 +78,9 @@ public record CourseCertificatePayload(
     string VerificationCode, string StudentName, string CourseTitle, string AuthorName,
     int CourseVersion, DateTime CourseCompletedAt, DateTime IssuedAt);
 
+public record CourseScriptEffectPayload(
+    string LessonId, string EventName, JsonElement Effects, DateTime CreatedAt);
+
 public record EnrollmentDto(
     string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent,
     string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress,
