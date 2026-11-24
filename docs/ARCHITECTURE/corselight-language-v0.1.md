@@ -3,12 +3,12 @@
 - **Nome:** CorseLight
 - **Identificador:** `CL`
 - **Versão da linguagem:** `0.1`
-- **Versão deste documento:** `0.1-candidate.2`
-- **Estado:** proposta técnica consolidada, aguardando revisão e aceite do proprietário. Não existe parser, AST ou runtime implementado.
+- **Versão deste documento:** `0.1-approved`
+- **Estado:** contrato aprovado pelo proprietário e integrado em `Homologa` pela PR #52. A implementação CL-002 está em andamento na branch `feature/cl-002-corselight-runtime`; runtime ainda não integrado à branch-base.
 - **Objetivo:** permitir lógica pequena, determinística e limitada nos cursos, interpretada pelo backend do CorseWeb.
 - **Fora do objetivo:** transformar CL em linguagem geral, executar código arbitrário ou permitir que scripts controlem autenticação, autorização, navegação de segurança ou conclusão por conta própria.
 
-Esta revisão fecha sintaxe, valores, eventos, funções, efeitos, armazenamento, isolamento e limites necessários para iniciar CL-002. A aprovação deste documento não significa que a linguagem já possa ser executada.
+Este contrato fecha sintaxe, valores, eventos, funções, efeitos, armazenamento, isolamento e limites necessários à implementação. A aprovação da especificação não significa, por si só, que a implementação esteja concluída ou disponível em produção.
 
 ## 1. Princípios obrigatórios
 
@@ -348,19 +348,19 @@ O fluxo real deve garantir uma unidade transacional coerente entre o evento prin
 
 ## 12. Dependências e fora de escopo
 
-**CL-001 (esta etapa):** revisar e aceitar este contrato de linguagem. Este documento é uma proposta e ainda requer aceite do proprietário.
+**CL-001 (concluída):** contrato aceito e integrado em `Homologa` pela PR #52. Os critérios de aceite desta seção foram confirmados.
 
-**CL-002 (etapa seguinte):** adicionar `ScriptsJson` em curso/rascunho, DTOs e snapshots; parser/AST; validador; registro de funções; persistência de estado/execução; integração dos três eventos; efeitos no DTO do aluno; migrações e testes.
+**CL-002 (em andamento):** a branch `feature/cl-002-corselight-runtime` adiciona `ScriptsJson` em curso/rascunho e DTOs de autoria, parser/AST, validador semântico, runtime tipado e limitado, persistência de estado/execução, ledger idempotente, integração dos três eventos, projeção segura dos efeitos no aluno, migração SQLite e testes. A entrega permanece em validação de CI e revisão; não deve ser tratada como integrada até o merge explícito.
 
 **Futuro, depois da v0.1:** editor/diagnóstico visual, retry policy, alteração de pontuação, múltiplas tentativas, loops controlados (se algum dia forem necessários), funções definidas pelo autor, funções de tempo/rede e recursos de integração externa. Nenhum desses itens deve entrar silenciosamente na implementação v0.1.
 
 ## 13. Critérios de aceite da especificação
 
-- [ ] O proprietário aceita a gramática e os operadores.
-- [ ] O proprietário aceita o conjunto inicial de três eventos e os momentos de disparo.
-- [ ] O proprietário aceita que score override e retry fiquem fora da v0.1.
-- [ ] O proprietário aceita os efeitos permitidos e suas restrições.
-- [ ] O proprietário aceita os limites de fonte, AST, instruções, estado e efeitos.
-- [ ] O proprietário aceita a coleção raiz `scripts[]` e sua separação da resposta pública de aluno.
+- [x] O proprietário aceita a gramática e os operadores.
+- [x] O proprietário aceita o conjunto inicial de três eventos e os momentos de disparo.
+- [x] O proprietário aceita que score override e retry fiquem fora da v0.1.
+- [x] O proprietário aceita os efeitos permitidos e suas restrições.
+- [x] O proprietário aceita os limites de fonte, AST, instruções, estado e efeitos.
+- [x] O proprietário aceita a coleção raiz `scripts[]` e sua separação da resposta pública de aluno.
 
-Até que esses pontos sejam aceitos, CL-002 não deve tratar a especificação como contrato congelado e nenhum script pode ser executado.
+A especificação foi aceita e é o contrato normativo do CL-002. Somente a implementação publicada, validada e integrada poderá executar scripts; a branch em desenvolvimento ainda depende de CI e revisão antes da integração.
