@@ -241,7 +241,7 @@ export function CorseLightEditor({ scripts, diagnostics, locale, onChange }: Pro
         <aside className="corselight-editor__scripts" aria-label={copy.scripts}>
           <div className="corselight-editor__section-heading">
             <h3>{copy.scripts}</h3>
-            <span>{scripts.length}/${MAX_SCRIPTS}</span>
+            <span>{scripts.length}/{MAX_SCRIPTS}</span>
           </div>
           <button type="button" className="corselight-editor__add" onClick={addScript} disabled={scripts.length >= MAX_SCRIPTS}>
             <span aria-hidden="true">＋</span>{copy.add}
