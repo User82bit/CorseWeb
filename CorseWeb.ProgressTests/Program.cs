@@ -229,6 +229,9 @@ await using (var db = new AppDbContext(options))
     Assert(
         appliedMigrations.Contains("20261123150000_AddCourseCertificates"),
         "The course-certificate migration must be discoverable and applied.");
+    Assert(
+        appliedMigrations.Contains("20261124100000_AddCorseLightRuntimeStorage"),
+        "The CorseLight storage migration must be discoverable and applied.");
 
     var persistedEnrollment = new CourseEnrollment
     {
