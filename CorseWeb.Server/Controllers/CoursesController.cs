@@ -190,9 +190,10 @@ public class CoursesController : ControllerBase
         if (!IsAdmin && c.AuthorId != CurrentUserId) return Forbid();
         var contentError = CourseContentValidator.Validate(dto.Modules);
         if (contentError != null) return BadRequest(new { error = contentError });
-        var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(dto.Modules?.GetRawText());
+        var mergedModulesJson = dto.Modules?.GetRawText() ?? c.ModulesJson;
+        var quizError = CourseQuizEvaluator.ValidatePublishedQuizzes(mergedModulesJson);
         if (quizError != null) return BadRequest(new { error = quizError });
-        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(dto.Modules?.GetRawText() ?? c.ModulesJson);
+        var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(mergedModulesJson);
         if (exerciseError != null) return BadRequest(new { error = exerciseError });
         var scriptDiagnostics = CorseLightValidator.ValidateScriptsJson(
             dto.Scripts?.GetRawText() ?? c.ScriptsJson,
