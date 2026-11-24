@@ -56,7 +56,7 @@ Contrato de dados:
 - O DTO de autor/proprietário/admin pode receber `scripts[]`; o DTO público/do aluno nunca inclui fonte, AST, diagnostics privados ou estado de scripts.
 - Alterações em scripts fazem parte da versão e do snapshot imutável de `CourseVersion`, assim como módulos e aulas.
 
-O editor visual CL e o editor de código não fazem parte desta etapa de especificação; serão uma entrega separada. A API e o modelo persistido atuais ainda não aceitam `scripts[]`.
+O editor visual CL e o editor de código não fazem parte do CL-002; serão uma entrega separada. A persistência e a API de autoria de `scripts[]` estão sendo implementadas na branch CL-002, sem incluir uma interface de edição nesta entrega.
 
 ## 3. Sintaxe e gramática
 
