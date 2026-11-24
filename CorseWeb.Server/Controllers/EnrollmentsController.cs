@@ -59,6 +59,12 @@ public class EnrollmentsController : ControllerBase
             : await _db.CourseCertificates
                 .Where(certificate => enrollmentIds.Contains(certificate.EnrollmentId))
                 .ToListAsync();
+        var scriptExecutions = enrollmentIds.Length == 0
+            ? new List<CourseScriptExecution>()
+            : await _db.CourseScriptExecutions
+                .Where(execution => enrollmentIds.Contains(execution.EnrollmentId)
+                    && execution.ScriptId == CourseScriptExecution.EventMarkerScriptId)
+                .ToListAsync();
 
         var completionsByEnrollment = completions
             .GroupBy(completion => completion.EnrollmentId)
@@ -72,6 +78,9 @@ public class EnrollmentsController : ControllerBase
         var certificatesByEnrollment = certificates
             .GroupBy(certificate => certificate.EnrollmentId, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.OrderByDescending(item => item.IssuedAt).First(), StringComparer.Ordinal);
+        var scriptExecutionsByEnrollment = scriptExecutions
+            .GroupBy(execution => execution.EnrollmentId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyCollection<CourseScriptExecution>)group.ToArray(), StringComparer.Ordinal);
 
         return Ok(enrollments.Select(enrollment =>
         {
@@ -80,13 +89,15 @@ public class EnrollmentsController : ControllerBase
             quizAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentQuizAttempts);
             exerciseAttemptsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentExerciseAttempts);
             certificatesByEnrollment.TryGetValue(enrollment.Id, out var enrollmentCertificate);
+            scriptExecutionsByEnrollment.TryGetValue(enrollment.Id, out var enrollmentScriptExecutions);
             return EnrollmentProgressProjector.ToDto(
                 enrollment,
                 course,
                 enrollmentCompletions ?? [],
                 enrollmentQuizAttempts ?? [],
                 enrollmentExerciseAttempts ?? [],
-                enrollmentCertificate);
+                enrollmentCertificate,
+                enrollmentScriptExecutions ?? []);
         }));
     }
 
