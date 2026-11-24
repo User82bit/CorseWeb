@@ -372,18 +372,16 @@ export async function updateCourse(slug: string, patch: Partial<Course>): Promis
   // draft?
   const draft = draftsCache.find(d => d.slug === slug);
   if (draft?.draftId) {
-    try {
-      const upd = await updateDraft(draft.draftId, {
-        title: patch.title, subtitle: patch.subtitle, description: patch.description,
-        category: patch.category, level: patch.level as Course["level"], language: patch.language,
-        tags: patch.tags as CourseCreateInput["tags"], thumbnail: patch.thumbnail,
-        allowComments: patch.allowComments, allowFork: patch.allowFork, modules: patch.modules,
-        scripts: patch.scripts,
-      });
-      return upd as unknown as Course;
-    } catch {
-      // fallback legado
-    }
+    // A cached backend draft is authoritative: surface API errors instead of
+    // silently treating a failed remote save as a successful legacy-local save.
+    const updatedDraft = await updateDraft(draft.draftId, {
+      title: patch.title, subtitle: patch.subtitle, description: patch.description,
+      category: patch.category, level: patch.level as Course["level"], language: patch.language,
+      tags: patch.tags as CourseCreateInput["tags"], thumbnail: patch.thumbnail,
+      allowComments: patch.allowComments, allowFork: patch.allowFork, modules: patch.modules,
+      scripts: patch.scripts,
+    });
+    return updatedDraft as unknown as Course;
   }
   // publicado?
   const pub = publishedCache.find(c => c.slug === slug);
