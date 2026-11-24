@@ -18,7 +18,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - A interface segue mobile-first: estruturar e testar celular primeiro, depois tablet e desktop. A existência de media queries não substitui teste em dispositivo/navegador.
 - Stack do cliente preservada: React, TypeScript/TSX, SCSS/Sass e Node.js. Backend atual: ASP.NET Core com EF Core/SQLite.
 - O editor de blocos anterior foi substituído intencionalmente pelo modelo de grafo FE-011. `blocks[]` e `elements[]` não são migrados automaticamente.
-- CorseLight v0.1 foi aceita e integrada em `Homologa` pela PR #52. CL-002 está em revisão na PR #53; CI #935 passou, mas a implementação ainda não foi integrada. Nenhum script deve ser considerado disponível até revisão/aceite e integração. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
+- CorseLight v0.1 foi aprovada e integrada pela PR #52; o runtime CL-002 foi integrado em `Homologa` pela PR #53 (CI #938). CL-003 adiciona a interface de autoria e a persistência frontend de `scripts[]` na PR #54, ainda em revisão. A fonte continua validada e executada exclusivamente pelo servidor. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
 
 ## Significado dos estados
 
@@ -50,7 +50,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Revisão
 
-- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Implementação na branch `feature/cl-002-corselight-runtime`, PR #53 aberta em rascunho para `Homologa`. Inclui `scripts[]` separado, lexer/parser/AST, validador semântico, runtime tipado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos, feedback na tela do aluno e migração SQLite. CI #935 passou: builds frontend/backend e 207 assertions de contrato/SQLite/API. Falta revisão/aceite manual e integração; não habilitar scripts em produção antes disso. [PR #53](https://github.com/User82bit/CorseWeb/pull/53).
+- **CL-003 · P1 · Criar o editor de autoria CorseLight v0.1.** Implementação na branch `feature/cl-003-corselight-authoring-editor`, PR #54 aberta em rascunho para `Homologa`. Inclui lista/criação/remoção/ativação de scripts, edição de fonte CL com limite de 16 KiB e inserção assistida dos três eventos, referência das funções nativas e diagnósticos retornados pelo servidor. `scripts[]` é preservado em rascunhos e cursos publicados. CI #956 passou em lint, testes frontend, build frontend, restore/build .NET e testes integrados da API. Falta validação manual de salvamento, diagnósticos e responsividade, além de teste com conta real de aluno. [PR #54](https://github.com/User82bit/CorseWeb/pull/54).
 
 - **FLOW-002 · P1 · Executar o card Exercício no grafo pedagógico.** Integrado à `Homologa` pela PR #50. O servidor compara o texto/código com a solução privada, persiste o resultado, protege ramos bloqueados e exige resposta para atividades alcançáveis antes de concluir a aula. CI #850 passou com 138 asserções de contrato/SQLite/API e builds frontend/backend. Falta validação manual e aceite. [FLOW-002](./BACKEND/etapas/flow-002-exercise-branching.md).
 
@@ -80,6 +80,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 ### Finalizada
 
 - **CL-001 · P1 · Aprovar a especificação CorseLight v0.1.** Contrato consolidado e aceito pelo proprietário, integrado em `Homologa` pela PR #52. Define gramática, precedência, três eventos, funções allowlisted, estado por matrícula/script, efeitos declarativos e limites. O aceite da especificação não equivale ao aceite do runtime CL-002. [Especificação](./ARCHITECTURE/corselight-language-v0.1.md).
+- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Runtime restrito integrado em `Homologa` pela PR #53; CI #938 passou com lint, builds e 207 assertions de contrato/SQLite/API. Inclui parser/AST próprios, validação semântica, interpretador tipado, estado isolado por matrícula/script, idempotência dos três eventos, efeitos declarativos e migração SQLite. A integração não substitui teste manual da autoria e da experiência do aluno; o editor frontend é a etapa CL-003. [PR #53](https://github.com/User82bit/CorseWeb/pull/53).
 - **CI-001 · P0 · Pipeline inicial de validação.** Workflow presente; executa lint/testes disponíveis/build frontend e restore/build Release .NET. A aprovação do workflow não cobre testes manuais ou E2E. Histórico: [PR #2](https://github.com/User82bit/CorseWeb/pull/2).
 - **FE-006 · P0 · Corrigir resolução do LanguageProvider em Windows/Vite.** PR integrado e inicialização local confirmada pelo proprietário. Histórico: [PR #5](https://github.com/User82bit/CorseWeb/pull/5).
 
