@@ -808,6 +808,8 @@ function LessonEditorPage() {
           if (!dirty.current) {
             const prepared = prepareModules(local);
             setModules(prepared);
+            setScripts(local.scripts ?? []);
+            setScriptDiagnostics(local.scriptDiagnostics ?? []);
             setSelectedLessonId(prepared[0]?.lessons[0]?.id ?? "");
           }
         } else {
