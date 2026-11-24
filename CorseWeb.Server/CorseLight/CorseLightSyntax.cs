@@ -363,7 +363,8 @@ internal sealed class ClLexer
                 case ';': Add(ClTokenKind.Semicolon, ";", line, column); break;
                 case '.': Add(ClTokenKind.Dot, ".", line, column); break;
                 case '!':
-                    Add(Match('=') ? ClTokenKind.BangEqual : ClTokenKind.Bang, MatchWas('=') ? "!=" : "!", line, column);
+                    if (Match('=')) Add(ClTokenKind.BangEqual, "!=", line, column);
+                    else Add(ClTokenKind.Bang, "!", line, column);
                     break;
                 case '<':
                     if (Match('=')) Add(ClTokenKind.LessEqual, "<=", line, column);
@@ -423,8 +424,6 @@ internal sealed class ClLexer
         Advance();
         return true;
     }
-    private bool MatchWas(char expected) => _tokens.Count > 0 || _source[_offset - 1] == expected;
-
     private void SkipWhitespaceAndComments()
     {
         while (!AtEnd)
