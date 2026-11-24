@@ -18,7 +18,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - A interface segue mobile-first: estruturar e testar celular primeiro, depois tablet e desktop. A existência de media queries não substitui teste em dispositivo/navegador.
 - Stack do cliente preservada: React, TypeScript/TSX, SCSS/Sass e Node.js. Backend atual: ASP.NET Core com EF Core/SQLite.
 - O editor de blocos anterior foi substituído intencionalmente pelo modelo de grafo FE-011. `blocks[]` e `elements[]` não são migrados automaticamente.
-- CorseLight v0.1 foi aceita e integrada em `Homologa` pela PR #52. CL-002 está em desenvolvimento numa branch isolada; nenhum script deve ser considerado disponível até a implementação passar CI, revisão e integração. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
+- CorseLight v0.1 foi aceita e integrada em `Homologa` pela PR #52. CL-002 está em revisão na PR #53; CI #935 passou, mas a implementação ainda não foi integrada. Nenhum script deve ser considerado disponível até revisão/aceite e integração. Nunca executar código do autor com `eval`, reflexão ou runtime de linguagem irrestrito.
 
 ## Significado dos estados
 
@@ -40,7 +40,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Iniciada
 
-- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Em andamento na branch `feature/cl-002-corselight-runtime`: coleção raiz `scripts[]`, DTOs de autoria, parser/AST, validador semântico, interpretador limitado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos e migração SQLite. Testes de linguagem, privacidade, bloqueio de ramos e persistência foram adicionados; store e tela do aluno exibem feedback e atualizam os efeitos após os eventos; aguarda CI e revisão. A PR continuará em rascunho até validação.
+
 
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 
@@ -49,6 +49,8 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 - **I18N-001 · P1 · Completar e revisar a experiência multilíngue.** A base pt-BR/en/es existe e a resolução de locale possui testes, mas o sistema continua registrado como incompleto. Conferir paridade dos dicionários, telas públicas/aluno/admin/editor, mensagens de erro, `html lang`, datas/números e persistência da escolha.
 
 ### Revisão
+
+- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Implementação na branch `feature/cl-002-corselight-runtime`, PR #53 aberta em rascunho para `Homologa`. Inclui `scripts[]` separado, lexer/parser/AST, validador semântico, runtime tipado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos, feedback na tela do aluno e migração SQLite. CI #935 passou: builds frontend/backend e 207 assertions de contrato/SQLite/API. Falta revisão/aceite manual e integração; não habilitar scripts em produção antes disso. [PR #53](https://github.com/User82bit/CorseWeb/pull/53).
 
 - **FLOW-002 · P1 · Executar o card Exercício no grafo pedagógico.** Integrado à `Homologa` pela PR #50. O servidor compara o texto/código com a solução privada, persiste o resultado, protege ramos bloqueados e exige resposta para atividades alcançáveis antes de concluir a aula. CI #850 passou com 138 asserções de contrato/SQLite/API e builds frontend/backend. Falta validação manual e aceite. [FLOW-002](./BACKEND/etapas/flow-002-exercise-branching.md).
 
