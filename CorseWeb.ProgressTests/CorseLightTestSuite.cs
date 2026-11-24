@@ -102,12 +102,12 @@ public static class CorseLightTestSuite
         assert(invalidTarget.Any(item => item.Code == "CL_INVALID_NODE_TARGET"),
             "Quiz nodes must not be eligible for content visibility or text mutation.");
 
-        var invalidContextScripts = goodScripts.Replace("activity.isCorrect()", "context.get(\"student.password\") == \"secret\"", StringComparison.Ordinal);
+        var invalidContextScripts = goodScripts.Replace("activity.isCorrect()", "context.get(\\\"student.password\\\") == \\\"secret\\\"", StringComparison.Ordinal);
         var invalidContext = CorseLightValidator.ValidateScriptsJson(invalidContextScripts, lessonModules);
         assert(invalidContext.Any(item => item.Code == "CL_CONTEXT_KEY"),
             "Context reads outside the privacy allowlist must be rejected.");
 
-        var unknownFunctionScripts = goodScripts.Replace("activity.isCorrect()", "system.exec(\"whoami\") == true", StringComparison.Ordinal);
+        var unknownFunctionScripts = goodScripts.Replace("activity.isCorrect()", "system.exec(\\\"whoami\\\") == true", StringComparison.Ordinal);
         var unknownFunction = CorseLightValidator.ValidateScriptsJson(unknownFunctionScripts, lessonModules);
         assert(unknownFunction.Any(item => item.Code == "CL_UNKNOWN_FUNCTION"),
             "Unknown functions and arbitrary system access must be rejected.");
