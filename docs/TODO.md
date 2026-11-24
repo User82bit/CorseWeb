@@ -40,7 +40,7 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Iniciada
 
-- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Em andamento na branch `feature/cl-002-corselight-runtime`: coleção raiz `scripts[]`, DTOs de autoria, parser/AST, validador semântico, interpretador limitado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos e migração SQLite. Testes de linguagem e persistência foram adicionados; aguarda CI e revisão. A PR continuará em rascunho até validação.
+- **CL-002 · P1 · Implementar parser e runtime CorseLight v0.1.** Em andamento na branch `feature/cl-002-corselight-runtime`: coleção raiz `scripts[]`, DTOs de autoria, parser/AST, validador semântico, interpretador limitado, estado por matrícula/script, ledger idempotente dos três eventos, efeitos declarativos e migração SQLite. Testes de linguagem, privacidade, bloqueio de ramos e persistência foram adicionados; store e tela do aluno exibem feedback e atualizam os efeitos após os eventos; aguarda CI e revisão. A PR continuará em rascunho até validação.
 
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 
