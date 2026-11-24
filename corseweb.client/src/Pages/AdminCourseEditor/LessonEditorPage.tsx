@@ -1641,6 +1641,8 @@ function LessonEditorPage() {
       await publishDraft(draft.draftId);
       navigate("/admin/courses");
     } catch (caught) {
+      const diagnostics = (caught as { body?: { diagnostics?: unknown } })?.body?.diagnostics;
+      if (Array.isArray(diagnostics)) setScriptDiagnostics(diagnostics as CorseLightDiagnostic[]);
       setError((caught as { body?: { error?: string }; message?: string })?.body?.error
         ?? (caught as { message?: string })?.message
         ?? copy.saveError);
