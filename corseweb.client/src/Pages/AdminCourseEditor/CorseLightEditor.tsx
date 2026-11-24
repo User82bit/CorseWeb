@@ -323,7 +323,8 @@ export function CorseLightEditor({ scripts, diagnostics, locale, onChange }: Pro
                 aria-label={copy.source}
                 onChange={(event) => {
                   const nextSource = event.target.value;
-                  if (new TextEncoder().encode(nextSource).byteLength > MAX_SOURCE_BYTES) {
+                  const nextBytes = new TextEncoder().encode(nextSource).byteLength;
+                  if (nextBytes > MAX_SOURCE_BYTES && nextBytes > sourceBytes) {
                     setLocalMessage(copy.limit);
                     return;
                   }
