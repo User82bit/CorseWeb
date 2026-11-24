@@ -94,7 +94,7 @@ public static class CorseLightEventRunner
                     using var stateDocument = JsonDocument.Parse(stateRow.ValueJson);
                     initialState[stateRow.Key] = CorseLightRuntime.FromJson(stateDocument.RootElement);
                 }
-                catch (JsonException)
+                catch (Exception exception) when (exception is JsonException or InvalidOperationException)
                 {
                     // A corrupt legacy row is isolated to this script; it is not exposed to the author or student.
                     initialState[stateRow.Key] = null;
