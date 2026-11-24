@@ -237,11 +237,14 @@ public class EnrollmentsController : ControllerBase
             catch (DbUpdateException)
             {
                 // A unique index makes simultaneous duplicate requests idempotent.
-                // Detach the failed insert and confirm another request persisted it.
                 _db.Entry(completion).State = EntityState.Detached;
                 var wasRecorded = await _db.CourseLessonCompletions.AnyAsync(record =>
                     record.EnrollmentId == enrollment.Id && record.LessonId == lessonId);
                 if (!wasRecorded) throw;
+                DetachScriptChanges();
+                _ = await CorseLightEventRunner.ExecuteAsync(
+                    _db, course, enrollment, lessonId,
+                    "lesson.finish", lessonId);
             }
         }
 
@@ -536,6 +539,14 @@ public class EnrollmentsController : ControllerBase
         _db.Enrollments.Remove(enrollment);
         await _db.SaveChangesAsync();
         return Ok(new { ok = true });
+    }
+
+    private void DetachScriptChanges()
+    {
+        foreach (var entry in _db.ChangeTracker.Entries<CourseScriptState>().ToArray())
+            _db.Entry(entry.Entity).State = EntityState.Detached;
+        foreach (var entry in _db.ChangeTracker.Entries<CourseScriptExecution>().ToArray())
+            _db.Entry(entry.Entity).State = EntityState.Detached;
     }
 
     private Task<Course?> FindCourseAsync(string courseId)
