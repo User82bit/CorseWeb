@@ -38,6 +38,27 @@ export interface Media {
   thumbnailUrl?: string;
 }
 
+/** Definição versionada de um script CorseLight armazenado na raiz do curso. */
+export interface CorseLightScript {
+  id: string;
+  name: string;
+  language: "CL";
+  languageVersion: "0.1";
+  enabled: boolean;
+  source: string;
+}
+
+/** Diagnóstico público ao autor retornado pela validação server-side. */
+export interface CorseLightDiagnostic {
+  code: string;
+  message: string;
+  line: number;
+  column: number;
+  endLine: number;
+  endColumn: number;
+  severity: "error" | "warning" | "info";
+}
+
 /** Tipos de nós disponíveis no canvas pedagógico. */
 export type CanvasNodeType =
   | "start"
@@ -163,6 +184,9 @@ export interface Course extends BaseEntity {
   status: CourseStatus;
   language: string; // código do idioma principal
   modules: Module[];
+  /** Lógica interna do curso; nunca é exposta na projeção pública do aluno. */
+  scripts?: CorseLightScript[];
+  scriptDiagnostics?: CorseLightDiagnostic[];
   // Metadados agregados
   totalModules: number;
   totalLessons: number;
