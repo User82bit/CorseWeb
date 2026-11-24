@@ -110,6 +110,9 @@ public class DraftsController : ControllerBase
         if (quizError != null) return BadRequest(new { error = quizError });
         var exerciseError = CourseExerciseEvaluator.ValidatePublishedExercises(d.ModulesJson);
         if (exerciseError != null) return BadRequest(new { error = exerciseError });
+        var scriptDiagnostics = CorseLightValidator.ValidateScriptsJson(d.ScriptsJson, d.ModulesJson);
+        if (scriptDiagnostics.Count > 0)
+            return BadRequest(new { error = "Os scripts CorseLight contêm erros e não podem ser publicados.", diagnostics = scriptDiagnostics });
 
         var user = await _db.Users.FindAsync(UserId);
         if (user == null) return Unauthorized();
@@ -131,6 +134,7 @@ public class DraftsController : ControllerBase
             course.Level = d.Level;
             course.Language = d.Language;
             course.ModulesJson = d.ModulesJson;
+            course.ScriptsJson = d.ScriptsJson;
             course.TotalModules = d.TotalModules;
             course.TotalLessons = d.TotalLessons;
             course.TotalMinutes = d.TotalMinutes;
@@ -165,6 +169,7 @@ public class DraftsController : ControllerBase
             Id = newId, Slug = slug, Title = d.Title, Subtitle = d.Subtitle, Description = d.Description,
             ShortDescription = d.ShortDescription, ThumbnailJson = d.ThumbnailJson, Category = d.Category,
             TagsJson = d.TagsJson, Level = d.Level, Language = d.Language, ModulesJson = d.ModulesJson,
+            ScriptsJson = d.ScriptsJson,
             TotalModules = d.TotalModules, TotalLessons = d.TotalLessons, TotalMinutes = d.TotalMinutes,
             AllowComments = d.AllowComments, AllowFork = d.AllowFork, IsFeatured = false,
             AuthorId = UserId, AuthorName = user.Name, AuthorAvatarJson = user.AvatarUrl != null ? $"{{\"url\":\"{user.AvatarUrl}\"}}" : null,
