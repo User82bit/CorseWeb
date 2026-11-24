@@ -14,14 +14,16 @@ public record CourseListDto(
     bool AllowComments, bool AllowFork, bool IsFeatured,
     string AuthorId, string AuthorName, JsonElement? AuthorAvatar,
     int Version, string? Changelog,
-    DateTime CreatedAt, DateTime UpdatedAt, string CreatedBy, string UpdatedBy
+    DateTime CreatedAt, DateTime UpdatedAt, string CreatedBy, string UpdatedBy,
+    JsonElement Scripts, JsonElement ScriptDiagnostics
 );
 
 public record CourseCreateDto(
     string Title, string? Subtitle, string Description, string Category,
     JsonElement? Tags, string Level, string Language,
     JsonElement? Thumbnail, JsonElement? Modules,
-    bool? AllowComments, bool? AllowFork, string? SeoTitle, string? SeoDescription, JsonElement? OgImage
+    bool? AllowComments, bool? AllowFork, string? SeoTitle, string? SeoDescription, JsonElement? OgImage,
+    JsonElement? Scripts = null
 );
 
 public record CourseUpdateDto(
@@ -29,7 +31,8 @@ public record CourseUpdateDto(
     JsonElement? Tags, string? Level, string? Language,
     JsonElement? Thumbnail, JsonElement? Modules,
     bool? AllowComments, bool? AllowFork, bool? IsFeatured,
-    string? SeoTitle, string? SeoDescription, JsonElement? OgImage, string? Changelog
+    string? SeoTitle, string? SeoDescription, JsonElement? OgImage, string? Changelog,
+    JsonElement? Scripts = null
 );
 
 public record CourseDraftDto(
@@ -38,7 +41,8 @@ public record CourseDraftDto(
     JsonElement Thumbnail, string Category, JsonElement Tags, string Level, string Language,
     JsonElement Modules, int TotalModules, int TotalLessons, int TotalMinutes,
     bool AllowComments, bool AllowFork,
-    DateTime CreatedAt, DateTime UpdatedAt
+    DateTime CreatedAt, DateTime UpdatedAt,
+    JsonElement Scripts, JsonElement ScriptDiagnostics
 );
 
 public record DraftCreateDto(
@@ -46,14 +50,16 @@ public record DraftCreateDto(
     JsonElement? Tags, string Level, string Language,
     JsonElement? Thumbnail, JsonElement? Modules,
     bool? AllowComments, bool? AllowFork,
-    string? SourceCourseId
+    string? SourceCourseId,
+    JsonElement? Scripts = null
 );
 
 public record DraftUpdateDto(
     string? Title, string? Subtitle, string? Description, string? Category,
     JsonElement? Tags, string? Level, string? Language,
     JsonElement? Thumbnail, JsonElement? Modules,
-    bool? AllowComments, bool? AllowFork, string? Slug
+    bool? AllowComments, bool? AllowFork, string? Slug,
+    JsonElement? Scripts = null
 );
 
 public record QuizAttemptPayload(
@@ -75,7 +81,8 @@ public record CourseCertificatePayload(
 public record EnrollmentDto(
     string CourseId, DateTime EnrolledAt, DateTime? CompletedAt, int OverallPercent,
     string? CurrentLessonId, DateTime LastAccessedAt, JsonElement ModulesProgress,
-    JsonElement QuizAttempts, JsonElement ExerciseAttempts, CourseCertificatePayload? Certificate
+    JsonElement QuizAttempts, JsonElement ExerciseAttempts, CourseCertificatePayload? Certificate,
+    JsonElement ScriptEffects
 );
 
 // Only the current lesson is client-updatable. Completion and percentages are server-derived.
