@@ -50,6 +50,10 @@ public static class CorseLightRuntime
     public const int MaxFeedbackBytes = 1024;
     public const int MaxTextBytes = 4 * 1024;
     private const int MaxOperations = 4096;
+    private static readonly HashSet<string> AllowedContextKeys = new(StringComparer.Ordinal)
+    {
+        "course.id", "lesson.id", "activity.id", "event.name", "student.locale"
+    };
 
     public static ClExecutionResult Execute(
         ClEventBlock eventBlock,
@@ -202,6 +206,9 @@ public static class CorseLightRuntime
             case "context.get":
                 RequireArity(call, arguments, 1, context);
                 var contextKey = RequireString(arguments[0], call, context);
+                if (!AllowedContextKeys.Contains(contextKey)
+                    || (contextKey == "activity.id" && context.Execution.EventName != "activity.submit"))
+                    throw context.Error("CL_CONTEXT_KEY", "Chave context.get não permitida neste evento.", call.Line, call.Column);
                 return context.Execution.Values.TryGetValue(contextKey, out var contextValue)
                     ? contextValue
                     : null;
