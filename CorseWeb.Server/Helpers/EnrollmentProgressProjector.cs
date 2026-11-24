@@ -32,7 +32,8 @@ public static class EnrollmentProgressProjector
         IReadOnlyCollection<CourseLessonCompletion> completionRecords,
         IReadOnlyCollection<CourseQuizAttempt>? quizAttempts = null,
         IReadOnlyCollection<CourseExerciseAttempt>? exerciseAttempts = null,
-        CourseCertificate? certificate = null)
+        CourseCertificate? certificate = null,
+        IReadOnlyCollection<CourseScriptExecution>? scriptExecutions = null)
     {
         var modules = ReadPublishedModules(course?.ModulesJson);
         var validLessonIds = modules
@@ -116,6 +117,28 @@ public static class EnrollmentProgressProjector
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(modulesProgress, JsonOptions));
         using var quizDocument = JsonDocument.Parse(JsonSerializer.Serialize(attemptPayload, JsonOptions));
         using var exerciseDocument = JsonDocument.Parse(JsonSerializer.Serialize(exercisePayload, JsonOptions));
+        var scriptPayload = new List<CourseScriptEffectPayload>();
+        foreach (var execution in (scriptExecutions ?? Array.Empty<CourseScriptExecution>())
+                     .Where(item => item.EnrollmentId == enrollment.Id
+                         && item.ScriptId == CourseScriptExecution.EventMarkerScriptId
+                         && !item.Failed)
+                     .OrderBy(item => item.CreatedAt))
+        {
+            try
+            {
+                using var effectsDocument = JsonDocument.Parse(execution.ResultJson);
+                scriptPayload.Add(new CourseScriptEffectPayload(
+                    execution.LessonId,
+                    execution.EventName,
+                    effectsDocument.RootElement.Clone(),
+                    execution.CreatedAt));
+            }
+            catch (JsonException)
+            {
+                // Invalid legacy effect snapshots are excluded from the student response.
+            }
+        }
+        using var scriptDocument = JsonDocument.Parse(JsonSerializer.Serialize(scriptPayload, JsonOptions));
         var currentLessonId = enrollment.CurrentLessonId is { } current
             && validLessonIds.Contains(current)
                 ? current
@@ -138,7 +161,8 @@ public static class EnrollmentProgressProjector
                 certificate.AuthorName,
                 certificate.CourseVersion,
                 certificate.CourseCompletedAt,
-                certificate.IssuedAt));
+                certificate.IssuedAt),
+            scriptDocument.RootElement.Clone());
     }
 
     private static IReadOnlyList<PublishedModule> ReadPublishedModules(string? modulesJson)
