@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
+
+const configDirectory = dirname(fileURLToPath(import.meta.url));
+const clientRoot = resolve(configDirectory, "..");
+const repositoryRoot = resolve(clientRoot, "..");
+const serverProject = join(repositoryRoot, "CorseWeb.Server", "CorseWeb.Server.csproj");
 
 const apiPort = 51089;
 const webPort = 49189;
@@ -31,7 +37,8 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `dotnet run --project ../CorseWeb.Server/CorseWeb.Server.csproj --configuration Release --no-launch-profile`,
+      command: `dotnet run --project "${serverProject}" --configuration Release --no-launch-profile`,
+      cwd: repositoryRoot,
       url: `http://127.0.0.1:${apiPort}/api/auth/config`,
       reuseExistingServer: false,
       timeout: 120_000,
@@ -46,6 +53,7 @@ export default defineConfig({
     },
     {
       command: `npm run dev -- --host 127.0.0.1 --port ${webPort}`,
+      cwd: clientRoot,
       url: `http://127.0.0.1:${webPort}`,
       reuseExistingServer: false,
       timeout: 60_000,
