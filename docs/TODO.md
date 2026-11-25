@@ -1,6 +1,6 @@
 # CorseWeb — Kanban do projeto
 
-Última atualização: 2026-11-24.
+Última atualização: 2026-11-25.
 
 Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TODO.md` funcionam como índices por domínio e não mantêm estados paralelos.
 
@@ -34,13 +34,12 @@ Este é o quadro único de trabalho. `docs/FRONTEND/TODO.md` e `docs/BACKEND/TOD
 
 ### Não iniciada
 
-- **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Cobrir visita pública, login, catálogo, matrícula, aula, conclusão, criação de curso, editor, salvar/publicar e falhas; incluir tamanhos móveis/tablet/desktop e teclado/toque.
 - **DATA-001 · P2 · Definir importação/exportação de cursos.** Especificar schema versionado, validação de entrada, tratamento de mídia, nós/conexões e scripts CL sem aceitar código executável não confiável.
 - **OPS-001 · P2 · Definir operação de produção.** Escolher banco/provider, backup/restore, gestão de secrets, HTTPS/proxy, armazenamento de uploads, logs e processo de migração; validar antes de publicar dados reais.
 
 ### Iniciada
 
-
+- **E2E-001 · P1 · Criar suíte de testes ponta a ponta.** Base Playwright iniciada na branch `feature/e2e-001-playwright`: servidor Vite isolado em HTTP apenas para o runner, catálogo público em viewport mobile/desktop, proteção de rotas de aluno/admin e diagnóstico visual da falha de atualização de progresso usando resposta HTTP controlada. A etapa ainda não cobre login/matrícula/publicação reais contra banco descartável; isso permanece como próximo incremento antes do aceite. CI executará Chromium e a suíte via `npm run test:e2e`.
 
 - **API-TEST-001 · P1 · Criar testes de integração do backend.** Base integrada em `Homologa` pela PR #48; a infraestrutura usa `WebApplicationFactory`, cookie e SQLite em memória. A suíte agora também recebe cenários de Quiz/ramificações pela FLOW-001. Ainda faltam Google OAuth real, CSRF/expiração, concorrência e fluxos adicionais de migração. [API-TEST-001](./BACKEND/etapas/api-test-001-http-integration.md).
 

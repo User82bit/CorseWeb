@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:i18n": "node --experimental-strip-types --test src/i18n/locale.test.mjs src/utils/formatEstimatedDuration.test.mjs src/utils/courseCoverUrl.test.mjs",
     "test:hierarchy": "node --experimental-strip-types --test src/Pages/AdminCourseEditor/nodeHierarchy.test.mjs",
-    "test:flow": "node --experimental-strip-types --test src/Pages/AppLessonPage/lessonFlow.test.mjs"
+    "test:flow": "node --experimental-strip-types --test src/Pages/AppLessonPage/lessonFlow.test.mjs",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
