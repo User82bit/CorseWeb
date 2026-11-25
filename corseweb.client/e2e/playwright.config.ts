@@ -40,7 +40,6 @@ export default defineConfig({
         ASPNETCORE_ENVIRONMENT: "Testing",
         ASPNETCORE_URLS: `http://127.0.0.1:${apiPort}`,
         ConnectionStrings__DefaultConnection: `Data Source=${databasePath};Foreign Keys=True`,
-        AdminEmails__0: "admin@corseweb.e2e",
         Logging__LogLevel__Default: "Warning",
         Logging__LogLevel__Microsoft_AspNetCore: "Warning",
       },
