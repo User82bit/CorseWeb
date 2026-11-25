@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 const appOrigin = "http://127.0.0.1:49189";
@@ -6,7 +7,7 @@ test("E2E-001 · API real: aluno atualiza e conclui progresso persistido", async
   await page.goto("/");
 
   const api = page.context().request;
-  const email = `aluno-${Date.now()}@corseweb.e2e`;
+  const email = `aluno-${randomUUID()}@corseweb.e2e`;
   const password = "StrongPassword123!";
 
   const registration = await api.post(`${appOrigin}/api/auth/register`, {
