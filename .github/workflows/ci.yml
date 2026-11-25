@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -63,6 +63,12 @@ jobs:
         working-directory: corseweb.client
         run: npm run build
 
+      - name: Restore .NET solution
+        run: dotnet restore CorseWeb.slnx
+
+      - name: Build .NET solution
+        run: dotnet build CorseWeb.slnx --no-restore --configuration Release
+
       - name: Install Playwright test runner
         working-directory: corseweb.client
         run: npm install --no-save --package-lock=false @playwright/test@1.56.1
@@ -77,12 +83,6 @@ jobs:
           CI: "true"
           VITE_DEV_HTTPS: "false"
         run: npm run test:e2e
-
-      - name: Restore .NET solution
-        run: dotnet restore CorseWeb.slnx
-
-      - name: Build .NET solution
-        run: dotnet build CorseWeb.slnx --no-restore --configuration Release
 
       - name: Test API integration and server progress contracts
         run: dotnet run --project CorseWeb.ProgressTests/CorseWeb.ProgressTests.csproj --no-build --no-restore --configuration Release
