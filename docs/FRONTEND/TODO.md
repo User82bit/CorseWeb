@@ -27,7 +27,7 @@ Este arquivo organiza o trabalho do cliente por área. **O Kanban oficial e os e
 | CERT-001 | Emitir, consultar e imprimir certificado de conclusão no card Certificate | `AppLessonPage.tsx`, `LessonContentRenderer.tsx`, `enrollmentStore.ts` e API de matrículas/certificados |
 | STUDENT-001 | Validar renderização do conteúdo pedagógico e ocultação de scripts | `src/Pages/AppLessonPage/AppLessonPage.tsx`, `.scss` |
 | STORE-001 | Definir cache, localStorage e fallback da API | `src/store/`, `src/lib/api.ts` |
-| E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | Playwright em `e2e/`; smoke tests de catálogo, guards e erro controlado de progresso. A primeira execução passou 3/4, mas falhou por expectativa de idioma; correção de locale determinístico em revisão. Falta integração E2E com backend e SQLite descartável |
+| E2E-001 | Criar testes ponta a ponta para navegação, sessão, cursos e editor | Playwright em `e2e/`; smoke tests de catálogo, guards e erro controlado, além de fluxo real com ASP.NET Core e SQLite temporário para registro, criação de curso, matrícula, atualização e conclusão persistida. Correção de locale, isolamento do banco e deduplicação do CI em revisão; aguarda CI verde |
 
 ## Estado do editor visual
 
