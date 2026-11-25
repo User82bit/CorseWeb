@@ -146,6 +146,7 @@ test.describe("E2E-001 · fluxos essenciais", () => {
   test("falha ao salvar progresso exibe o detalhe retornado pela API e permite tentar novamente", async ({ page }) => {
     const course = courseFixture();
     let progressRequests = 0;
+    let lastProgressBody: unknown = null;
 
     await installStudentSession(page);
     await page.route("**/api/courses", route => route.fulfill({
@@ -164,7 +165,10 @@ test.describe("E2E-001 · fluxos essenciais", () => {
       body: JSON.stringify([enrollmentFixture()]),
     }));
     await page.route("**/api/enrollments/e2e-course/progress", async route => {
-      if (route.request().method() === "PUT") progressRequests += 1;
+      if (route.request().method() === "PUT") {
+        progressRequests += 1;
+        lastProgressBody = route.request().postDataJSON();
+      }
       await route.fulfill({
         status: 400,
         contentType: "application/json",
@@ -177,6 +181,7 @@ test.describe("E2E-001 · fluxos essenciais", () => {
     const alert = page.getByRole("alert");
     await expect(alert).toContainText("Não foi possível salvar seu progresso");
     await expect(alert).toContainText("Aula não publicada ou não pertencente ao curso");
+    expect(lastProgressBody).toEqual({ currentLessonId: "lesson-e2e" });
 
     await page.getByRole("button", { name: /tentar novamente/i }).click();
     await expect.poll(() => progressRequests).toBeGreaterThanOrEqual(2);
