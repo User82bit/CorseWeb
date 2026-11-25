@@ -31,7 +31,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `dotnet run --project ../CorseWeb.Server/CorseWeb.Server.csproj --configuration Release --no-launch-profile --urls http://127.0.0.1:${apiPort}`,
+      command: `dotnet run --project ../CorseWeb.Server/CorseWeb.Server.csproj --configuration Release --no-launch-profile`,
       url: `http://127.0.0.1:${apiPort}/api/auth/config`,
       reuseExistingServer: false,
       timeout: 120_000,
